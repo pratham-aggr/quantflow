@@ -10,6 +10,7 @@ import { AddStockForm } from './AddStockForm'
 import { TransactionHistory } from './TransactionHistory'
 import { PortfolioSelector } from './PortfolioSelector'
 import { PortfolioSummary } from './PortfolioSummary'
+import { MarketDataStatus } from './MarketDataStatus'
 
 export const PortfolioManagement: React.FC = () => {
   const { user } = useAuth()
@@ -142,6 +143,9 @@ export const PortfolioManagement: React.FC = () => {
                             <HoldingsTable holdings={currentPortfolio.holdings.slice(0, 5)} compact />
                           </div>
                         )}
+                        
+                        {/* Market Data Status */}
+                        <MarketDataStatus />
                       </div>
                     )}
 

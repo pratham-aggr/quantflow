@@ -5,13 +5,14 @@ import { FormInput } from './FormInput'
 import { LoadingSpinner } from './LoadingSpinner'
 import { ErrorMessage } from './ErrorMessage'
 import { CreateHoldingSchema, CreateHoldingData } from '../types/portfolio'
+import { marketDataService } from '../lib/marketDataService'
 
 interface AddStockFormProps {
   portfolioId: string
   onSuccess?: () => void
 }
 
-// Mock stock data for demo purposes
+// Mock stock data for fallback when API is not available
 const MOCK_STOCKS = [
   { symbol: 'AAPL', name: 'Apple Inc.' },
   { symbol: 'GOOGL', name: 'Alphabet Inc.' },
@@ -43,14 +44,48 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
 
   const watchedSymbol = watch('symbol')
 
-  // Mock stock search function
-  const searchStocks = (query: string) => {
+  // Debounced search function
+  const debouncedSearch = React.useCallback(
+    React.useMemo(
+      () => {
+        let timeoutId: NodeJS.Timeout
+        return (query: string) => {
+          clearTimeout(timeoutId)
+          timeoutId = setTimeout(() => searchStocks(query), 300)
+        }
+      },
+      []
+    ),
+    []
+  )
+
+  // Real-time stock search function with fallback to mock data
+  const searchStocks = async (query: string) => {
     if (!query || query.length < 1) {
       setSearchResults([])
       setShowSearchResults(false)
       return
     }
 
+    try {
+      // Try to get real-time search results from Finnhub
+      if (marketDataService.isConfigured()) {
+        const searchResult = await marketDataService.searchStocks(query)
+        if (searchResult && searchResult.result) {
+          const realResults = searchResult.result.slice(0, 10).map(item => ({
+            symbol: item.symbol,
+            name: item.description
+          }))
+          setSearchResults(realResults)
+          setShowSearchResults(true)
+          return
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch real-time search results, using mock data:', error)
+    }
+
+    // Fallback to mock data
     const filtered = MOCK_STOCKS.filter(stock => 
       stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
       stock.name.toLowerCase().includes(query.toLowerCase())
@@ -136,7 +171,7 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
                 value: 10,
                 message: 'Stock symbol must be less than 10 characters'
               },
-              onChange: (e) => searchStocks(e.target.value)
+              onChange: (e) => debouncedSearch(e.target.value)
             })}
           />
           

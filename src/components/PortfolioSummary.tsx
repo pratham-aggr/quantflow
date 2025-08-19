@@ -2,64 +2,72 @@ import React, { useState, useEffect } from 'react'
 import { PortfolioWithHoldings } from '../types/portfolio'
 import { stockPriceService } from '../lib/stockPriceService'
 import { LoadingSpinner } from './LoadingSpinner'
+import { useMultipleStockPrices } from '../hooks/useStockPrice'
 
 interface PortfolioSummaryProps {
   portfolio: PortfolioWithHoldings
 }
 
 export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio }) => {
-  const [portfolioValue, setPortfolioValue] = useState<{
-    totalValue: number
-    totalCost: number
-    totalGainLoss: number
-    totalGainLossPercent: number
-    holdingsWithPrices: any[]
-  } | null>(null)
-  const [loading, setLoading] = useState(true)
+  const symbols = portfolio.holdings.map(h => h.symbol)
+  
+  // Use real-time stock prices with auto-refresh every 30 seconds
+  const { data: stockPrices, loading: pricesLoading, error: pricesError } = useMultipleStockPrices({
+    symbols,
+    autoRefresh: true,
+    refreshInterval: 30000, // 30 seconds
+    enabled: symbols.length > 0
+  })
 
-  useEffect(() => {
-    const calculateValue = async () => {
-      if (portfolio.holdings.length === 0) {
-        setPortfolioValue({
-          totalValue: 0,
-          totalCost: 0,
-          totalGainLoss: 0,
-          totalGainLossPercent: 0,
-          holdingsWithPrices: []
-        })
-        setLoading(false)
-        return
-      }
-
-      try {
-        const value = await stockPriceService.calculatePortfolioValue(
-          portfolio.holdings.map(h => ({
-            symbol: h.symbol,
-            quantity: h.quantity,
-            avg_price: h.avg_price
-          }))
-        )
-        setPortfolioValue(value)
-      } catch (error) {
-        console.error('Error calculating portfolio value:', error)
-        // Fallback to cost basis calculation
-        const totalCost = portfolio.holdings.reduce(
-          (sum, holding) => sum + (holding.quantity * holding.avg_price), 0
-        )
-        setPortfolioValue({
-          totalValue: totalCost,
-          totalCost,
-          totalGainLoss: 0,
-          totalGainLossPercent: 0,
-          holdingsWithPrices: []
-        })
-      } finally {
-        setLoading(false)
+  // Calculate portfolio value with real-time prices
+  const portfolioValue = React.useMemo(() => {
+    if (portfolio.holdings.length === 0) {
+      return {
+        totalValue: 0,
+        totalCost: 0,
+        totalGainLoss: 0,
+        totalGainLossPercent: 0,
+        holdingsWithPrices: []
       }
     }
 
-    calculateValue()
-  }, [portfolio.holdings])
+    let totalValue = 0
+    let totalCost = 0
+    const holdingsWithPrices = portfolio.holdings.map(holding => {
+      const currentPrice = stockPrices[holding.symbol]?.price || holding.avg_price
+      const currentValue = holding.quantity * currentPrice
+      const costBasis = holding.quantity * holding.avg_price
+      const gainLoss = currentValue - costBasis
+      const gainLossPercent = costBasis > 0 ? (gainLoss / costBasis) * 100 : 0
+      
+      totalValue += currentValue
+      totalCost += costBasis
+      
+      return {
+        symbol: holding.symbol,
+        quantity: holding.quantity,
+        avgPrice: holding.avg_price,
+        currentPrice,
+        currentValue,
+        costBasis,
+        gainLoss,
+        gainLossPercent
+      }
+    })
+    
+    const totalGainLoss = totalValue - totalCost
+    const totalGainLossPercent = totalCost > 0 ? (totalGainLoss / totalCost) * 100 : 0
+    
+    return {
+      totalValue,
+      totalCost,
+      totalGainLoss,
+      totalGainLossPercent,
+      holdingsWithPrices
+    }
+  }, [portfolio.holdings, stockPrices])
+
+  const loading = pricesLoading && symbols.length > 0
 
   const totalHoldingsValue = portfolioValue?.totalValue || portfolio.holdings.reduce(
     (sum, holding) => sum + (holding.quantity * holding.avg_price), 0

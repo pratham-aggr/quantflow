@@ -1,5 +1,7 @@
-// Mock stock price service for demo purposes
-// In a real application, you would integrate with a stock API like Alpha Vantage, Yahoo Finance, or IEX Cloud
+// Real-time stock price service using Finnhub.io API
+// Falls back to mock data if API key is not configured
+
+import { marketDataService } from './marketDataService'
 
 interface StockPrice {
   symbol: string
@@ -9,7 +11,7 @@ interface StockPrice {
   lastUpdated: string
 }
 
-// Mock stock prices for demo
+// Mock stock prices for fallback when API is not available
 const MOCK_STOCK_PRICES: Record<string, StockPrice> = {
   'AAPL': {
     symbol: 'AAPL',
@@ -86,20 +88,55 @@ const MOCK_STOCK_PRICES: Record<string, StockPrice> = {
 export const stockPriceService = {
   // Get current price for a single stock
   async getStockPrice(symbol: string): Promise<StockPrice | null> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 100))
-    
+    try {
+      // Try to get real-time data from Finnhub
+      if (marketDataService.isConfigured()) {
+        const quote = await marketDataService.getStockQuote(symbol)
+        if (quote) {
+          return {
+            symbol: quote.symbol,
+            price: quote.price,
+            change: quote.change,
+            changePercent: quote.changePercent,
+            lastUpdated: new Date(quote.timestamp * 1000).toISOString()
+          }
+        }
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch real-time price for ${symbol}, using mock data:`, error)
+    }
+
+    // Fallback to mock data
     const upperSymbol = symbol.toUpperCase()
     return MOCK_STOCK_PRICES[upperSymbol] || null
   },
 
   // Get current prices for multiple stocks
   async getStockPrices(symbols: string[]): Promise<Record<string, StockPrice>> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 200))
-    
     const prices: Record<string, StockPrice> = {}
     
+    try {
+      // Try to get real-time data from Finnhub
+      if (marketDataService.isConfigured()) {
+        const quotes = await marketDataService.getMultipleQuotes(symbols)
+        
+        Object.entries(quotes).forEach(([symbol, quote]) => {
+          prices[symbol] = {
+            symbol: quote.symbol,
+            price: quote.price,
+            change: quote.change,
+            changePercent: quote.changePercent,
+            lastUpdated: new Date(quote.timestamp * 1000).toISOString()
+          }
+        })
+        
+        return prices
+      }
+    } catch (error) {
+      console.warn('Failed to fetch real-time prices, using mock data:', error)
+    }
+
+    // Fallback to mock data
     for (const symbol of symbols) {
       const upperSymbol = symbol.toUpperCase()
       if (MOCK_STOCK_PRICES[upperSymbol]) {
