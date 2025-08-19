@@ -32,6 +32,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [searchResults, setSearchResults] = useState<typeof MOCK_STOCKS>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
+  const [isLoadingPrice, setIsLoadingPrice] = useState(false)
+  const [priceAutoFilled, setPriceAutoFilled] = useState(false)
 
   const {
     register,
@@ -94,10 +96,27 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
     setShowSearchResults(true)
   }
 
-  const selectStock = (stock: typeof MOCK_STOCKS[0]) => {
+  const selectStock = async (stock: typeof MOCK_STOCKS[0]) => {
     setValue('symbol', stock.symbol)
     setValue('company_name', stock.name)
     setShowSearchResults(false)
+    
+    // Auto-fill average price with current market price
+    setIsLoadingPrice(true)
+    setPriceAutoFilled(false)
+    try {
+      if (marketDataService.isConfigured()) {
+        const quote = await marketDataService.getStockQuote(stock.symbol)
+        if (quote && quote.price > 0) {
+          setValue('avg_price', quote.price)
+          setPriceAutoFilled(true)
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to fetch current price for auto-fill:', error)
+    } finally {
+      setIsLoadingPrice(false)
+    }
   }
 
   const onSubmit = async (data: CreateHoldingData) => {
@@ -118,6 +137,7 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
         setSubmitError(null)
         setSearchResults([])
         setShowSearchResults(false)
+        setPriceAutoFilled(false)
         onSuccess?.()
       } else {
         setSubmitError('Failed to add stock. Please try again.')
@@ -224,26 +244,43 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
         />
 
         {/* Average Price */}
-        <FormInput
-          label="Average Price"
-          type="number"
-          step="0.01"
-          placeholder="150.00"
-          required
-          error={errors.avg_price?.message}
-          {...register('avg_price', {
-            required: 'Average price is required',
-            valueAsNumber: true,
-            min: {
-              value: 0.01,
-              message: 'Average price must be greater than 0'
-            },
-            max: {
-              value: 100000,
-              message: 'Average price cannot exceed $100,000'
-            }
-          })}
-        />
+        <div className="relative">
+          <FormInput
+            label="Average Price"
+            type="number"
+            step="0.01"
+            placeholder={isLoadingPrice ? "Loading..." : "150.00"}
+            required
+            error={errors.avg_price?.message}
+            disabled={isLoadingPrice}
+            {...register('avg_price', {
+              required: 'Average price is required',
+              valueAsNumber: true,
+              min: {
+                value: 0.01,
+                message: 'Average price must be greater than 0'
+              },
+              max: {
+                value: 100000,
+                message: 'Average price cannot exceed $100,000'
+              }
+            })}
+          />
+          {isLoadingPrice && (
+            <div className="absolute right-3 top-8">
+              <LoadingSpinner size="sm" />
+            </div>
+          )}
+        </div>
+        
+        {/* Auto-fill notification */}
+        {priceAutoFilled && (
+          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
+            <p className="text-sm text-green-800">
+              ✅ Current market price auto-filled. You can adjust this value if needed.
+            </p>
+          </div>
+        )}
 
         {/* Total Value Preview */}
         {watch('quantity') && watch('avg_price') && (
