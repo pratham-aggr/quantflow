@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { PortfolioWithHoldings } from '../types/portfolio'
-import { stockPriceService } from '../lib/stockPriceService'
 import { LoadingSpinner } from './LoadingSpinner'
-import { useMultipleStockPrices } from '../hooks/useStockPrice'
+import { useSafeStockPrices } from '../hooks/useSafeStockPrices'
 
 interface PortfolioSummaryProps {
   portfolio: PortfolioWithHoldings
@@ -11,10 +10,13 @@ interface PortfolioSummaryProps {
 export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio }) => {
   const symbols = portfolio.holdings.map(h => h.symbol)
   
-  // Temporarily disable real-time stock prices to prevent max depth exceeded
-  const stockPrices: Record<string, any> = {}
-  const pricesLoading = false
-  const pricesError = null
+  // Use safe real-time stock prices with auto-refresh
+  const { data: stockPrices, loading: pricesLoading, error: pricesError, lastUpdated } = useSafeStockPrices({
+    symbols,
+    autoRefresh: false, // Temporarily disable auto-refresh to debug
+    refreshInterval: 30000, // 30 seconds
+    enabled: symbols.length > 0
+  })
 
   // Calculate portfolio value with real-time prices
   const portfolioValue = React.useMemo(() => {
@@ -62,9 +64,28 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio })
       totalGainLossPercent,
       holdingsWithPrices
     }
-  }, [portfolio.holdings, JSON.stringify(stockPrices)]) // Use JSON.stringify to prevent object reference changes
+  }, [portfolio.holdings, stockPrices]) // Safe dependency array
 
   const loading = pricesLoading && symbols.length > 0
+
+  // Display error if there's a price fetching error
+  if (pricesError && symbols.length > 0) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Portfolio Summary</h3>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800 text-sm">
+              ⚠️ Unable to fetch real-time prices: {pricesError}
+            </p>
+            <p className="text-red-700 text-xs mt-1">
+              Portfolio values shown are based on your purchase prices.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const totalHoldingsValue = portfolioValue?.totalValue || portfolio.holdings.reduce(
     (sum, holding) => sum + (holding.quantity * holding.avg_price), 0
@@ -100,6 +121,13 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio })
                     {portfolioValue.totalGainLoss >= 0 ? '+' : ''}${portfolioValue.totalGainLoss.toLocaleString()} 
                     ({portfolioValue.totalGainLossPercent >= 0 ? '+' : ''}{portfolioValue.totalGainLossPercent.toFixed(2)}%)
                   </span>
+                </div>
+              )}
+              
+              {/* Last Updated Indicator */}
+              {lastUpdated && (
+                <div className="mt-2 text-xs text-blue-200">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
                 </div>
               )}
             </div>

@@ -38,11 +38,11 @@ interface SearchResult {
   }>
 }
 
-// Rate limiting configuration
+// Rate limiting configuration for Finnhub Free Plan
 const RATE_LIMIT = {
-  callsPerMinute: 60,
-  callsPerSecond: 1,
-  retryDelay: 1000, // 1 second
+  callsPerMinute: 60, // Free plan: 60 calls per minute
+  callsPerSecond: 1,  // Free plan: 1 call per second
+  retryDelay: 1000,   // 1 second
   maxRetries: 3
 }
 
@@ -242,6 +242,10 @@ class MarketDataService {
         return mappedData
       } else {
         console.log(`Invalid quote data for ${symbol}:`, rawData)
+        // Check if it's a non-US stock (free plan limitation)
+        if (rawData && rawData.error) {
+          console.warn(`Free plan limitation: ${symbol} may not be available (US stocks only)`)
+        }
       }
       
       return null
@@ -317,10 +321,11 @@ class MarketDataService {
 
     console.log(`Uncached symbols to fetch:`, uncachedSymbols)
 
-    // Fetch uncached symbols
+    // Fetch uncached symbols with rate limiting (1 call per second for free plan)
     if (uncachedSymbols.length > 0) {
       try {
-        const promises = uncachedSymbols.map(async (symbol) => {
+        // Process symbols sequentially to respect rate limits
+        for (const symbol of uncachedSymbols) {
           console.log(`Fetching quote for ${symbol}...`)
           const quote = await this.getStockQuote(symbol)
           if (quote) {
@@ -329,9 +334,14 @@ class MarketDataService {
           } else {
             console.log(`Failed to fetch quote for ${symbol}`)
           }
-        })
-
-        await Promise.all(promises)
+          
+          // Add delay between requests to respect rate limits (1 call per second)
+          if (uncachedSymbols.indexOf(symbol) < uncachedSymbols.length - 1) {
+            console.log(`Waiting 1 second before next request...`)
+            await new Promise(resolve => setTimeout(resolve, 1000))
+          }
+        }
+        
         console.log(`All quotes fetched. Results:`, results)
       } catch (error) {
         console.error('Error in getMultipleQuotes:', error)
