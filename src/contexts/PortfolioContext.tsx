@@ -210,16 +210,11 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   }
 
   const createHolding = async (data: CreateHoldingData): Promise<Holding | null> => {
-    console.log('PortfolioContext: createHolding called with data:', data)
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
-      console.log('PortfolioContext: Calling portfolioService.createHolding...')
       const holding = await portfolioService.createHolding(data)
-      console.log('PortfolioContext: portfolioService.createHolding result:', holding)
-      
       if (holding && state.currentPortfolio) {
-        console.log('PortfolioContext: Updating currentPortfolio with new holding...')
         setState(prev => ({
           ...prev,
           currentPortfolio: prev.currentPortfolio ? {
@@ -228,14 +223,10 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
           } : null,
           loading: false
         }))
-        console.log('PortfolioContext: State updated successfully')
-      } else {
-        console.log('PortfolioContext: No holding returned or no currentPortfolio')
-        setState(prev => ({ ...prev, loading: false }))
       }
       return holding
     } catch (error) {
-      console.error('PortfolioContext: Error creating holding:', error)
+      console.error('Error creating holding:', error)
       setState(prev => ({
         ...prev,
         loading: false,

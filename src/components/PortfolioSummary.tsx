@@ -14,7 +14,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio })
   // Use real-time stock prices with auto-refresh every 30 seconds
   const { data: stockPrices, loading: pricesLoading, error: pricesError } = useMultipleStockPrices({
     symbols,
-    autoRefresh: true,
+    autoRefresh: false, // Temporarily disable auto-refresh
     refreshInterval: 30000, // 30 seconds
     enabled: symbols.length > 0
   })
