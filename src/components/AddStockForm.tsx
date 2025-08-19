@@ -141,37 +141,49 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
   }
 
   const onSubmit = async (data: CreateHoldingData) => {
+    console.log('Starting form submission with data:', data)
     setIsSubmitting(true)
     setSubmitError(null)
 
     try {
+      console.log('Validating data with Zod...')
       // Validate data with Zod
       const validatedData = CreateHoldingSchema.parse({
         ...data,
         portfolio_id: portfolioId
       })
+      console.log('Validation passed:', validatedData)
       
+      console.log('Calling createHolding...')
       const holding = await createHolding(validatedData)
+      console.log('createHolding result:', holding)
       
       if (holding) {
+        console.log('Holding created successfully, resetting form...')
         reset()
         setSubmitError(null)
         setSearchResults([])
         setShowSearchResults(false)
         setPriceAutoFilled(false)
+        console.log('Calling onSuccess callback...')
         onSuccess?.()
+        console.log('Form submission completed successfully')
       } else {
+        console.log('createHolding returned null/false')
         setSubmitError('Failed to add stock. Please try again.')
       }
     } catch (error: any) {
       console.error('Add stock error:', error)
       if (error.errors) {
         // Zod validation errors
+        console.log('Zod validation errors:', error.errors)
         setSubmitError(error.errors[0]?.message || 'Validation failed')
       } else {
+        console.log('Non-validation error:', error.message)
         setSubmitError('Failed to add stock. Please try again.')
       }
     } finally {
+      console.log('Setting isSubmitting to false')
       setIsSubmitting(false)
     }
   }
