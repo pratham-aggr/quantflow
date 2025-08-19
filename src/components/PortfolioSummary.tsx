@@ -11,13 +11,10 @@ interface PortfolioSummaryProps {
 export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio }) => {
   const symbols = portfolio.holdings.map(h => h.symbol)
   
-  // Use real-time stock prices with auto-refresh every 30 seconds
-  const { data: stockPrices, loading: pricesLoading, error: pricesError } = useMultipleStockPrices({
-    symbols,
-    autoRefresh: false, // Temporarily disable auto-refresh
-    refreshInterval: 30000, // 30 seconds
-    enabled: symbols.length > 0
-  })
+  // Temporarily disable real-time stock prices to prevent max depth exceeded
+  const stockPrices: Record<string, any> = {}
+  const pricesLoading = false
+  const pricesError = null
 
   // Calculate portfolio value with real-time prices
   const portfolioValue = React.useMemo(() => {
@@ -65,7 +62,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ portfolio })
       totalGainLossPercent,
       holdingsWithPrices
     }
-  }, [portfolio.holdings, stockPrices])
+  }, [portfolio.holdings, JSON.stringify(stockPrices)]) // Use JSON.stringify to prevent object reference changes
 
   const loading = pricesLoading && symbols.length > 0
 

@@ -157,7 +157,7 @@ export const useMultipleStockPrices = ({
     } finally {
       setLoading(false)
     }
-  }, [symbols, enabled])
+  }, [symbols.join(','), enabled]) // Use symbols.join(',') to prevent array reference changes
 
   // Initial fetch
   useEffect(() => {
