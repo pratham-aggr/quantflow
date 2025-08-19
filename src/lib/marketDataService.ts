@@ -219,15 +219,29 @@ class MarketDataService {
 
     console.log(`Fetching quote for ${symbol} from API...`)
     try {
-      const data = await this.makeRequest<StockQuote>(`/quote`, { symbol: symbol.toUpperCase() })
-      console.log(`API response for ${symbol}:`, data)
+      const rawData = await this.makeRequest<any>(`/quote`, { symbol: symbol.toUpperCase() })
+      console.log(`API response for ${symbol}:`, rawData)
       
-      if (data && data.price > 0) {
-        console.log(`Valid quote received for ${symbol}:`, data)
-        this.cache.set(cacheKey, data)
-        return data
+      // Map Finnhub API response to our StockQuote interface
+      if (rawData && rawData.c) {
+        const mappedData: StockQuote = {
+          symbol: symbol.toUpperCase(),
+          price: rawData.c, // current price
+          change: rawData.d, // change
+          changePercent: rawData.dp, // change percent
+          high: rawData.h, // high
+          low: rawData.l, // low
+          open: rawData.o, // open
+          previousClose: rawData.pc, // previous close
+          volume: rawData.v || 0, // volume
+          timestamp: Date.now() // current timestamp
+        }
+        
+        console.log(`Mapped quote data for ${symbol}:`, mappedData)
+        this.cache.set(cacheKey, mappedData)
+        return mappedData
       } else {
-        console.log(`Invalid quote data for ${symbol}:`, data)
+        console.log(`Invalid quote data for ${symbol}:`, rawData)
       }
       
       return null
