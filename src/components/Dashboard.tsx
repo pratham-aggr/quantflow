@@ -33,6 +33,18 @@ export const Dashboard: React.FC = () => {
               </div>
             </div>
 
+            {/* Debug Environment Variables */}
+            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+              <h3 className="text-sm font-medium text-yellow-900 mb-2">🔧 Debug: Environment Variables</h3>
+              <div className="text-sm text-yellow-700 space-y-1">
+                <p>Supabase URL: {process.env.REACT_APP_SUPABASE_URL ? '✅ Set' : '❌ Not Set'}</p>
+                <p>Supabase Key: {process.env.REACT_APP_SUPABASE_ANON_KEY ? '✅ Set' : '❌ Not Set'}</p>
+                <p>Environment: {process.env.NODE_ENV}</p>
+                <p>User ID: {user?.id || 'Not logged in'}</p>
+                <p>Portfolios Count: {portfolios.length}</p>
+              </div>
+            </div>
+
             {/* System Status */}
             <div className="mt-6 p-4 bg-blue-50 rounded-md">
               <h3 className="text-sm font-medium text-blue-900 mb-2">QuantFlow System Status</h3>
