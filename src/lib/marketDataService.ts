@@ -187,17 +187,24 @@ class MarketDataService {
       url.searchParams.append(key, value)
     })
 
+    console.log(`Making API request to: ${url.toString()}`)
+
     return this.rateLimiter.execute(async () => {
+      console.log(`Executing API request for ${endpoint}...`)
       const response = await fetch(url.toString())
+      console.log(`API response status: ${response.status}`)
       
       if (!response.ok) {
+        console.error(`API request failed with status: ${response.status}`)
         if (response.status === 429) {
           throw new Error('Rate limit exceeded')
         }
         throw new Error(`API request failed: ${response.status}`)
       }
 
-      return response.json()
+      const data = await response.json()
+      console.log(`API response data:`, data)
+      return data
     })
   }
 
@@ -206,15 +213,21 @@ class MarketDataService {
     const cached = this.cache.get(cacheKey)
     
     if (cached) {
+      console.log(`Returning cached quote for ${symbol}:`, cached)
       return cached
     }
 
+    console.log(`Fetching quote for ${symbol} from API...`)
     try {
       const data = await this.makeRequest<StockQuote>(`/quote`, { symbol: symbol.toUpperCase() })
+      console.log(`API response for ${symbol}:`, data)
       
       if (data && data.price > 0) {
+        console.log(`Valid quote received for ${symbol}:`, data)
         this.cache.set(cacheKey, data)
         return data
+      } else {
+        console.log(`Invalid quote data for ${symbol}:`, data)
       }
       
       return null

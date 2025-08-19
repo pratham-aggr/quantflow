@@ -131,9 +131,9 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
       } else {
         console.log('Market data service not configured')
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to fetch current price for auto-fill:', error)
-      console.error('Error details:', error.message)
+      console.error('Error details:', error?.message || 'Unknown error')
     } finally {
       setIsLoadingPrice(false)
       console.log('Loading state set to false')
