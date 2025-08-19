@@ -2,7 +2,6 @@ import React from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePortfolio } from '../contexts/PortfolioContext'
 import { Navigation } from './Navigation'
-import { ConfigStatus } from './ConfigStatus'
  
 
 export const Dashboard: React.FC = () => {
@@ -87,8 +86,7 @@ export const Dashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Configuration Status */}
-            <ConfigStatus />
+
             
           </div>
         </div>
