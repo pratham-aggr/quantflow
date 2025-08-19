@@ -300,6 +300,7 @@ class MarketDataService {
   }
 
   async getMultipleQuotes(symbols: string[]): Promise<Record<string, StockQuote>> {
+    console.log(`Getting multiple quotes for symbols:`, symbols)
     const results: Record<string, StockQuote> = {}
     const uncachedSymbols: string[] = []
 
@@ -307,22 +308,35 @@ class MarketDataService {
     symbols.forEach(symbol => {
       const cached = this.cache.get(`quote_${symbol.toUpperCase()}`)
       if (cached) {
+        console.log(`Using cached quote for ${symbol}:`, cached)
         results[symbol.toUpperCase()] = cached
       } else {
         uncachedSymbols.push(symbol)
       }
     })
 
+    console.log(`Uncached symbols to fetch:`, uncachedSymbols)
+
     // Fetch uncached symbols
     if (uncachedSymbols.length > 0) {
-      const promises = uncachedSymbols.map(async (symbol) => {
-        const quote = await this.getStockQuote(symbol)
-        if (quote) {
-          results[symbol.toUpperCase()] = quote
-        }
-      })
+      try {
+        const promises = uncachedSymbols.map(async (symbol) => {
+          console.log(`Fetching quote for ${symbol}...`)
+          const quote = await this.getStockQuote(symbol)
+          if (quote) {
+            console.log(`Successfully fetched quote for ${symbol}:`, quote)
+            results[symbol.toUpperCase()] = quote
+          } else {
+            console.log(`Failed to fetch quote for ${symbol}`)
+          }
+        })
 
-      await Promise.all(promises)
+        await Promise.all(promises)
+        console.log(`All quotes fetched. Results:`, results)
+      } catch (error) {
+        console.error('Error in getMultipleQuotes:', error)
+        throw error
+      }
     }
 
     return results
