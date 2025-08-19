@@ -108,24 +108,35 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
     console.log('Fetching price for:', stock.symbol)
     
     try {
-      if (marketDataService.isConfigured()) {
+      console.log('Checking if market data service is configured...')
+      const isConfigured = marketDataService.isConfigured()
+      console.log('Market data service configured:', isConfigured)
+      
+      if (isConfigured) {
         console.log('Market data service is configured')
+        console.log('Calling getStockQuote for:', stock.symbol)
         const quote = await marketDataService.getStockQuote(stock.symbol)
         console.log('Quote received:', quote)
+        console.log('Quote type:', typeof quote)
+        console.log('Quote price:', quote?.price)
+        
         if (quote && quote.price > 0) {
           console.log('Setting price to:', quote.price)
           setValue('avg_price', quote.price)
           setPriceAutoFilled(true)
+          console.log('Price auto-fill completed successfully')
         } else {
-          console.log('No valid quote received')
+          console.log('No valid quote received - quote:', quote)
         }
       } else {
         console.log('Market data service not configured')
       }
     } catch (error) {
       console.error('Failed to fetch current price for auto-fill:', error)
+      console.error('Error details:', error.message)
     } finally {
       setIsLoadingPrice(false)
+      console.log('Loading state set to false')
     }
   }
 
