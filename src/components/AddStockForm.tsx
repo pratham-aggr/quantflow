@@ -309,8 +309,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
       </form>
 
       <div className="mt-4 text-sm text-gray-600">
-        <p>💡 Tip: Use the stock symbol search to quickly find and add stocks</p>
-        <p>📊 Popular stocks: AAPL, GOOGL, MSFT, AMZN, TSLA</p>
+        <p>Tip: Use the stock symbol search to quickly find and add stocks</p>
+        <p>Popular stocks: AAPL, GOOGL, MSFT, AMZN, TSLA</p>
       </div>
     </div>
   )
