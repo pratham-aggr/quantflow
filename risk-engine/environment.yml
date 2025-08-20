@@ -1,0 +1,17 @@
+name: quantflow-risk-engine
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.9
+  - flask=2.3.3
+  - pandas=2.1.1
+  - numpy=1.24.3
+  - scipy=1.11.1
+  - requests=2.31.0
+  - python-dotenv=1.0.0
+  - gunicorn=21.2.0
+  - pip
+  - pip:
+    - flask-cors==4.0.0
+    - yfinance==0.2.18
