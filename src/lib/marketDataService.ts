@@ -171,7 +171,7 @@ class MarketDataService {
     this.apiKey = process.env.REACT_APP_FINNHUB_API_KEY || ''
     
     if (!this.apiKey) {
-      console.warn('Finnhub API key not found. Using mock data.')
+      throw new Error('Finnhub API key not configured. Please set REACT_APP_FINNHUB_API_KEY environment variable.')
     }
   }
 

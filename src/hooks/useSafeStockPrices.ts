@@ -58,6 +58,7 @@ export const useSafeStockPrices = ({
       setLoading(false)
       console.log('Fetch completed, loading set to false')
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbolsKey, enabled])
 
   // Use the safe auto-refresh hook

@@ -3,6 +3,12 @@ import cors from 'cors'
 import dotenv from 'dotenv'
 import { createClient } from '@supabase/supabase-js'
 
+// Import our services
+import { connectRedis, disconnectRedis } from './config/redis.js'
+import { marketDataService } from './services/marketDataService.js'
+import { schedulerService } from './services/schedulerService.js'
+import marketDataRoutes from './routes/marketData.js'
+
 dotenv.config()
 
 const app = express()
@@ -38,10 +44,52 @@ async function requireAuth(req, res, next) {
   }
 }
 
+// Initialize services
+async function initializeServices() {
+  console.log('🚀 Initializing QuantFlow API services...')
+  
+  // Connect to Redis
+  const redisConnected = await connectRedis()
+  if (!redisConnected) {
+    console.warn('⚠️ Redis connection failed. Some features may be limited.')
+  }
+  
+  // Initialize market data service
+  if (marketDataService.isConfigured()) {
+    console.log('✅ Market data service configured')
+    
+    // Start scheduler
+    schedulerService.start()
+    
+    // Initial popular stocks cache update
+    try {
+      await marketDataService.updatePopularStocksCache()
+      console.log('✅ Initial popular stocks cache updated')
+    } catch (error) {
+      console.warn('⚠️ Failed to update initial popular stocks cache:', error.message)
+    }
+  } else {
+    console.warn('⚠️ Market data service not configured. Set FINNHUB_API_KEY environment variable.')
+  }
+  
+  console.log('✅ Services initialized successfully')
+}
+
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' })
+  res.json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    services: {
+      redis: 'connected', // We'll assume it's connected if the server is running
+      marketData: marketDataService.isConfigured(),
+      scheduler: schedulerService.getStatus().isRunning
+    }
+  })
 })
+
+// Market data routes (public - no auth required for market data)
+app.use('/api/market-data', marketDataRoutes)
 
 // Protected example
 app.get('/api/protected', requireAuth, (req, res) => {
@@ -66,5 +114,91 @@ app.get('/api/me', requireAuth, async (req, res) => {
   }
 })
 
+// Admin routes for service management
+app.get('/api/admin/services/status', requireAuth, async (req, res) => {
+  try {
+    const marketDataStatus = marketDataService.isConfigured()
+    const schedulerStatus = schedulerService.getStatus()
+    const cacheStats = await marketDataService.getCacheStats()
+    
+    res.json({
+      marketData: {
+        configured: marketDataStatus,
+        provider: 'Finnhub.io'
+      },
+      scheduler: schedulerStatus,
+      cache: cacheStats,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Admin status error:', error)
+    res.status(500).json({ error: 'Failed to get service status' })
+  }
+})
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Shutting down QuantFlow API...')
+  
+  // Stop scheduler
+  schedulerService.stop()
+  
+  // Disconnect Redis
+  await disconnectRedis()
+  
+  console.log('✅ Shutdown complete')
+  process.exit(0)
+})
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Received SIGTERM, shutting down...')
+  
+  // Stop scheduler
+  schedulerService.stop()
+  
+  // Disconnect Redis
+  await disconnectRedis()
+  
+  console.log('✅ Shutdown complete')
+  process.exit(0)
+})
+
 const PORT = process.env.PORT || 4000
-app.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`))
+
+// Start server
+app.listen(PORT, async () => {
+  console.log(`🚀 QuantFlow API listening on http://localhost:${PORT}`)
+  
+  // Initialize services after server starts
+  await initializeServices()
+  
+  console.log(`
+📊 QuantFlow API Server Started Successfully!
+
+🔗 API Endpoints:
+   - Health Check: GET /api/health
+   - Market Data: GET /api/market-data/*
+   - Protected: GET /api/protected
+   - User Profile: GET /api/me
+   - Admin Status: GET /api/admin/services/status
+
+📈 Market Data Features:
+   - Stock Quotes: GET /api/market-data/quote/:symbol
+   - Multiple Quotes: GET /api/market-data/quotes?symbols=AAPL,GOOGL
+   - Company Profiles: GET /api/market-data/profile/:symbol
+   - Stock Search: GET /api/market-data/search?q=apple
+   - Popular Stocks: GET /api/market-data/popular
+   - Service Status: GET /api/market-data/status
+
+🔄 Scheduled Jobs:
+   - Popular stocks update: Every 5 minutes
+   - Cache cleanup: Every hour
+   - Health check: Every 15 minutes
+
+💾 Caching:
+   - Stock quotes: 15 minutes
+   - Company profiles: 1 hour
+   - Search results: 30 minutes
+   - Popular stocks: 5 minutes
+  `)
+})

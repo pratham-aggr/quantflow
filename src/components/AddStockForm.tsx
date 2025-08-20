@@ -12,25 +12,16 @@ interface AddStockFormProps {
   onSuccess?: () => void
 }
 
-// Mock stock data for fallback when API is not available
-const MOCK_STOCKS = [
-  { symbol: 'AAPL', name: 'Apple Inc.' },
-  { symbol: 'GOOGL', name: 'Alphabet Inc.' },
-  { symbol: 'MSFT', name: 'Microsoft Corporation' },
-  { symbol: 'AMZN', name: 'Amazon.com Inc.' },
-  { symbol: 'TSLA', name: 'Tesla Inc.' },
-  { symbol: 'META', name: 'Meta Platforms Inc.' },
-  { symbol: 'NVDA', name: 'NVIDIA Corporation' },
-  { symbol: 'NFLX', name: 'Netflix Inc.' },
-  { symbol: 'JPM', name: 'JPMorgan Chase & Co.' },
-  { symbol: 'JNJ', name: 'Johnson & Johnson' }
-]
+interface StockSearchResult {
+  symbol: string
+  name: string
+}
 
 export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSuccess }) => {
   const { createHolding } = usePortfolio()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [searchResults, setSearchResults] = useState<typeof MOCK_STOCKS>([])
+  const [searchResults, setSearchResults] = useState<StockSearchResult[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
   const [isLoadingPrice, setIsLoadingPrice] = useState(false)
   const [priceAutoFilled, setPriceAutoFilled] = useState(false)
@@ -44,59 +35,48 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
     watch
   } = useForm<CreateHoldingData>()
 
-  const watchedSymbol = watch('symbol')
-
   // Debounced search function
-  const debouncedSearch = React.useCallback(
-    React.useMemo(
-      () => {
-        let timeoutId: NodeJS.Timeout
-        return (query: string) => {
-          clearTimeout(timeoutId)
-          timeoutId = setTimeout(() => searchStocks(query), 300)
-        }
-      },
-      []
-    ),
-    []
-  )
-
-  // Real-time stock search function with fallback to mock data
-  const searchStocks = async (query: string) => {
-    if (!query || query.length < 1) {
-      setSearchResults([])
-      setShowSearchResults(false)
-      return
+  const debouncedSearch = React.useCallback((query: string) => {
+    // Clear any existing timeout
+    if ((debouncedSearch as any).timeoutId) {
+      clearTimeout((debouncedSearch as any).timeoutId)
     }
-
-    try {
-      // Try to get real-time search results from Finnhub
-      if (marketDataService.isConfigured()) {
-        const searchResult = await marketDataService.searchStocks(query)
-        if (searchResult && searchResult.result) {
-          const realResults = searchResult.result.slice(0, 10).map(item => ({
-            symbol: item.symbol,
-            name: item.description
-          }))
-          setSearchResults(realResults)
-          setShowSearchResults(true)
-          return
-        }
+    
+    // Set new timeout
+    (debouncedSearch as any).timeoutId = setTimeout(async () => {
+      if (!query || query.length < 1) {
+        setSearchResults([])
+        setShowSearchResults(false)
+        return
       }
-    } catch (error) {
-      console.warn('Failed to fetch real-time search results, using mock data:', error)
-    }
 
-    // Fallback to mock data
-    const filtered = MOCK_STOCKS.filter(stock => 
-      stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
-      stock.name.toLowerCase().includes(query.toLowerCase())
-    )
-    setSearchResults(filtered)
-    setShowSearchResults(true)
-  }
+      try {
+        // Get real-time search results from Finnhub
+        if (marketDataService.isConfigured()) {
+          const searchResult = await marketDataService.searchStocks(query)
+          if (searchResult && searchResult.result) {
+            const realResults = searchResult.result.slice(0, 10).map(item => ({
+              symbol: item.symbol,
+              name: item.description
+            }))
+            setSearchResults(realResults)
+            setShowSearchResults(true)
+            return
+          }
+        } else {
+          console.warn('Market data service not configured - search disabled')
+          setSearchResults([])
+          setShowSearchResults(false)
+        }
+      } catch (error) {
+        console.error('Failed to fetch search results:', error)
+        setSearchResults([])
+        setShowSearchResults(false)
+      }
+    }, 300)
+  }, [])
 
-  const selectStock = async (stock: typeof MOCK_STOCKS[0]) => {
+  const selectStock = async (stock: StockSearchResult) => {
     console.log('Selecting stock:', stock)
     setValue('symbol', stock.symbol)
     setValue('company_name', stock.name)

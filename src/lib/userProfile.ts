@@ -1,20 +1,9 @@
 import { supabase } from './supabase'
 import { User, UserProfile } from '../types/auth'
-import { mockUserProfileService } from './mockAuth'
-
-// Check if Supabase is configured
-const isSupabaseConfigured = process.env.REACT_APP_SUPABASE_URL && 
-  process.env.REACT_APP_SUPABASE_ANON_KEY &&
-  process.env.REACT_APP_SUPABASE_URL !== 'https://placeholder.supabase.co' && 
-  process.env.REACT_APP_SUPABASE_ANON_KEY !== 'placeholder-key'
 
 export const userProfileService = {
   // Get user profile by ID
   async getUserProfile(userId: string): Promise<User | null> {
-    if (!isSupabaseConfigured) {
-      return mockUserProfileService.getUserProfile(userId)
-    }
-
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
@@ -31,10 +20,6 @@ export const userProfileService = {
 
   // Update user profile
   async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<User | null> {
-    if (!isSupabaseConfigured) {
-      return mockUserProfileService.updateUserProfile(userId, updates)
-    }
-
     const { data, error } = await supabase
       .from('user_profiles')
       .update({
@@ -55,10 +40,6 @@ export const userProfileService = {
 
   // Create user profile (called automatically on signup)
   async createUserProfile(userId: string, email: string, fullName?: string): Promise<User | null> {
-    if (!isSupabaseConfigured) {
-      return mockUserProfileService.createUserProfile(userId, email, fullName)
-    }
-
     const { data, error } = await supabase
       .from('user_profiles')
       .insert({

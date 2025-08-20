@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Transaction } from '../types/portfolio'
-import { portfolioService } from '../lib/portfolioService'
 import { LoadingSpinner } from './LoadingSpinner'
 import { ErrorMessage } from './ErrorMessage'
-import { CalendarIcon, FunnelIcon } from '@heroicons/react/24/outline'
+import { FunnelIcon } from '@heroicons/react/24/outline'
 
 interface TransactionHistoryProps {
   portfolioId: string
@@ -26,43 +25,12 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ portfoli
   })
 
   // Fetch transactions using React Query
-  const { data: transactions = [], isLoading, error, refetch } = useQuery({
+  const { data: transactions = [], isLoading, error, refetch } = useQuery<Transaction[]>({
     queryKey: ['transactions', portfolioId],
-    queryFn: async () => {
-      // For now, we'll use mock data since the service doesn't have a getTransactions method
-      // In a real implementation, you would call portfolioService.getTransactions(portfolioId)
-      return [
-        {
-          id: '1',
-          portfolio_id: portfolioId,
-          symbol: 'AAPL',
-          type: 'BUY' as const,
-          quantity: 100,
-          price: 150.00,
-          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '2',
-          portfolio_id: portfolioId,
-          symbol: 'GOOGL',
-          type: 'BUY' as const,
-          quantity: 50,
-          price: 2800.00,
-          date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: '3',
-          portfolio_id: portfolioId,
-          symbol: 'TSLA',
-          type: 'SELL' as const,
-          quantity: 25,
-          price: 800.00,
-          date: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString(),
-          created_at: new Date(Date.now() - 21 * 24 * 60 * 60 * 1000).toISOString()
-        }
-      ]
+    queryFn: async (): Promise<Transaction[]> => {
+      // TODO: Implement real transaction fetching from portfolio service
+      // For now, return empty array until transaction service is implemented
+      return []
     },
     enabled: !!portfolioId
   })
@@ -75,10 +43,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ portfoli
     if (filters.dateTo && new Date(transaction.date) > new Date(filters.dateTo)) return false
     return true
   })
-
-  const totalValue = filteredTransactions.reduce((sum, transaction) => 
-    sum + (transaction.quantity * transaction.price), 0
-  )
 
   const totalBuyValue = filteredTransactions
     .filter(t => t.type === 'BUY')
