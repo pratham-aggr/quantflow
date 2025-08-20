@@ -10,6 +10,7 @@ import { ProfilePage } from './components/ProfilePage';
 import { AuthPage } from './components/AuthPage';
 import { ResetPasswordForm } from './components/ResetPasswordForm';
 import { PortfolioManagement } from './components/PortfolioManagement';
+import { AuthDebug } from './components/AuthDebug';
 import './App.css';
 
 // Create a client
@@ -28,6 +29,7 @@ function App() {
       <Router>
         <AuthProvider>
           <PortfolioProvider>
+            <AuthDebug />
             <Routes>
             {/* Public routes - redirect to dashboard if authenticated */}
             <Route 

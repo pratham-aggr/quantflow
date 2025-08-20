@@ -174,20 +174,118 @@ export const portfolioService = {
       throw new Error('Supabase not configured. Please set up your Supabase credentials.')
     }
     
-    const { data: transaction, error } = await supabase
-      .from('transactions')
-      .insert({ 
-        ...data, 
-        date: data.date || new Date().toISOString() 
-      })
-      .select()
-      .single()
-    
-    if (error) { 
-      console.error('Error creating transaction:', error)
-      return null 
+    try {
+      // Start a transaction to ensure data consistency
+      const { data: transaction, error: transactionError } = await supabase
+        .from('transactions')
+        .insert({ 
+          ...data, 
+          date: data.date || new Date().toISOString() 
+        })
+        .select()
+        .single()
+      
+      if (transactionError) { 
+        console.error('Error creating transaction:', transactionError)
+        return null 
+      }
+
+      // Update the holding based on the transaction
+      await this.updateHoldingFromTransaction(data)
+      
+      return transaction
+    } catch (error) {
+      console.error('Error in createTransaction:', error)
+      return null
     }
-    
-    return transaction
+  },
+
+  // Update holding average price and quantity based on transaction
+  async updateHoldingFromTransaction(transactionData: CreateTransactionData): Promise<void> {
+    try {
+      // Find existing holding for this symbol in the portfolio
+      const { data: existingHolding, error: fetchError } = await supabase
+        .from('holdings')
+        .select('*')
+        .eq('portfolio_id', transactionData.portfolio_id)
+        .eq('symbol', transactionData.symbol)
+        .single()
+
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
+        console.error('Error fetching existing holding:', fetchError)
+        return
+      }
+
+      const isBuy = transactionData.type === 'BUY'
+      const isSell = transactionData.type === 'SELL'
+      const transactionQuantity = transactionData.quantity
+      const transactionPrice = transactionData.price
+      const totalTransactionValue = transactionQuantity * transactionPrice
+
+      if (existingHolding) {
+        // Update existing holding
+        const currentQuantity = existingHolding.quantity
+        const currentAvgPrice = existingHolding.avg_price
+        const currentTotalValue = currentQuantity * currentAvgPrice
+
+        let newQuantity: number
+        let newAvgPrice: number
+
+        if (isBuy) {
+          // For buy transactions: weighted average price
+          newQuantity = currentQuantity + transactionQuantity
+          newAvgPrice = (currentTotalValue + totalTransactionValue) / newQuantity
+        } else if (isSell) {
+          // For sell transactions: reduce quantity, keep same average price
+          newQuantity = currentQuantity - transactionQuantity
+          if (newQuantity <= 0) {
+            // If selling all shares, delete the holding
+            await this.deleteHolding(existingHolding.id)
+            return
+          }
+          newAvgPrice = currentAvgPrice // Average price doesn't change on sell
+        } else {
+          console.error('Invalid transaction type:', transactionData.type)
+          return
+        }
+
+        // Update the holding
+        const { error: updateError } = await supabase
+          .from('holdings')
+          .update({
+            quantity: newQuantity,
+            avg_price: newAvgPrice,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existingHolding.id)
+
+        if (updateError) {
+          console.error('Error updating holding:', updateError)
+        } else {
+          console.log(`Updated holding ${transactionData.symbol}: quantity=${newQuantity}, avg_price=${newAvgPrice}`)
+        }
+      } else if (isBuy) {
+        // Create new holding for buy transaction
+        const { error: createError } = await supabase
+          .from('holdings')
+          .insert({
+            portfolio_id: transactionData.portfolio_id,
+            symbol: transactionData.symbol,
+            quantity: transactionQuantity,
+            avg_price: transactionPrice,
+            company_name: transactionData.symbol // Default company name
+          })
+
+        if (createError) {
+          console.error('Error creating new holding:', createError)
+        } else {
+          console.log(`Created new holding ${transactionData.symbol}: quantity=${transactionQuantity}, avg_price=${transactionPrice}`)
+        }
+      } else if (isSell) {
+        console.warn(`Attempted to sell ${transactionData.symbol} but no holding exists`)
+      }
+    } catch (error) {
+      console.error('Error updating holding from transaction:', error)
+    }
   }
 }

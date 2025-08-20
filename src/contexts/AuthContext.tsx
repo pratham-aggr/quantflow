@@ -25,19 +25,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Initialize auth state on mount
   useEffect(() => {
+    // Add a global timeout to prevent endless loading
+    const globalTimeout = setTimeout(() => {
+      console.log('🛑 Global auth timeout - forcing loading to false')
+      setState({ user: null, loading: false, error: null })
+    }, 8000) // 8 second global timeout
+
     const initializeAuth = async () => {
       try {
         // Get current user session
         const { data: { user }, error } = await auth.getUser()
         
         if (error) {
-          console.error('Error getting current user:', error)
-          // Don't set error state for auth session missing - this is normal for new users
-          if (error.message.includes('Auth session missing')) {
-            setState({ user: null, loading: false, error: null })
-          } else {
-            setState({ user: null, loading: false, error: error.message })
-          }
+          console.log('AuthContext: Error getting current user - setting loading to false')
+          // Always set loading to false for any error
+          setState({ user: null, loading: false, error: null })
           return
         }
 
@@ -84,7 +86,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 error: null
               })
             } else {
-              setState({ user: null, loading: false, error: 'Failed to create user profile' })
+              console.log('AuthContext: Failed to create profile - setting loading to false')
+              setState({ user: null, loading: false, error: null })
             }
           }
         } else {
@@ -92,8 +95,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setState({ user: null, loading: false, error: null })
         }
       } catch (error) {
-        console.error('Auth initialization error:', error)
-        setState({ user: null, loading: false, error: 'Authentication initialization failed' })
+        console.log('AuthContext: Error during initialization - setting loading to false')
+        setState({ user: null, loading: false, error: null })
+      } finally {
+        // Clear the global timeout since we're done
+        clearTimeout(globalTimeout)
       }
     }
 

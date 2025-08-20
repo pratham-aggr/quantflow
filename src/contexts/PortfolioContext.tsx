@@ -35,6 +35,7 @@ interface PortfolioContextType extends PortfolioState {
   
   // Utility functions
   refreshPortfolios: () => void
+  refreshCurrentPortfolio: () => Promise<void>
   clearError: () => void
 }
 
@@ -295,7 +296,24 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 
     try {
       const transaction = await portfolioService.createTransaction(data)
-      setState(prev => ({ ...prev, loading: false }))
+      
+      if (transaction && state.currentPortfolio) {
+        // Refresh the current portfolio to get updated holdings with new average prices
+        const updatedPortfolio = await portfolioService.getPortfolioWithHoldings(state.currentPortfolio.id)
+        if (updatedPortfolio) {
+          setState(prev => ({
+            ...prev,
+            currentPortfolio: updatedPortfolio,
+            loading: false
+          }))
+          console.log('✅ Transaction completed and holdings updated with new average prices')
+        } else {
+          setState(prev => ({ ...prev, loading: false }))
+        }
+      } else {
+        setState(prev => ({ ...prev, loading: false }))
+      }
+      
       return transaction
     } catch (error) {
       console.error('Error creating transaction:', error)
@@ -305,6 +323,23 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
         error: 'Failed to create transaction'
       }))
       return null
+    }
+  }
+
+  const refreshCurrentPortfolio = async (): Promise<void> => {
+    if (!state.currentPortfolio) return
+
+    try {
+      const updatedPortfolio = await portfolioService.getPortfolioWithHoldings(state.currentPortfolio.id)
+      if (updatedPortfolio) {
+        setState(prev => ({
+          ...prev,
+          currentPortfolio: updatedPortfolio
+        }))
+        console.log('✅ Current portfolio holdings refreshed')
+      }
+    } catch (error) {
+      console.error('Error refreshing current portfolio:', error)
     }
   }
 
@@ -323,6 +358,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     deleteHolding,
     createTransaction,
     refreshPortfolios,
+    refreshCurrentPortfolio,
     clearError
   }
 
