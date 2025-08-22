@@ -5,6 +5,10 @@ export interface Portfolio {
   user_id: string
   name: string
   cash_balance: number
+  total_value?: number
+  total_pnl?: number
+  risk_score?: number
+  is_visible?: boolean
   created_at: string
   updated_at?: string
 }
@@ -30,6 +34,8 @@ export interface Transaction {
   quantity: number
   price: number
   date: string
+  portfolio_name?: string
+  notes?: string
   created_at: string
 }
 
