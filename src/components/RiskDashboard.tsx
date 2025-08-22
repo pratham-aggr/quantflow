@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePortfolio } from '../contexts/PortfolioContext'
 import { riskService, PortfolioRiskAnalysis, RiskAlert } from '../lib/riskService'
+import { AdvancedRiskDashboard } from './AdvancedRiskDashboard'
 import { performanceMonitor } from '../lib/performance'
 import { 
   ExclamationTriangleIcon, 
@@ -9,7 +10,8 @@ import {
   ShieldCheckIcon,
   ChartBarIcon,
   ClockIcon,
-  CurrencyDollarIcon
+  CurrencyDollarIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline'
 
 export const RiskDashboard: React.FC = () => {
@@ -19,6 +21,7 @@ export const RiskDashboard: React.FC = () => {
   const [alerts, setAlerts] = useState<RiskAlert[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showAdvancedAnalysis, setShowAdvancedAnalysis] = useState(false)
 
   useEffect(() => {
     const loadRiskData = async () => {
@@ -110,9 +113,33 @@ export const RiskDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Risk Overview */}
+      {/* Advanced Analysis Toggle */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Portfolio Risk Analysis</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Portfolio Risk Analysis</h2>
+          <button
+            onClick={() => setShowAdvancedAnalysis(!showAdvancedAnalysis)}
+            className="flex items-center px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+          >
+            <SparklesIcon className="w-4 h-4 mr-2" />
+            {showAdvancedAnalysis ? 'Show Basic' : 'Show Advanced'} Analysis
+          </button>
+        </div>
+      </div>
+
+      {/* Advanced Risk Analysis */}
+      {showAdvancedAnalysis && currentPortfolio?.holdings && (
+        <AdvancedRiskDashboard
+          holdings={currentPortfolio.holdings}
+          riskTolerance={user?.risk_tolerance || 'moderate'}
+          autoRefresh={false}
+        />
+      )}
+
+      {/* Basic Risk Overview */}
+      {!showAdvancedAnalysis && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Basic Risk Analysis</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Overall Risk Score */}
@@ -167,9 +194,10 @@ export const RiskDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* Risk Alerts */}
-      {alerts.length > 0 && (
+      {!showAdvancedAnalysis && alerts.length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Risk Alerts</h3>
           <div className="space-y-3">
@@ -211,53 +239,55 @@ export const RiskDashboard: React.FC = () => {
       )}
 
       {/* Risk Metrics Details */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Detailed Risk Metrics</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Portfolio Metrics</h4>
-            <dl className="space-y-2">
-              <div className="flex justify-between">
-                <dt className="text-sm text-gray-600">Sharpe Ratio</dt>
-                <dd className="text-sm font-medium text-gray-900">{riskAnalysis.portfolio_metrics.sharpe_ratio.toFixed(2)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-sm text-gray-600">Max Drawdown</dt>
-                <dd className="text-sm font-medium text-gray-900">{riskAnalysis.portfolio_metrics.max_drawdown.toFixed(2)}%</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-sm text-gray-600">Value at Risk (95%)</dt>
-                <dd className="text-sm font-medium text-gray-900">{riskAnalysis.portfolio_metrics.var_95.toFixed(2)}%</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-sm text-gray-600">Diversification Score</dt>
-                <dd className="text-sm font-medium text-gray-900">{(riskAnalysis.portfolio_metrics.diversification_score * 100).toFixed(0)}%</dd>
-              </div>
-            </dl>
-          </div>
-          <div>
-            <h4 className="text-sm font-medium text-gray-900 mb-3">Risk Score Components</h4>
-            <dl className="space-y-2">
-              <div className="flex justify-between">
-                <dt className="text-sm text-gray-600">Volatility Score</dt>
-                <dd className="text-sm font-medium text-gray-900">{riskAnalysis.risk_score.components.volatility_score.toFixed(1)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-sm text-gray-600">Beta Score</dt>
-                <dd className="text-sm font-medium text-gray-900">{riskAnalysis.risk_score.components.beta_score.toFixed(1)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-sm text-gray-600">Sharpe Score</dt>
-                <dd className="text-sm font-medium text-gray-900">{riskAnalysis.risk_score.components.sharpe_score.toFixed(1)}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-sm text-gray-600">Concentration Score</dt>
-                <dd className="text-sm font-medium text-gray-900">{riskAnalysis.risk_score.components.concentration_score.toFixed(1)}</dd>
-              </div>
-            </dl>
+      {!showAdvancedAnalysis && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Detailed Risk Metrics</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Portfolio Metrics</h4>
+              <dl className="space-y-2">
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-600">Sharpe Ratio</dt>
+                  <dd className="text-sm font-medium text-gray-900">{riskAnalysis.portfolio_metrics.sharpe_ratio.toFixed(2)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-600">Max Drawdown</dt>
+                  <dd className="text-sm font-medium text-gray-900">{riskAnalysis.portfolio_metrics.max_drawdown.toFixed(2)}%</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-600">Value at Risk (95%)</dt>
+                  <dd className="text-sm font-medium text-gray-900">{riskAnalysis.portfolio_metrics.var_95.toFixed(2)}%</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-600">Diversification Score</dt>
+                  <dd className="text-sm font-medium text-gray-900">{(riskAnalysis.portfolio_metrics.diversification_score * 100).toFixed(0)}%</dd>
+                </div>
+              </dl>
+            </div>
+            <div>
+              <h4 className="text-sm font-medium text-gray-900 mb-3">Risk Score Components</h4>
+              <dl className="space-y-2">
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-600">Volatility Score</dt>
+                  <dd className="text-sm font-medium text-gray-900">{riskAnalysis.risk_score.components.volatility_score.toFixed(1)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-600">Beta Score</dt>
+                  <dd className="text-sm font-medium text-gray-900">{riskAnalysis.risk_score.components.beta_score.toFixed(1)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-600">Sharpe Score</dt>
+                  <dd className="text-sm font-medium text-gray-900">{riskAnalysis.risk_score.components.sharpe_score.toFixed(1)}</dd>
+                </div>
+                <div className="flex justify-between">
+                  <dt className="text-sm text-gray-600">Concentration Score</dt>
+                  <dd className="text-sm font-medium text-gray-900">{riskAnalysis.risk_score.components.concentration_score.toFixed(1)}</dd>
+                </div>
+              </dl>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }

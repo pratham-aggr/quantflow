@@ -5,6 +5,7 @@ import os
 from risk_calculator import RiskCalculator
 from portfolio_analyzer import PortfolioAnalyzer
 from rebalancing_engine import RebalancingEngine
+from advanced_risk_engine import AdvancedRiskEngine
 
 # Load environment variables
 load_dotenv()
@@ -16,6 +17,7 @@ CORS(app, origins=['http://localhost:3000', 'http://localhost:4000', 'http://loc
 risk_calculator = RiskCalculator()
 portfolio_analyzer = PortfolioAnalyzer()
 rebalancing_engine = RebalancingEngine()
+advanced_risk_engine = AdvancedRiskEngine()
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -244,6 +246,169 @@ def optimize_portfolio():
             'optimized_allocation': optimized_allocation,
             'original_target': target_allocation
         })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ========== ADVANCED RISK ENGINE ENDPOINTS ==========
+
+@app.route('/api/risk/advanced', methods=['POST'])
+def generate_advanced_risk_report():
+    """Generate comprehensive advanced risk report with Monte Carlo, correlation, sector analysis, and ML predictions"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data:
+            return jsonify({'error': 'Portfolio holdings data required'}), 400
+        
+        holdings = data['holdings']
+        risk_tolerance = data.get('risk_tolerance', 'moderate')
+        
+        # Generate comprehensive risk report
+        risk_report = advanced_risk_engine.generate_risk_report(holdings, risk_tolerance)
+        
+        return jsonify(risk_report)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk/monte-carlo', methods=['POST'])
+def run_monte_carlo_simulation():
+    """Run Monte Carlo simulation for portfolio returns"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data:
+            return jsonify({'error': 'Portfolio holdings data required'}), 400
+        
+        holdings = data['holdings']
+        time_horizon = data.get('time_horizon', 252)
+        
+        # Run Monte Carlo simulation
+        monte_carlo_result = advanced_risk_engine.run_monte_carlo_simulation(holdings, time_horizon)
+        
+        # Convert to JSON-serializable format
+        result = {
+            'mean_return': monte_carlo_result.mean_return,
+            'std_return': monte_carlo_result.std_return,
+            'percentiles': monte_carlo_result.percentiles,
+            'worst_case': monte_carlo_result.worst_case,
+            'best_case': monte_carlo_result.best_case,
+            'probability_positive': monte_carlo_result.probability_positive,
+            'confidence_intervals': monte_carlo_result.confidence_intervals
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk/correlation', methods=['POST'])
+def calculate_correlation_matrix():
+    """Calculate correlation matrix and diversification analysis"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data:
+            return jsonify({'error': 'Portfolio holdings data required'}), 400
+        
+        holdings = data['holdings']
+        
+        # Calculate correlation matrix
+        correlation_result = advanced_risk_engine.calculate_correlation_matrix(holdings)
+        
+        # Convert to JSON-serializable format
+        result = {
+            'diversification_score': correlation_result.diversification_score,
+            'high_correlation_pairs': correlation_result.high_correlation_pairs,
+            'heatmap_data': correlation_result.heatmap_data
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk/sector-analysis', methods=['POST'])
+def analyze_sector_allocation():
+    """Analyze sector allocation and sector-specific risks"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data:
+            return jsonify({'error': 'Portfolio holdings data required'}), 400
+        
+        holdings = data['holdings']
+        
+        # Analyze sector allocation
+        sector_result = advanced_risk_engine.analyze_sector_allocation(holdings)
+        
+        # Convert to JSON-serializable format
+        result = {
+            'sector_allocation': sector_result.sector_allocation,
+            'sector_risk': sector_result.sector_risk,
+            'concentration_risk': sector_result.concentration_risk,
+            'recommendations': sector_result.sector_recommendations
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk/ml-prediction', methods=['POST'])
+def predict_volatility_ml():
+    """Predict portfolio volatility using machine learning"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data:
+            return jsonify({'error': 'Portfolio holdings data required'}), 400
+        
+        holdings = data['holdings']
+        historical_data = data.get('historical_data', None)
+        
+        # Predict volatility using ML
+        ml_result = advanced_risk_engine.predict_volatility_ml(holdings, historical_data)
+        
+        # Convert to JSON-serializable format
+        result = {
+            'predicted_volatility': ml_result.predicted_volatility,
+            'confidence_interval': ml_result.confidence_interval,
+            'feature_importance': ml_result.feature_importance,
+            'model_accuracy': ml_result.model_accuracy,
+            'prediction_horizon': ml_result.prediction_horizon
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/risk/train-ml', methods=['POST'])
+def train_ml_model():
+    """Train the ML model for volatility prediction"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'training_data' not in data:
+            return jsonify({'error': 'Training data required'}), 400
+        
+        training_data = data['training_data']
+        
+        # Train ML model
+        success = advanced_risk_engine.train_ml_model(training_data)
+        
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'ML model trained successfully'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Failed to train ML model - insufficient data'
+            })
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
