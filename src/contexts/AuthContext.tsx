@@ -29,83 +29,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setState({ user: null, loading: false, error: null })
   }
 
-  // Initialize auth state on mount
+  // Initialize auth state on mount (optimized)
   useEffect(() => {
-    // Add a global timeout to prevent endless loading
+    // Reduced timeout for faster loading
     const globalTimeout = setTimeout(() => {
       console.log('🛑 Global auth timeout - forcing loading to false')
       setState({ user: null, loading: false, error: null })
-    }, 3000) // Reduced to 3 seconds for faster loading
+    }, 2000) // Reduced to 2 seconds
 
     const initializeAuth = async () => {
       try {
-        // Add timeout to auth.getUser() call
-        const authTimeout = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Auth timeout')), 2000)
-        )
+        // Use the optimized login service for session retrieval
+        const sessionData = await loginService.getCurrentSession()
         
-        const authPromise = auth.getUser()
-        
-        const { data: { user }, error } = await Promise.race([authPromise, authTimeout]) as any
-        
-        if (error) {
-          console.log('AuthContext: Error getting current user - setting loading to false')
-          setState({ user: null, loading: false, error: null })
-          return
-        }
-
-        const supabaseUser = user
-
-        if (supabaseUser) {
-          // Fetch user profile from database with timeout
-          const profileTimeout = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
-          )
-          
-          const profilePromise = userProfileService.getUserProfile(supabaseUser.id)
-          const userProfile = await Promise.race([profilePromise, profileTimeout]) as any
-          
-          if (userProfile) {
-            setState({
-              user: {
-                id: supabaseUser.id,
-                email: supabaseUser.email!,
-                full_name: userProfile.full_name,
-                risk_tolerance: userProfile.risk_tolerance,
-                investment_goals: userProfile.investment_goals,
-                created_at: userProfile.created_at,
-                updated_at: userProfile.updated_at
-              },
-              loading: false,
-              error: null
-            })
-          } else {
-            console.warn('User profile not found, creating default profile')
-            // Create a default profile if none exists
-            const newProfile = await userProfileService.createUserProfile(
-              supabaseUser.id,
-              supabaseUser.email!,
-              (supabaseUser as any).user_metadata?.full_name
-            )
-            if (newProfile) {
-              setState({
-                user: {
-                  id: supabaseUser.id,
-                  email: supabaseUser.email!,
-                  full_name: newProfile.full_name,
-                  risk_tolerance: newProfile.risk_tolerance,
-                  investment_goals: newProfile.investment_goals,
-                  created_at: newProfile.created_at,
-                  updated_at: newProfile.updated_at
-                },
-                loading: false,
-                error: null
-              })
-            } else {
-              console.log('AuthContext: Failed to create profile - setting loading to false')
-              setState({ user: null, loading: false, error: null })
-            }
-          }
+        if (sessionData?.user) {
+          setState({
+            user: sessionData.user,
+            loading: false,
+            error: null
+          })
         } else {
           // No user session - this is normal for new visitors
           setState({ user: null, loading: false, error: null })
@@ -121,68 +63,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeAuth()
 
-    // Listen for auth state changes
+    // Listen for auth state changes (optimized)
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id)
       
       try {
         if (event === 'SIGNED_IN' && session?.user) {
-          const userProfile = await userProfileService.getUserProfile(session.user.id)
-          if (userProfile) {
+          // Use cached profile data if available
+          const sessionData = await loginService.getCurrentSession()
+          if (sessionData?.user) {
             setState({
-              user: {
-                id: session.user.id,
-                email: session.user.email!,
-                full_name: userProfile.full_name,
-                risk_tolerance: userProfile.risk_tolerance,
-                investment_goals: userProfile.investment_goals,
-                created_at: userProfile.created_at,
-                updated_at: userProfile.updated_at
-              },
+              user: sessionData.user,
               loading: false,
               error: null
             })
-          } else {
-            // Create profile if it doesn't exist
-            const newProfile = await userProfileService.createUserProfile(
-              session.user.id,
-              session.user.email!,
-              (session.user as any).user_metadata?.full_name
-            )
-            if (newProfile) {
-              setState({
-                user: {
-                  id: session.user.id,
-                  email: session.user.email!,
-                  full_name: newProfile.full_name,
-                  risk_tolerance: newProfile.risk_tolerance,
-                  investment_goals: newProfile.investment_goals,
-                  created_at: newProfile.created_at,
-                  updated_at: newProfile.updated_at
-                },
-                loading: false,
-                error: null
-              })
-            }
           }
         } else if (event === 'SIGNED_OUT') {
           console.log('Auth state change: SIGNED_OUT detected')
+          loginService.clearUserCache() // Clear cache on sign out
           setState({ user: null, loading: false, error: null })
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          // Handle token refresh
-          const userProfile = await userProfileService.getUserProfile(session.user.id)
-          if (userProfile) {
+          // Handle token refresh (use cached data when possible)
+          const sessionData = await loginService.getCurrentSession()
+          if (sessionData?.user) {
             setState(prev => ({
               ...prev,
-              user: {
-                id: session.user.id,
-                email: session.user.email!,
-                full_name: userProfile.full_name,
-                risk_tolerance: userProfile.risk_tolerance,
-                investment_goals: userProfile.investment_goals,
-                created_at: userProfile.created_at,
-                updated_at: userProfile.updated_at
-              }
+              user: sessionData.user
             }))
           }
         }
@@ -195,7 +101,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => subscription.unsubscribe()
   }, [])
 
-  // Login function
+  // Login function (optimized)
   const login = async (credentials: LoginCredentials) => {
     setState(prev => ({ ...prev, loading: true, error: null }))
     
@@ -228,7 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Register function
+  // Register function (optimized)
   const register = async (credentials: RegisterCredentials) => {
     setState(prev => ({ ...prev, loading: true, error: null }))
     
@@ -248,28 +154,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (data?.user) {
-        // Create user profile
-        const userProfile = await userProfileService.createUserProfile(
+        // Create user profile (async, don't wait for completion)
+        userProfileService.createUserProfile(
           data.user.id, 
           credentials.email, 
           credentials.full_name
-        )
-        
-        if (userProfile) {
+        ).then(userProfile => {
+          if (userProfile) {
+            setState({
+              user: {
+                id: data.user.id,
+                email: data.user.email!,
+                full_name: userProfile.full_name,
+                risk_tolerance: userProfile.risk_tolerance,
+                investment_goals: userProfile.investment_goals,
+                created_at: userProfile.created_at,
+                updated_at: userProfile.updated_at
+              },
+              loading: false,
+              error: null
+            })
+          }
+        }).catch(error => {
+          console.error('Profile creation error:', error)
+          // Still set user state even if profile creation fails
           setState({
             user: {
               id: data.user.id,
               email: data.user.email!,
-              full_name: userProfile.full_name,
-              risk_tolerance: userProfile.risk_tolerance,
-              investment_goals: userProfile.investment_goals,
-              created_at: userProfile.created_at,
-              updated_at: userProfile.updated_at
+              full_name: credentials.full_name,
+              risk_tolerance: 'moderate',
+              investment_goals: [],
+              created_at: data.user.created_at,
+              updated_at: data.user.updated_at
             },
             loading: false,
             error: null
           })
-        }
+        })
       }
     } catch (error) {
       console.error('Registration error:', error)
@@ -281,32 +203,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Logout function
+  // Logout function (optimized)
   const logout = async () => {
     console.log('Logout initiated')
     setState(prev => ({ ...prev, loading: true }))
     
-    // Add a timeout to prevent infinite loading
+    // Reduced timeout for faster logout
     const timeoutId = setTimeout(() => {
       console.log('Logout timeout - forcing state clear')
       setState({ user: null, loading: false, error: null })
-    }, 3000) // Reduced to 3 seconds
+    }, 2000) // Reduced to 2 seconds
     
     try {
-      // Call Supabase auth directly for logout
-      console.log('Calling Supabase signOut...')
-      const { error } = await auth.signOut()
+      // Use the optimized logout service
+      const result = await loginService.logoutUser()
       
       clearTimeout(timeoutId) // Clear timeout if logout succeeds
       
-      if (error) {
-        console.error('Logout error:', error)
-        setState(prev => ({ 
-          ...prev, 
-          loading: false, 
-          error: error.message || 'Logout failed. Please try again.' 
-        }))
-      } else {
+      if (result.success) {
         // Clear the state immediately
         console.log('Logout successful, clearing state')
         setState({ user: null, loading: false, error: null })
@@ -316,6 +230,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           localStorage.clear()
           sessionStorage.clear()
         }
+      } else {
+        setState(prev => ({ 
+          ...prev, 
+          loading: false, 
+          error: result.error || 'Logout failed. Please try again.' 
+        }))
       }
     } catch (error) {
       console.error('Logout error:', error)
@@ -325,7 +245,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
-  // Update profile function
+  // Update profile function (optimized)
   const updateProfile = async (profile: Partial<UserProfile>) => {
     if (!state.user) {
       setState(prev => ({ 

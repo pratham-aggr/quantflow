@@ -20,6 +20,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
   const { login } = useAuth()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [loginStep, setLoginStep] = useState<'idle' | 'validating' | 'authenticating' | 'loading-profile'>('idle')
 
   const {
     register,
@@ -30,15 +31,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true)
     setSubmitError(null)
+    setLoginStep('validating')
 
     try {
-      // Use the new login service with enhanced validation and error handling
+      // Step 1: Quick validation feedback
+      setLoginStep('authenticating')
+      
+      // Use the optimized login service with enhanced validation and error handling
       const result = await loginService.loginUser({
         email: data.email,
         password: data.password
       })
 
       if (result.success) {
+        setLoginStep('loading-profile')
         // If login is successful, use the auth context to handle the session
         await login(data)
       } else {
@@ -49,6 +55,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
       setSubmitError('Login failed. Please check your credentials and try again.')
     } finally {
       setIsSubmitting(false)
+      setLoginStep('idle')
+    }
+  }
+
+  const getLoadingText = () => {
+    switch (loginStep) {
+      case 'validating':
+        return 'Validating...'
+      case 'authenticating':
+        return 'Signing In...'
+      case 'loading-profile':
+        return 'Loading Profile...'
+      default:
+        return 'Signing In...'
     }
   }
 
@@ -74,6 +94,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
           placeholder="Enter your email"
           required
           error={errors.email?.message}
+          disabled={isSubmitting}
           {...register('email', {
             required: 'Email is required',
             pattern: {
@@ -89,6 +110,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
           placeholder="Enter your password"
           required
           error={errors.password?.message}
+          disabled={isSubmitting}
           {...register('password', {
             required: 'Password is required',
             minLength: {
@@ -102,7 +124,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
           <button
             type="button"
             onClick={onForgotPassword}
-            className="text-sm text-blue-600 hover:text-blue-500"
+            disabled={isSubmitting}
+            className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Forgot your password?
           </button>
@@ -116,7 +139,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
           {isSubmitting ? (
             <div className="flex items-center justify-center">
               <LoadingSpinner size="sm" className="mr-2" />
-              Signing In...
+              {getLoadingText()}
             </div>
           ) : (
             'Sign In'
@@ -130,7 +153,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
           <button
             type="button"
             onClick={onSwitchToRegister}
-            className="text-blue-600 hover:text-blue-500 font-medium"
+            disabled={isSubmitting}
+            className="text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Sign up here
           </button>
