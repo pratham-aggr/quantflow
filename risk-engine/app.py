@@ -6,6 +6,9 @@ from risk_calculator import RiskCalculator
 from portfolio_analyzer import PortfolioAnalyzer
 from rebalancing_engine import RebalancingEngine
 from advanced_risk_engine import AdvancedRiskEngine
+from tax_loss_harvesting import TaxLossHarvestingEngine, TaxSettings
+from advanced_rebalancing import AdvancedRebalancingEngine, RebalancingSettings
+from paper_trading import PaperTradingEngine, BrokerageAPISimulator, OrderSide, OrderType
 
 # Load environment variables
 load_dotenv()
@@ -18,6 +21,10 @@ risk_calculator = RiskCalculator()
 portfolio_analyzer = PortfolioAnalyzer()
 rebalancing_engine = RebalancingEngine()
 advanced_risk_engine = AdvancedRiskEngine()
+tax_loss_engine = TaxLossHarvestingEngine()
+advanced_rebalancing_engine = AdvancedRebalancingEngine()
+paper_trading_engine = PaperTradingEngine()
+brokerage_simulator = BrokerageAPISimulator()
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -412,6 +419,154 @@ def train_ml_model():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# Tax-Loss Harvesting Endpoints
+@app.route('/api/tax-loss-harvesting/analyze', methods=['POST'])
+def analyze_tax_loss_harvesting():
+    """Analyze portfolio for tax-loss harvesting opportunities"""
+    try:
+        data = request.get_json()
+        holdings = data.get('holdings', [])
+        transactions = data.get('transactions', [])
+        tax_settings_data = data.get('tax_settings', {})
+        
+        # Create tax settings
+        tax_settings = TaxSettings(**tax_settings_data) if tax_settings_data else TaxSettings()
+        
+        # Update engine with settings
+        tax_loss_engine.tax_settings = tax_settings
+        
+        opportunities = tax_loss_engine.analyze_portfolio_for_harvesting(
+            holdings, transactions
+        )
+        
+        # Convert to serializable format
+        opportunities_data = []
+        for opp in opportunities:
+            opportunities_data.append({
+                'symbol': opp.symbol,
+                'shares_to_sell': opp.shares_to_sell,
+                'current_price': opp.current_price,
+                'cost_basis': opp.cost_basis,
+                'unrealized_loss': opp.unrealized_loss,
+                'tax_savings': opp.tax_savings,
+                'replacement_symbol': opp.replacement_symbol,
+                'replacement_shares': opp.replacement_shares,
+                'wash_sale_risk': opp.wash_sale_risk,
+                'holding_period': opp.holding_period
+            })
+        
+        return jsonify({
+            'success': True,
+            'opportunities': opportunities_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/tax-loss-harvesting/annual-benefit', methods=['POST'])
+def estimate_annual_tax_benefit():
+    """Estimate annual tax benefits from systematic harvesting"""
+    try:
+        data = request.get_json()
+        portfolio_value = data.get('portfolio_value', 100000)
+        expected_volatility = data.get('expected_volatility', 0.15)
+        
+        benefit_estimate = tax_loss_engine.estimate_annual_tax_benefit(
+            portfolio_value, expected_volatility
+        )
+        
+        return jsonify({
+            'success': True,
+            **benefit_estimate
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+# Paper Trading Endpoints
+@app.route('/api/paper-trading/create-portfolio', methods=['POST'])
+def create_paper_portfolio():
+    """Create a new paper trading portfolio"""
+    try:
+        data = request.get_json()
+        name = data.get('name', 'Paper Portfolio')
+        initial_cash = data.get('initial_cash', 100000.0)
+        
+        portfolio = paper_trading_engine.create_portfolio(name, initial_cash)
+        
+        return jsonify({
+            'success': True,
+            'portfolio_id': portfolio.id,
+            'name': portfolio.name,
+            'initial_cash': portfolio.cash
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/paper-trading/place-order', methods=['POST'])
+def place_paper_order():
+    """Place a paper trading order"""
+    try:
+        data = request.get_json()
+        portfolio_id = data.get('portfolio_id')
+        symbol = data.get('symbol')
+        side_str = data.get('side', 'BUY')
+        quantity = data.get('quantity', 0)
+        order_type_str = data.get('order_type', 'MARKET')
+        price = data.get('price')
+        stop_price = data.get('stop_price')
+        
+        # Convert strings to enums
+        side = OrderSide.BUY if side_str.upper() == 'BUY' else OrderSide.SELL
+        order_type = OrderType[order_type_str.upper()]
+        
+        order = paper_trading_engine.place_order(
+            portfolio_id, symbol, side, quantity, order_type, price, stop_price
+        )
+        
+        return jsonify({
+            'success': True,
+            'order_id': order.id,
+            'symbol': order.symbol,
+            'side': order.side.value,
+            'quantity': order.quantity,
+            'status': order.status.value,
+            'created_at': order.created_at.isoformat()
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/paper-trading/portfolio/<portfolio_id>', methods=['GET'])
+def get_paper_portfolio_summary(portfolio_id):
+    """Get paper portfolio summary"""
+    try:
+        summary = paper_trading_engine.get_portfolio_summary(portfolio_id)
+        
+        return jsonify({
+            'success': True,
+            **summary
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5001))
