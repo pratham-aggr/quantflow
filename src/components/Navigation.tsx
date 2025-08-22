@@ -8,6 +8,7 @@ import { Menu as HeadlessMenu, Transition } from '@headlessui/react'
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
   { name: 'Portfolios', href: '/portfolios' },
+  { name: 'Rebalancing', href: '/rebalancing' },
   { name: 'Profile', href: '/profile' }
 ]
 

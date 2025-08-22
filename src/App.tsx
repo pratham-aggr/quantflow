@@ -10,6 +10,7 @@ import { ProfilePage } from './components/ProfilePage';
 import { AuthPage } from './components/AuthPage';
 import { ResetPasswordForm } from './components/ResetPasswordForm';
 import { PortfolioManagement } from './components/PortfolioManagement';
+import { Rebalancing } from './components/Rebalancing';
 import { AuthDebug } from './components/AuthDebug';
 import { ToastContainer, useToast } from './components/Toast';
 import './App.css';
@@ -152,6 +153,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <PortfolioManagement />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/rebalancing" 
+                    element={
+                      <ProtectedRoute>
+                        <Rebalancing />
                       </ProtectedRoute>
                     } 
                   />
