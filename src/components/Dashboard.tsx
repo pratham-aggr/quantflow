@@ -1,22 +1,106 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePortfolio } from '../contexts/PortfolioContext'
 import { Navigation } from './Navigation'
-import { RiskDashboard } from './RiskDashboard'
- 
+import { PortfolioOverview } from './dashboard/PortfolioOverview'
+import { PortfolioAllocation } from './dashboard/PortfolioAllocation'
+import { PerformanceChart } from './dashboard/PerformanceChart'
+import { RiskMetrics } from './dashboard/RiskMetrics'
+import { HoldingsTable } from './dashboard/HoldingsTable'
+import { SkeletonCard, SkeletonTable } from './Skeleton'
+import { useToast } from './Toast'
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  DollarSign, 
+  Shield, 
+  PieChart, 
+  BarChart3,
+  Activity,
+  Calendar,
+  RefreshCw
+} from 'lucide-react'
 
 export const Dashboard: React.FC = () => {
-  const { user, loading: authLoading } = useAuth()
-  const { portfolios, currentPortfolio } = usePortfolio()
-  const [activeTab, setActiveTab] = useState<'overview' | 'risk'>('overview')
+  const { user } = useAuth()
+  const { portfolios, currentPortfolio, loading, error, refreshPortfolios } = usePortfolio()
+  const { info } = useToast()
+  const [timeRange, setTimeRange] = useState<'1D' | '1W' | '1M' | '1Y'>('1M')
+  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  // Show loading state while auth is initializing
-  if (authLoading) {
+  // Mock data for demonstration - replace with real API calls
+  const mockPortfolioData = {
+    totalValue: 125000,
+    dailyPnL: 1250,
+    dailyPnLPercent: 1.01,
+    totalPnL: 15000,
+    totalPnLPercent: 13.64,
+    riskScore: 65,
+    allocation: [
+      { sector: 'Technology', value: 45000, percentage: 36 },
+      { sector: 'Healthcare', value: 30000, percentage: 24 },
+      { sector: 'Finance', value: 25000, percentage: 20 },
+      { sector: 'Consumer', value: 15000, percentage: 12 },
+      { sector: 'Energy', value: 10000, percentage: 8 }
+    ],
+    performance: {
+      '1D': [120000, 121000, 122500, 123000, 124500, 125000],
+      '1W': [118000, 119500, 121000, 122000, 123500, 124000, 125000],
+      '1M': [110000, 112000, 115000, 118000, 120000, 122000, 125000],
+      '1Y': [100000, 105000, 110000, 115000, 120000, 125000]
+    }
+  }
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await refreshPortfolios()
+      info('Portfolio Updated', 'Your portfolio data has been refreshed.')
+    } catch (error) {
+      console.error('Failed to refresh portfolio:', error)
+    } finally {
+      setIsRefreshing(false)
+    }
+  }
+
+  if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+          <SkeletonTable />
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+            <div className="flex items-center">
+              <Shield className="h-5 w-5 text-red-400 mr-2" />
+              <h3 className="text-lg font-medium text-red-800">Error Loading Portfolio</h3>
+            </div>
+            <p className="mt-2 text-red-700">{error}</p>
+            <button
+              onClick={handleRefresh}
+              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -25,118 +109,123 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          
-          {/* Tab Navigation */}
-          <div className="mb-6">
-            <nav className="flex space-x-8">
-              <button
-                onClick={() => setActiveTab('overview')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'overview'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => setActiveTab('risk')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'risk'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                Risk Analysis
-              </button>
-            </nav>
+      
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="mt-2 text-gray-600">
+              Welcome back, {user?.full_name || user?.email}. Here's your portfolio overview.
+            </p>
           </div>
-
-          {/* Tab Content */}
-          {activeTab === 'overview' && (
-            <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Your Profile</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Risk Tolerance</h3>
-                <p className="mt-1 text-sm text-gray-900 capitalize">
-                  {user?.risk_tolerance || 'Not set'}
-                </p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Investment Goals</h3>
-                <p className="mt-1 text-sm text-gray-900">
-                  {user?.investment_goals?.length ? user.investment_goals.join(', ') : 'Not set'}
-                </p>
-              </div>
-            </div>
-
-
-
-            {/* System Status */}
-            <div className="mt-6 p-4 bg-blue-50 rounded-md">
-              <h3 className="text-sm font-medium text-blue-900 mb-2">QuantFlow System Status</h3>
-              <div className="text-sm text-blue-700 space-y-1">
-                <p>✅ Authentication system with Supabase</p>
-                <p>✅ Portfolio management database</p>
-                <p>✅ User profile management</p>
-                <p>✅ Professional UI with Tailwind CSS</p>
-                <p>✅ Portfolio context and state management</p>
-                <p>✅ Protected routes with React Router</p>
-              </div>
-            </div>
-
-            {/* Portfolio Information */}
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-              <h3 className="text-sm font-medium text-green-900 mb-2">Portfolio Management</h3>
-              <div className="text-sm text-green-700 space-y-1">
-                <p>📊 Total Portfolios: {portfolios.length}</p>
-                {currentPortfolio && (
-                  <>
-                    <p>🎯 Current Portfolio: {currentPortfolio.name}</p>
-                    <p>💰 Cash Balance: ${currentPortfolio.cash_balance.toLocaleString()}</p>
-                    <p>📈 Total Holdings: {currentPortfolio.holdings.length}</p>
-                    <p>💵 Total Value: ${(currentPortfolio.cash_balance + currentPortfolio.holdings.reduce((sum, holding) => sum + (holding.quantity * holding.avg_price), 0)).toLocaleString()}</p>
-                  </>
-                )}
-                {portfolios.length === 0 && (
-                  <p>📝 No portfolios yet. Create your first portfolio to get started!</p>
-                )}
-              </div>
-            </div>
-
-            {/* Production Mode Indicator */}
-            {!process.env.REACT_APP_SUPABASE_URL || process.env.REACT_APP_SUPABASE_URL === 'https://placeholder.supabase.co' ? (
-              <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-md">
-                <h3 className="text-sm font-medium text-yellow-900 mb-2">🔄 Development Mode</h3>
-                <div className="text-sm text-yellow-700 space-y-1">
-                  <p>• Using mock authentication for development</p>
-                  <p>• Demo login: <code className="bg-yellow-100 px-1 rounded">demo@quantflow.com</code></p>
-                  <p>• Any password will work for demo account</p>
-                  <p>• Set up Supabase for real authentication</p>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                <h3 className="text-sm font-medium text-green-900 mb-2">✅ Production Mode</h3>
-                <div className="text-sm text-green-700">
-                  <p>• Connected to Supabase for real authentication</p>
-                </div>
-              </div>
-            )}
+          <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh
+            </button>
           </div>
-          )}
-
-          {/* Risk Analysis Tab */}
-          {activeTab === 'risk' && (
-            <RiskDashboard />
-          )}
         </div>
-      </main>
+
+        {/* Portfolio Overview Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <PortfolioOverview
+            title="Total Value"
+            value={`$${mockPortfolioData.totalValue.toLocaleString()}`}
+            change={mockPortfolioData.dailyPnL}
+            changePercent={mockPortfolioData.dailyPnLPercent}
+            icon={DollarSign}
+            trend={mockPortfolioData.dailyPnL >= 0 ? 'up' : 'down'}
+          />
+          <PortfolioOverview
+            title="Daily P&L"
+            value={`$${mockPortfolioData.dailyPnL.toLocaleString()}`}
+            change={mockPortfolioData.dailyPnLPercent}
+            changePercent={mockPortfolioData.dailyPnLPercent}
+            icon={Activity}
+            trend={mockPortfolioData.dailyPnL >= 0 ? 'up' : 'down'}
+            isPercentage
+          />
+          <PortfolioOverview
+            title="Total P&L"
+            value={`$${mockPortfolioData.totalPnL.toLocaleString()}`}
+            change={mockPortfolioData.totalPnLPercent}
+            changePercent={mockPortfolioData.totalPnLPercent}
+            icon={BarChart3}
+            trend={mockPortfolioData.totalPnL >= 0 ? 'up' : 'down'}
+            isPercentage
+          />
+          <PortfolioOverview
+            title="Risk Score"
+            value={mockPortfolioData.riskScore.toString()}
+            change={null}
+            changePercent={null}
+            icon={Shield}
+            trend="neutral"
+            isRisk
+          />
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Portfolio Allocation */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <PieChart className="h-5 w-5 mr-2 text-blue-600" />
+                Portfolio Allocation
+              </h3>
+            </div>
+            <PortfolioAllocation data={mockPortfolioData.allocation} />
+          </div>
+
+          {/* Performance Chart */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center">
+                <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
+                Performance
+              </h3>
+              <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
+                {(['1D', '1W', '1M', '1Y'] as const).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => setTimeRange(range)}
+                    className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                      timeRange === range
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {range}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <PerformanceChart 
+              data={mockPortfolioData.performance[timeRange]} 
+              timeRange={timeRange}
+            />
+          </div>
+        </div>
+
+        {/* Risk Metrics */}
+        <div className="mb-8">
+          <RiskMetrics portfolioData={mockPortfolioData} />
+        </div>
+
+        {/* Holdings Table */}
+        <div className="bg-white rounded-lg shadow">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-semibold text-gray-900">Holdings</h3>
+          </div>
+          <HoldingsTable portfolio={currentPortfolio} />
+        </div>
+      </div>
     </div>
   )
 }
