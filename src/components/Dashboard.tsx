@@ -56,11 +56,18 @@ export const Dashboard: React.FC = () => {
     const holdings = currentPortfolio.holdings
     
     // Add sample current prices if missing
-    const holdingsWithPrices = holdings.map(holding => ({
-      ...holding,
-      current_price: holding.current_price || Math.round(holding.avg_price * (1 + Math.random() * 0.2 - 0.1) * 100) / 100, // ±10% variation, rounded to 2 decimals
-      sector: holding.sector || ['Technology', 'Healthcare', 'Finance', 'Consumer', 'Energy'][Math.floor(Math.random() * 5)]
-    }))
+    const holdingsWithPrices = holdings.map(holding => {
+      // Generate a consistent price variation based on symbol
+      const symbolHash = holding.symbol.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0)
+      const variation = ((symbolHash % 20) - 10) / 100 // ±10% variation based on symbol
+      const sectorIndex = symbolHash % 5
+      
+      return {
+        ...holding,
+        current_price: holding.current_price || Math.round(holding.avg_price * (1 + variation) * 100) / 100,
+        sector: holding.sector || ['Technology', 'Healthcare', 'Finance', 'Consumer', 'Energy'][sectorIndex]
+      }
+    })
     
     const totalValue = holdingsWithPrices.reduce((sum, holding) => {
       return sum + (holding.quantity * holding.current_price)
