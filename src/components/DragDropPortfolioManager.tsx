@@ -22,7 +22,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { GripVertical, Trash2, Edit, Eye, EyeOff, Plus, Download, Upload } from 'lucide-react'
 import { PortfolioWithHoldings, Holding } from '../types/portfolio'
 import { csvService } from '../lib/csvService'
-import { useToast } from '../hooks/useToast'
+import { useToast } from './Toast'
 
 interface DragDropPortfolioManagerProps {
   portfolios: PortfolioWithHoldings[]
@@ -269,7 +269,7 @@ export const DragDropPortfolioManager: React.FC<DragDropPortfolioManagerProps> =
   const [expandedPortfolios, setExpandedPortfolios] = useState<Set<string>>(new Set())
   const [activeId, setActiveId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { showToast } = useToast()
+  const { success, error: showError } = useToast()
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -334,9 +334,9 @@ export const DragDropPortfolioManager: React.FC<DragDropPortfolioManagerProps> =
       const csvContent = csvService.exportPortfolioData(portfolio.holdings)
       const filename = `${portfolio.name}_holdings_${new Date().toISOString().split('T')[0]}.csv`
       csvService.downloadCSV(csvContent, filename)
-      showToast('success', 'Export Successful', `Portfolio "${portfolio.name}" exported to CSV`)
+      success('Export Successful', `Portfolio "${portfolio.name}" exported to CSV`)
     } catch (error) {
-      showToast('error', 'Export Failed', 'Failed to export portfolio data')
+      showError('Export Failed', 'Failed to export portfolio data')
     }
   }
 
@@ -347,17 +347,17 @@ export const DragDropPortfolioManager: React.FC<DragDropPortfolioManagerProps> =
     try {
       const result = await csvService.importTransactions(file)
       if (result.success && result.data) {
-        showToast('success', 'Import Successful', `Imported ${result.data.length} transactions`)
+        success('Import Successful', `Imported ${result.data.length} transactions`)
         // Here you would typically call an API to save the transactions
         // For now, we'll just show the success message
       } else {
-        showToast('error', 'Import Failed', result.message)
+        showError('Import Failed', result.message)
         if (result.errors) {
           console.error('Import errors:', result.errors)
         }
       }
     } catch (error) {
-      showToast('error', 'Import Failed', 'Failed to process CSV file')
+      showError('Import Failed', 'Failed to process CSV file')
     }
 
     // Reset file input
@@ -369,7 +369,7 @@ export const DragDropPortfolioManager: React.FC<DragDropPortfolioManagerProps> =
   const downloadTemplate = () => {
     const template = csvService.generateImportTemplate()
     csvService.downloadCSV(template, 'transaction_template.csv')
-    showToast('success', 'Template Downloaded', 'Transaction template downloaded successfully')
+    success('Template Downloaded', 'Transaction template downloaded successfully')
   }
 
   return (

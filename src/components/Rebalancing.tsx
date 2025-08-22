@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePortfolio } from '../contexts/PortfolioContext'
-import { Navigation } from './Navigation'
+
 import { rebalancingService, RebalancingAnalysis, RebalancingSuggestion, WhatIfAnalysis } from '../lib/rebalancingService'
 import { useToast } from './Toast'
 import { 
@@ -215,9 +215,8 @@ export const Rebalancing: React.FC = () => {
 
   if (portfolioLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-neutral-50 dark:bg-black">
+        <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <SkeletonCard />
             <SkeletonCard />
@@ -230,13 +229,12 @@ export const Rebalancing: React.FC = () => {
 
   if (!currentPortfolio?.holdings || currentPortfolio.holdings.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="min-h-screen bg-neutral-50 dark:bg-black">
+        <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
-            <Target className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No Portfolio Data</h3>
-            <p className="mt-1 text-sm text-gray-500">
+            <Target className="mx-auto h-12 w-12 text-neutral-400" />
+            <h3 className="mt-2 text-sm font-medium text-neutral-900 dark:text-white">No Portfolio Data</h3>
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
               Add holdings to your portfolio to start rebalancing analysis.
             </p>
           </div>
@@ -246,15 +244,13 @@ export const Rebalancing: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-neutral-50 dark:bg-black">
+      <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Portfolio Rebalancing</h1>
-            <p className="mt-2 text-gray-600">
+            <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">Portfolio Rebalancing</h1>
+            <p className="text-neutral-600 dark:text-neutral-400">
               Optimize your portfolio allocation using Modern Portfolio Theory
             </p>
           </div>
@@ -278,11 +274,11 @@ export const Rebalancing: React.FC = () => {
 
         {/* Advanced Settings */}
         {showAdvancedSettings && (
-          <div className="bg-white rounded-lg shadow p-6 mb-8">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Settings</h3>
+          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 mb-8">
+            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">Advanced Settings</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Transaction Cost Rate (%)
                 </label>
                 <input
@@ -292,11 +288,11 @@ export const Rebalancing: React.FC = () => {
                   max="1"
                   value={transactionCostRate * 100}
                   onChange={(e) => setTransactionCostRate(parseFloat(e.target.value) / 100)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                   Minimum Trade Threshold ($)
                 </label>
                 <input
@@ -304,7 +300,7 @@ export const Rebalancing: React.FC = () => {
                   min="0"
                   value={minTradeThreshold}
                   onChange={(e) => setMinTradeThreshold(parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
                 />
               </div>
             </div>

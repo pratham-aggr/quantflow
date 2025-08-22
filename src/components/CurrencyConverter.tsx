@@ -10,7 +10,7 @@ import {
   DollarSign
 } from 'lucide-react'
 import { marketDataService, CurrencyExchange } from '../lib/marketDataService'
-import { useToast } from '../hooks/useToast'
+import { useToast } from './Toast'
 
 interface CurrencyConverterProps {
   defaultFromCurrency?: string
@@ -57,7 +57,7 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const { showToast } = useToast()
+  const { error: showError } = useToast()
 
   // Calculate converted amount
   const convertedAmount = useMemo(() => {
@@ -116,12 +116,12 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
           })
         }
       } else {
-        setError(`Exchange rate not available for ${fromCurrency}/${toCurrency}`)
-        showToast('error', 'Rate Error', 'Failed to fetch exchange rate')
+        setError(`Exchange rate not available for ${fromCurrency}/${toCurrency}. This currency pair may not be supported by the free API plan.`)
+        showError('Rate Error', `Exchange rate not available for ${fromCurrency}/${toCurrency}`)
       }
     } catch (err) {
       setError('Failed to fetch exchange rate')
-      showToast('error', 'Connection Error', 'Failed to connect to exchange rate service')
+      showError('Connection Error', 'Failed to connect to exchange rate service')
     } finally {
       setLoading(false)
     }
@@ -310,8 +310,33 @@ export const CurrencyConverter: React.FC<CurrencyConverterProps> = ({
         {/* Error Display */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div className="text-red-800 text-center">
+            <div className="text-red-800 text-center mb-3">
               {error}
+            </div>
+            <div className="text-sm text-red-700 text-center">
+              <p className="mb-2">Try these common currency pairs that are usually available:</p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {[
+                  { from: 'USD', to: 'EUR' },
+                  { from: 'USD', to: 'GBP' },
+                  { from: 'EUR', to: 'USD' },
+                  { from: 'GBP', to: 'USD' },
+                  { from: 'USD', to: 'JPY' },
+                  { from: 'USD', to: 'CAD' }
+                ].map((pair) => (
+                  <button
+                    key={`${pair.from}-${pair.to}`}
+                    onClick={() => {
+                      setFromCurrency(pair.from)
+                      setToCurrency(pair.to)
+                      setError(null)
+                    }}
+                    className="px-3 py-1 bg-red-100 hover:bg-red-200 rounded-md text-red-800 transition-colors"
+                  >
+                    {pair.from}/{pair.to}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}

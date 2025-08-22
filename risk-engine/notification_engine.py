@@ -12,8 +12,8 @@ from dataclasses import dataclass, field
 from typing import List, Dict, Optional, Any, Union
 from enum import Enum
 import requests
-from email.mime.text import MimeText
-from email.mime.multipart import MimeMultipart
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import websockets
 import threading
 import time
@@ -108,18 +108,18 @@ class EmailService:
     ) -> bool:
         """Send an email notification."""
         try:
-            msg = MimeMultipart('alternative')
+            msg = MIMEMultipart('alternative')
             msg['Subject'] = subject
             msg['From'] = from_email or "noreply@quantflow.com"
             msg['To'] = to_email
             
             # Add plain text version
-            text_part = MimeText(body, 'plain')
+            text_part = MIMEText(body, 'plain')
             msg.attach(text_part)
             
             # Add HTML version if provided
             if html_body:
-                html_part = MimeText(html_body, 'html')
+                html_part = MIMEText(html_body, 'html')
                 msg.attach(html_part)
             
             # Send email

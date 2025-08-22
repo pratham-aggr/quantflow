@@ -41,7 +41,7 @@ import { DashboardWidget, WidgetConfig, WidgetType, WidgetSize } from './Dashboa
 import { InteractiveDashboardChart, ChartDataPoint } from './InteractiveDashboardChart'
 import { exportService, generatePDFReport, generateCSVExport, downloadFile } from '../lib/exportService'
 import { useNumberAnimation, useSlideIn, useStaggeredAnimation } from '../lib/animationSystem'
-import { useToast } from '../hooks/useToast'
+import { useToast } from './Toast'
 
 // Dashboard layout types
 type DashboardLayout = 'grid' | 'list' | 'compact'
@@ -123,7 +123,7 @@ const WIDGET_TEMPLATES: Array<{
 export const EnhancedDashboard: React.FC = () => {
   const { user } = useAuth()
   const { currentPortfolio, refreshCurrentPortfolio } = usePortfolio()
-  const { showToast } = useToast()
+  const { success, error: showError, info } = useToast()
   
   // State management
   const [widgets, setWidgets] = useState<WidgetConfig[]>([])
@@ -146,14 +146,38 @@ export const EnhancedDashboard: React.FC = () => {
     })
   )
 
+  // Calculate portfolio metrics
+  const portfolioMetrics = useMemo(() => {
+    if (!currentPortfolio) return null
+
+    const totalValue = currentPortfolio.holdings.reduce((sum, holding) => {
+      return sum + (holding.quantity * (holding.current_price || holding.avg_price))
+    }, 0) + (currentPortfolio.cash_balance || 0)
+
+    const totalCost = currentPortfolio.holdings.reduce((sum, holding) => {
+      return sum + (holding.quantity * holding.avg_price)
+    }, 0)
+
+    const totalPnL = totalValue - totalCost
+    const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0
+
+    return {
+      totalValue,
+      totalCost,
+      totalPnL,
+      totalPnLPercent,
+      cashBalance: currentPortfolio.cash_balance || 0
+    }
+  }, [currentPortfolio])
+
   // Animated values
   const animatedTotalValue = useNumberAnimation(
-    currentPortfolio?.total_value || 0,
+    portfolioMetrics?.totalValue || 0,
     { from: 0, format: 'currency', duration: 1000 }
   )
 
   const animatedDailyPnL = useNumberAnimation(
-    currentPortfolio?.total_pnl || 0,
+    portfolioMetrics?.totalPnL || 0,
     { from: 0, format: 'currency', duration: 800 }
   )
 
@@ -181,7 +205,7 @@ export const EnhancedDashboard: React.FC = () => {
 
   // Update widget data based on portfolio
   useEffect(() => {
-    if (!currentPortfolio) return
+    if (!currentPortfolio || !portfolioMetrics) return
 
     setWidgets(prevWidgets => prevWidgets.map(widget => {
       switch (widget.id) {
@@ -190,8 +214,8 @@ export const EnhancedDashboard: React.FC = () => {
             ...widget,
             data: {
               ...widget.data,
-              value: currentPortfolio.total_value || 0,
-              change: (currentPortfolio.total_pnl || 0) / (currentPortfolio.total_value || 1) * 100,
+              value: portfolioMetrics.totalValue,
+              change: portfolioMetrics.totalPnLPercent,
               isLive: true
             }
           }
@@ -200,8 +224,8 @@ export const EnhancedDashboard: React.FC = () => {
             ...widget,
             data: {
               ...widget.data,
-              value: currentPortfolio.total_pnl || 0,
-              change: (currentPortfolio.total_pnl || 0) / (currentPortfolio.total_value || 1) * 100,
+              value: portfolioMetrics.totalPnL,
+              change: portfolioMetrics.totalPnLPercent,
               isLive: true
             }
           }
@@ -275,13 +299,13 @@ export const EnhancedDashboard: React.FC = () => {
     setIsRefreshing(true)
     try {
       await refreshCurrentPortfolio()
-      showToast('success', 'Portfolio refreshed successfully')
+      success('Portfolio refreshed successfully')
     } catch (error) {
-      showToast('error', 'Failed to refresh portfolio')
+      showError('Failed to refresh portfolio')
     } finally {
       setIsRefreshing(false)
     }
-  }, [refreshCurrentPortfolio, showToast])
+  }, [refreshCurrentPortfolio, success, showError])
 
   const handleAddWidget = useCallback((template: typeof WIDGET_TEMPLATES[0]) => {
     const newWidget: WidgetConfig = {
@@ -298,8 +322,8 @@ export const EnhancedDashboard: React.FC = () => {
     }
     setWidgets(prev => [...prev, newWidget])
     setShowWidgetLibrary(false)
-    showToast('success', `Added ${template.title} widget`)
-  }, [widgets.length, showToast])
+    success(`Added ${template.title} widget`)
+  }, [widgets.length, success])
 
   const handleUpdateWidget = useCallback((config: WidgetConfig) => {
     setWidgets(prev => prev.map(widget => 
@@ -309,8 +333,8 @@ export const EnhancedDashboard: React.FC = () => {
 
   const handleDeleteWidget = useCallback((id: string) => {
     setWidgets(prev => prev.filter(widget => widget.id !== id))
-    showToast('info', 'Widget removed')
-  }, [showToast])
+    info('Widget removed')
+  }, [info])
 
   const handleDuplicateWidget = useCallback((config: WidgetConfig) => {
     const duplicatedWidget: WidgetConfig = {
@@ -319,13 +343,13 @@ export const EnhancedDashboard: React.FC = () => {
       position: { x: config.position.x + 1, y: config.position.y + 1 }
     }
     setWidgets(prev => [...prev, duplicatedWidget])
-    showToast('success', 'Widget duplicated')
-  }, [showToast])
+    success('Widget duplicated')
+  }, [success])
 
   const handleRefreshWidget = useCallback((id: string) => {
     // Trigger widget-specific refresh
-    showToast('info', 'Widget refreshed')
-  }, [showToast])
+    info('Widget refreshed')
+  }, [info])
 
   const handleExportDashboard = useCallback(async (format: 'pdf' | 'png') => {
     if (!dashboardRef.current) return
@@ -377,12 +401,12 @@ export const EnhancedDashboard: React.FC = () => {
       }
 
       downloadFile(blob, filename, format)
-      showToast('success', `Dashboard exported as ${format.toUpperCase()}`)
+      success(`Dashboard exported as ${format.toUpperCase()}`)
     } catch (error) {
       console.error('Export error:', error)
-      showToast('error', 'Failed to export dashboard')
+      showError('Failed to export dashboard')
     }
-  }, [currentPortfolio, showToast])
+  }, [currentPortfolio, success, showError])
 
   const handleFullscreen = useCallback(() => {
     if (containerRef.current) {
@@ -633,10 +657,10 @@ export const EnhancedDashboard: React.FC = () => {
                           height={300}
                           animated={true}
                           realTime={true}
-                                                     onDataPointClick={(point) => {
-                             setSelectedWidget(widget.id)
-                             showToast('info', `Selected: ${point.label}`)
-                           }}
+                                                                               onDataPointClick={(point) => {
+                            setSelectedWidget(widget.id)
+                            info(`Selected: ${point.label}`)
+                          }}
                         />
                       </div>
                     )

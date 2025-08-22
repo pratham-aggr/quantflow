@@ -34,7 +34,7 @@ import {
   createRiskAlert
 } from '../lib/notificationService'
 import { useAuth } from '../contexts/AuthContext'
-import { useToast } from '../hooks/useToast'
+import { useToast } from './Toast'
 
 interface NotificationCenterProps {
   isOpen: boolean
@@ -54,7 +54,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   onClose 
 }) => {
   const { user } = useAuth()
-  const { showToast } = useToast()
+  const { success, error: showError, info } = useToast()
   
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [alertRules, setAlertRules] = useState<AlertRule[]>([])
@@ -87,7 +87,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         user.id,
         (notification) => {
           setNotifications(prev => [notification, ...prev])
-          showToast('info', `New notification: ${notification.title}`)
+          info(`New notification: ${notification.title}`)
         }
       )
 
@@ -96,7 +96,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         notificationService.disconnectWebSocket()
       }
     }
-  }, [user, showToast])
+  }, [user, info])
 
   const loadNotificationData = useCallback(async () => {
     if (!user) return
@@ -114,11 +114,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       setPreferences(preferencesData || createDefaultNotificationPreferences())
     } catch (error) {
       console.error('Error loading notification data:', error)
-      showToast('error', 'Failed to load notification data')
+      showError('Failed to load notification data')
     } finally {
       setIsLoading(false)
     }
-  }, [user, showToast])
+  }, [user, showError])
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
@@ -144,10 +144,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
       setNotifications(prev => 
         prev.map(n => ({ ...n, readAt: n.readAt || new Date().toISOString() }))
       )
-      showToast('success', 'All notifications marked as read')
+      success('All notifications marked as read')
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
-      showToast('error', 'Failed to mark notifications as read')
+      showError('Failed to mark notifications as read')
     }
   }
 
@@ -155,15 +155,15 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     if (!user) return
     
     try {
-      const success = await notificationService.sendTestNotification(user.id)
-      if (success) {
-        showToast('success', 'Test notification sent successfully')
+      const result = await notificationService.sendTestNotification(user.id)
+      if (result) {
+        success('Test notification sent successfully')
       } else {
-        showToast('error', 'Failed to send test notification')
+        showError('Failed to send test notification')
       }
     } catch (error) {
       console.error('Error sending test notification:', error)
-      showToast('error', 'Failed to send test notification')
+      showError('Failed to send test notification')
     }
   }
 
@@ -194,11 +194,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
           channels: [NotificationChannel.EMAIL, NotificationChannel.PUSH],
           enabled: true
         })
-        showToast('success', 'Alert rule created successfully')
+        success('Alert rule created successfully')
       }
     } catch (error) {
       console.error('Error creating alert rule:', error)
-      showToast('error', 'Failed to create alert rule')
+      showError('Failed to create alert rule')
     }
   }
 
@@ -206,7 +206,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     if (!editingRule) return
     
     try {
-      const success = await notificationService.updateAlertRule(editingRule.id, {
+      const result = await notificationService.updateAlertRule(editingRule.id, {
         name: alertFormData.name,
         type: alertFormData.type,
         conditions: alertFormData.conditions,
@@ -217,7 +217,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         enabled: alertFormData.enabled
       })
       
-      if (success) {
+      if (result) {
         setAlertRules(prev => 
           prev.map(rule => 
             rule.id === editingRule.id 
@@ -227,24 +227,24 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         )
         setEditingRule(null)
         setShowAlertForm(false)
-        showToast('success', 'Alert rule updated successfully')
+        success('Alert rule updated successfully')
       }
     } catch (error) {
       console.error('Error updating alert rule:', error)
-      showToast('error', 'Failed to update alert rule')
+      showError('Failed to update alert rule')
     }
   }
 
   const handleDeleteAlertRule = async (ruleId: string) => {
     try {
-      const success = await notificationService.deleteAlertRule(ruleId)
-      if (success) {
+      const result = await notificationService.deleteAlertRule(ruleId)
+      if (result) {
         setAlertRules(prev => prev.filter(rule => rule.id !== ruleId))
-        showToast('success', 'Alert rule deleted successfully')
+        success('Alert rule deleted successfully')
       }
     } catch (error) {
       console.error('Error deleting alert rule:', error)
-      showToast('error', 'Failed to delete alert rule')
+      showError('Failed to delete alert rule')
     }
   }
 
@@ -253,10 +253,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     
     try {
       notificationService.saveNotificationPreferences(user.id, preferences)
-      showToast('success', 'Notification preferences saved')
+              success('Notification preferences saved')
     } catch (error) {
       console.error('Error saving preferences:', error)
-      showToast('error', 'Failed to save preferences')
+      showError('Failed to save preferences')
     }
   }
 
@@ -264,13 +264,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     try {
       const granted = await notificationService.requestNotificationPermission()
       if (granted) {
-        showToast('success', 'Notification permission granted')
+        success('Notification permission granted')
       } else {
-        showToast('error', 'Notification permission denied')
+        showError('Notification permission denied')
       }
     } catch (error) {
       console.error('Error requesting notification permission:', error)
-      showToast('error', 'Failed to request notification permission')
+      showError('Failed to request notification permission')
     }
   }
 

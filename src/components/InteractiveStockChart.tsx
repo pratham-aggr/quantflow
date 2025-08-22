@@ -27,7 +27,7 @@ import {
   DollarSign
 } from 'lucide-react'
 import { marketDataService, HistoricalData, StockQuote } from '../lib/marketDataService'
-import { useToast } from '../hooks/useToast'
+import { useToast } from './Toast'
 
 ChartJS.register(
   CategoryScale,
@@ -76,7 +76,7 @@ export const InteractiveStockChart: React.FC<InteractiveStockChartProps> = ({
   const [selectedIndicators, setSelectedIndicators] = useState<Set<TechnicalIndicator>>(new Set(['MA20'] as TechnicalIndicator[]))
   const [isFullscreen, setIsFullscreen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
-  const { showToast } = useToast()
+  const { success, error: showError, info } = useToast()
 
   // Calculate date range based on selection
   const dateRange = useMemo(() => {
@@ -126,7 +126,7 @@ export const InteractiveStockChart: React.FC<InteractiveStockChartProps> = ({
       }
     } catch (err) {
       setError('Failed to fetch historical data')
-      showToast('error', 'Data Error', 'Failed to load historical price data')
+      showError('Data Error', 'Failed to load historical price data')
     } finally {
       setLoading(false)
     }
@@ -406,7 +406,7 @@ export const InteractiveStockChart: React.FC<InteractiveStockChartProps> = ({
 
   const exportChart = () => {
     // Implementation for chart export
-    showToast('info', 'Export', 'Chart export functionality coming soon!')
+            info('Export', 'Chart export functionality coming soon!')
   }
 
   const containerClass = isFullscreen 

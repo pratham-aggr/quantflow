@@ -16,29 +16,29 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const buttonVariants = {
   primary: {
-    base: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 text-white',
-    disabled: 'bg-blue-400 cursor-not-allowed',
-    loading: 'bg-blue-600 cursor-wait'
+    base: 'bg-primary-600 hover:bg-primary-700 focus:ring-primary-500 text-white',
+    disabled: 'bg-primary-400 cursor-not-allowed',
+    loading: 'bg-primary-600 cursor-wait'
   },
   secondary: {
-    base: 'bg-gray-600 hover:bg-gray-700 focus:ring-gray-500 text-white',
-    disabled: 'bg-gray-400 cursor-not-allowed',
-    loading: 'bg-gray-600 cursor-wait'
+    base: 'bg-neutral-600 hover:bg-neutral-700 focus:ring-neutral-500 text-white',
+    disabled: 'bg-neutral-400 cursor-not-allowed',
+    loading: 'bg-neutral-600 cursor-wait'
   },
   danger: {
-    base: 'bg-red-600 hover:bg-red-700 focus:ring-red-500 text-white',
-    disabled: 'bg-red-400 cursor-not-allowed',
-    loading: 'bg-red-600 cursor-wait'
+    base: 'bg-loss-600 hover:bg-loss-700 focus:ring-loss-500 text-white',
+    disabled: 'bg-loss-400 cursor-not-allowed',
+    loading: 'bg-loss-600 cursor-wait'
   },
   ghost: {
-    base: 'bg-transparent hover:bg-gray-100 focus:ring-gray-500 text-gray-700',
-    disabled: 'text-gray-400 cursor-not-allowed',
-    loading: 'text-gray-700 cursor-wait'
+    base: 'bg-transparent hover:bg-neutral-100 dark:hover:bg-neutral-800 focus:ring-neutral-500 text-neutral-700 dark:text-neutral-300',
+    disabled: 'text-neutral-400 cursor-not-allowed',
+    loading: 'text-neutral-700 dark:text-neutral-300 cursor-wait'
   },
   outline: {
-    base: 'bg-transparent border border-gray-300 hover:bg-gray-50 focus:ring-blue-500 text-gray-700',
-    disabled: 'border-gray-200 text-gray-400 cursor-not-allowed',
-    loading: 'border-gray-300 text-gray-700 cursor-wait'
+    base: 'bg-transparent border border-neutral-300 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-800 focus:ring-primary-500 text-neutral-700 dark:text-neutral-300',
+    disabled: 'border-neutral-200 dark:border-neutral-700 text-neutral-400 cursor-not-allowed',
+    loading: 'border-neutral-300 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 cursor-wait'
   }
 }
 

@@ -21,7 +21,7 @@ import {
   Network
 } from 'lucide-react'
 import { advancedRiskService, AdvancedRiskReport, MonteCarloAnalysis, CorrelationAnalysis, SectorAnalysis, MLPrediction } from '../lib/advancedRiskService'
-import { useToast } from '../hooks/useToast'
+import { useToast } from './Toast'
 
 interface AdvancedRiskDashboardProps {
   holdings: any[]
@@ -46,7 +46,7 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
   const [viewMode, setViewMode] = useState<ViewMode>('summary')
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false)
-  const { showToast } = useToast()
+  const { success, error: showError } = useToast()
 
   // Generate risk report
   const generateRiskReport = async () => {
@@ -69,10 +69,10 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
       })
 
       setRiskReport(report)
-      showToast('success', 'Risk Analysis Complete', 'Advanced risk report generated successfully')
+      success('Risk Analysis Complete', 'Advanced risk report generated successfully')
     } catch (err) {
       setError('Failed to generate risk report')
-      showToast('error', 'Analysis Failed', 'Unable to generate advanced risk analysis')
+      showError('Analysis Failed', 'Unable to generate advanced risk analysis')
     } finally {
       setLoading(false)
     }
@@ -132,7 +132,7 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
     link.click()
     URL.revokeObjectURL(url)
 
-    showToast('success', 'Report Exported', 'Risk report downloaded successfully')
+    success('Report Exported', 'Risk report downloaded successfully')
   }
 
   if (loading && !riskReport) {

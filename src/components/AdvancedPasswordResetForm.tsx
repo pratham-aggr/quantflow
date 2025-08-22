@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { Eye, EyeOff, CheckCircle, XCircle, RefreshCw, Shield, Lock, Mail } from 'lucide-react'
 import { passwordResetService } from '../lib/passwordResetService'
-import { useToast } from '../hooks/useToast'
+import { useToast } from './Toast'
 
 interface PasswordResetFormData {
   email: string
@@ -29,7 +29,7 @@ export const AdvancedPasswordResetForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [passwordSuggestions, setPasswordSuggestions] = useState<string[]>([])
   const [step, setStep] = useState<'request' | 'reset'>('request')
-  const { showToast } = useToast()
+  const { success, error: showError } = useToast()
 
   const {
     register,
@@ -95,13 +95,13 @@ export const AdvancedPasswordResetForm: React.FC = () => {
       })
 
       if (result.success) {
-        showToast('success', 'Password reset email sent!', 'Check your inbox for reset instructions.')
+        success('Password reset email sent!', 'Check your inbox for reset instructions.')
         setStep('reset')
       } else {
-        showToast('error', 'Reset Failed', result.message)
+        showError('Reset Failed', result.message)
       }
     } catch (error) {
-      showToast('error', 'Error', 'Failed to send reset email. Please try again.')
+      showError('Error', 'Failed to send reset email. Please try again.')
     } finally {
       setIsLoading(false)
     }
@@ -109,12 +109,12 @@ export const AdvancedPasswordResetForm: React.FC = () => {
 
   const handlePasswordReset = async (data: PasswordResetFormData) => {
     if (data.newPassword !== data.confirmPassword) {
-      showToast('error', 'Passwords Mismatch', 'Passwords do not match.')
+      showError('Passwords Mismatch', 'Passwords do not match.')
       return
     }
 
     if (passwordStrength.score < 3) {
-      showToast('error', 'Weak Password', 'Please choose a stronger password.')
+      showError('Weak Password', 'Please choose a stronger password.')
       return
     }
 
@@ -127,15 +127,15 @@ export const AdvancedPasswordResetForm: React.FC = () => {
       })
 
       if (result.success) {
-        showToast('success', 'Password Updated!', 'Your password has been successfully updated.')
+        success('Password Updated!', 'Your password has been successfully updated.')
         reset()
         // Redirect to login
         window.location.href = '/login'
       } else {
-        showToast('error', 'Update Failed', result.message)
+        showError('Update Failed', result.message)
       }
     } catch (error) {
-      showToast('error', 'Error', 'Failed to update password. Please try again.')
+      showError('Error', 'Failed to update password. Please try again.')
     } finally {
       setIsLoading(false)
     }

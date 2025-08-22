@@ -633,22 +633,83 @@ class MarketDataService {
     }
 
     try {
-      const data = await this.makeRequest<any>('/forex/rates', {
-        base: base.toUpperCase()
-      })
+      // Try using the forex/candle endpoint as a fallback for free plan
+      console.log(`Attempting forex conversion for ${base}/${target}...`)
+      
+      // First try the rates endpoint
+      try {
+        const data = await this.makeRequest<any>('/forex/rates', {
+          base: base.toUpperCase()
+        })
 
-      if (data && data.quote && data.quote[target.toUpperCase()]) {
-        const exchange: CurrencyExchange = {
-          base: base.toUpperCase(),
-          target: target.toUpperCase(),
-          rate: data.quote[target.toUpperCase()],
-          timestamp: Date.now()
+        console.log(`Forex rates API response for ${base}/${target}:`, data)
+
+        if (data && data.quote && data.quote[target.toUpperCase()]) {
+          const exchange: CurrencyExchange = {
+            base: base.toUpperCase(),
+            target: target.toUpperCase(),
+            rate: data.quote[target.toUpperCase()],
+            timestamp: Date.now()
+          }
+          
+          this.cache.set(cacheKey, exchange)
+          return exchange
         }
-        
-        this.cache.set(cacheKey, exchange)
-        return exchange
+      } catch (ratesError) {
+        console.log(`Forex rates endpoint failed for ${base}/${target}:`, ratesError)
       }
       
+      // Try reverse conversion if direct conversion fails
+      try {
+        console.log(`Trying reverse conversion for ${target}/${base}`)
+        const reverseData = await this.makeRequest<any>('/forex/rates', {
+          base: target.toUpperCase()
+        })
+        
+        if (reverseData && reverseData.quote && reverseData.quote[base.toUpperCase()]) {
+          const exchange: CurrencyExchange = {
+            base: base.toUpperCase(),
+            target: target.toUpperCase(),
+            rate: 1 / reverseData.quote[base.toUpperCase()],
+            timestamp: Date.now()
+          }
+          
+          this.cache.set(cacheKey, exchange)
+          return exchange
+        }
+      } catch (reverseError) {
+        console.log(`Reverse conversion failed for ${target}/${base}:`, reverseError)
+      }
+      
+      // Fallback: Try using forex/candle endpoint (might work better with free plan)
+      try {
+        console.log(`Trying forex candle endpoint for ${base}${target}`)
+        const candleData = await this.makeRequest<any>('/forex/candle', {
+          symbol: `${base.toUpperCase()}${target.toUpperCase()}`,
+          resolution: '1',
+          from: (Math.floor(Date.now() / 1000) - 3600).toString(), // 1 hour ago
+          to: Math.floor(Date.now() / 1000).toString()
+        })
+        
+        console.log(`Forex candle API response for ${base}${target}:`, candleData)
+        
+        if (candleData && candleData.c && candleData.c.length > 0) {
+          const latestPrice = candleData.c[candleData.c.length - 1]
+          const exchange: CurrencyExchange = {
+            base: base.toUpperCase(),
+            target: target.toUpperCase(),
+            rate: latestPrice,
+            timestamp: Date.now()
+          }
+          
+          this.cache.set(cacheKey, exchange)
+          return exchange
+        }
+      } catch (candleError) {
+        console.log(`Forex candle endpoint failed for ${base}${target}:`, candleError)
+      }
+      
+      console.warn(`All forex endpoints failed for ${base}/${target}. This currency pair is not available with the current API plan.`)
       return null
     } catch (error) {
       console.error(`Failed to fetch currency exchange ${base}/${target}:`, error)

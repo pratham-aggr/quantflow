@@ -6,6 +6,7 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -40,6 +41,7 @@ ChartJS.register(
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend,
@@ -123,6 +125,26 @@ export const InteractiveDashboardChart: React.FC<InteractiveChartProps> = ({
   const barChartRef = useRef<ChartJS<'bar'>>(null)
   const doughnutChartRef = useRef<ChartJS<'doughnut'>>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+
+  // Cleanup charts when component unmounts or chart type changes
+  useEffect(() => {
+    return () => {
+      // Destroy all chart instances on cleanup
+      const lineChart = lineChartRef.current
+      const barChart = barChartRef.current
+      const doughnutChart = doughnutChartRef.current
+      
+      if (lineChart) {
+        lineChart.destroy()
+      }
+      if (barChart) {
+        barChart.destroy()
+      }
+      if (doughnutChart) {
+        doughnutChart.destroy()
+      }
+    }
+  }, [currentChartType])
 
   // Animated data
   const animatedData = useChartAnimation(data, {
@@ -267,7 +289,17 @@ export const InteractiveDashboardChart: React.FC<InteractiveChartProps> = ({
     }
 
     if (currentChartType === 'doughnut') {
-      return baseOptions
+      return {
+        ...baseOptions,
+        scales: {
+          x: {
+            display: false
+          },
+          y: {
+            display: false
+          }
+        }
+      }
     }
 
     return {
@@ -500,6 +532,7 @@ export const InteractiveDashboardChart: React.FC<InteractiveChartProps> = ({
         <div className="relative" style={{ height: '100%' }}>
           {currentChartType === 'line' && (
             <Line
+              key="line-chart"
               ref={lineChartRef}
               data={chartData}
               options={chartOptions}
@@ -507,6 +540,7 @@ export const InteractiveDashboardChart: React.FC<InteractiveChartProps> = ({
           )}
           {currentChartType === 'bar' && (
             <Bar
+              key="bar-chart"
               ref={barChartRef}
               data={chartData}
               options={chartOptions}
@@ -514,6 +548,7 @@ export const InteractiveDashboardChart: React.FC<InteractiveChartProps> = ({
           )}
           {currentChartType === 'doughnut' && (
             <Doughnut
+              key="doughnut-chart"
               ref={doughnutChartRef}
               data={chartData}
               options={chartOptions}

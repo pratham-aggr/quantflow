@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePortfolio } from '../contexts/PortfolioContext'
-import { Navigation } from './Navigation'
+
 import { PortfolioOverview } from './dashboard/PortfolioOverview'
 import { PortfolioAllocation } from './dashboard/PortfolioAllocation'
 import { PerformanceChart } from './dashboard/PerformanceChart'
@@ -142,7 +142,6 @@ export const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <SkeletonCard />
@@ -162,7 +161,6 @@ export const Dashboard: React.FC = () => {
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-6">
             <div className="flex items-center">
@@ -184,8 +182,6 @@ export const Dashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">

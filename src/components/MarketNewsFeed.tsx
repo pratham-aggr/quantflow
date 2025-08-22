@@ -15,7 +15,7 @@ import {
   Eye
 } from 'lucide-react'
 import { marketDataService, MarketNews } from '../lib/marketDataService'
-import { useToast } from '../hooks/useToast'
+import { useToast } from './Toast'
 
 interface MarketNewsFeedProps {
   symbol?: string
@@ -47,7 +47,7 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
   const [sortBy, setSortBy] = useState<SortBy>('newest')
   const [bookmarkedNews, setBookmarkedNews] = useState<Set<number>>(new Set())
   const [expandedNews, setExpandedNews] = useState<Set<number>>(new Set())
-  const { showToast } = useToast()
+  const { success, error: showError, info } = useToast()
 
   // Load bookmarks from localStorage
   useEffect(() => {
@@ -93,7 +93,7 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
       setNews(newsData)
     } catch (err) {
       setError('Failed to fetch news')
-      showToast('error', 'News Error', 'Failed to load market news')
+      showError('News Error', 'Failed to load market news')
     } finally {
       setLoading(false)
     }
@@ -169,10 +169,10 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
     const newBookmarks = new Set(bookmarkedNews)
     if (newBookmarks.has(newsId)) {
       newBookmarks.delete(newsId)
-      showToast('info', 'Bookmark Removed', 'Article removed from bookmarks')
+      info('Bookmark Removed', 'Article removed from bookmarks')
     } else {
       newBookmarks.add(newsId)
-      showToast('success', 'Bookmark Added', 'Article saved to bookmarks')
+      success('Bookmark Added', 'Article saved to bookmarks')
     }
     setBookmarkedNews(newBookmarks)
   }
@@ -202,9 +202,9 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
       // Fallback: copy to clipboard
       try {
         await navigator.clipboard.writeText(item.url)
-        showToast('success', 'Link Copied', 'News article link copied to clipboard')
+        success('Link Copied', 'News article link copied to clipboard')
       } catch (error) {
-        showToast('error', 'Share Failed', 'Failed to copy link to clipboard')
+        showError('Share Failed', 'Failed to copy link to clipboard')
       }
     }
   }

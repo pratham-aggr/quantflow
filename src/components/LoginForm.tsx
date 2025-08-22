@@ -71,10 +71,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
   }
 
   return (
-    <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
+    <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 p-8 rounded-lg w-full max-w-md">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Welcome Back</h2>
-        <p className="text-gray-600 mt-2">Sign in to your QuantFlow account</p>
+        <h2 className="text-2xl font-bold text-neutral-900 dark:text-white">Welcome Back</h2>
+        <p className="text-neutral-600 dark:text-neutral-400 mt-2">Sign in to your QuantFlow account</p>
       </div>
 
       {submitError && (

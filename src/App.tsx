@@ -5,13 +5,15 @@ import { AuthProvider } from './contexts/AuthContext';
 import { PortfolioProvider } from './contexts/PortfolioContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
-import { Dashboard } from './components/Dashboard';
-import { EnhancedDashboard } from './components/EnhancedDashboard';
+import { SimpleDashboard } from './components/SimpleDashboard';
 import { ProfilePage } from './components/ProfilePage';
 import { AuthPage } from './components/AuthPage';
 import { ResetPasswordForm } from './components/ResetPasswordForm';
 import { PortfolioManagement } from './components/PortfolioManagement';
 import { Rebalancing } from './components/Rebalancing';
+import { RiskAnalysis } from './components/RiskAnalysis';
+import { MarketData } from './components/MarketData';
+import { Navigation } from './components/Navigation';
 import { AuthDebug } from './components/AuthDebug';
 import { ToastContainer, useToast } from './components/Toast';
 import './App.css';
@@ -104,6 +106,7 @@ function App() {
           <AuthProvider>
             <PortfolioProvider>
               <ToastProvider>
+                <Navigation />
                 <AuthDebug />
                 <Routes>
                   {/* Public routes - redirect to dashboard if authenticated */}
@@ -137,7 +140,7 @@ function App() {
                     path="/dashboard" 
                     element={
                       <ProtectedRoute>
-                        <EnhancedDashboard />
+                        <SimpleDashboard />
                       </ProtectedRoute>
                     } 
                   />
@@ -162,6 +165,22 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <Rebalancing />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/risk-analysis" 
+                    element={
+                      <ProtectedRoute>
+                        <RiskAnalysis />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/market-data" 
+                    element={
+                      <ProtectedRoute>
+                        <MarketData />
                       </ProtectedRoute>
                     } 
                   />
