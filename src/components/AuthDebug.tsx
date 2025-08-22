@@ -2,7 +2,7 @@ import React from 'react'
 import { useAuth } from '../contexts/AuthContext'
 
 export const AuthDebug: React.FC = () => {
-  const { user, loading, error } = useAuth()
+  const { user, loading, error, forceResetAuth } = useAuth()
 
   return (
     <div style={{
@@ -23,6 +23,24 @@ export const AuthDebug: React.FC = () => {
       <div>User: {user ? '✅ Logged in' : '❌ Not logged in'}</div>
       <div>Error: {error || 'None'}</div>
       <div>Time: {new Date().toLocaleTimeString()}</div>
+      
+      {loading && (
+        <button
+          onClick={forceResetAuth}
+          style={{
+            marginTop: '8px',
+            padding: '4px 8px',
+            background: '#dc2626',
+            color: 'white',
+            border: 'none',
+            borderRadius: '3px',
+            fontSize: '10px',
+            cursor: 'pointer'
+          }}
+        >
+          🔄 Force Reset
+        </button>
+      )}
     </div>
   )
 }

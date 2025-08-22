@@ -31,17 +31,32 @@ npm install
 npm start
 ```
 
+5. (Optional) Start the Risk Assessment Engine:
+```bash
+cd risk-engine
+./start.sh
+```
+
 The app will be available at [http://localhost:3000](http://localhost:3000)
+
+**Risk Assessment Engine**: If you started the risk engine, it will be available at [http://localhost:5000](http://localhost:5000)
 
 ## 🔧 Project Structure
 
 ```
-src/
-├── lib/           # Supabase and utility functions
-├── types/         # TypeScript type definitions
-├── components/    # React components
-├── pages/         # Page components
-└── contexts/      # React contexts
+quantflow/
+├── src/                    # React frontend
+│   ├── lib/               # Supabase and utility functions
+│   ├── types/             # TypeScript type definitions
+│   ├── components/        # React components
+│   └── contexts/          # React contexts
+├── server/                # Express.js market data API
+├── risk-engine/           # Python Flask risk assessment microservice
+│   ├── app.py            # Main Flask application
+│   ├── risk_calculator.py # Core risk calculations
+│   ├── portfolio_analyzer.py # Portfolio analysis
+│   └── requirements.txt   # Python dependencies
+└── README.md             # This file
 ```
 
 ## 🛠️ Built With
@@ -53,6 +68,9 @@ src/
 - **React Hook Form** - Form handling
 - **React Router** - Navigation
 - **Chart.js** - Data visualization
+- **Python Flask** - Risk assessment microservice
+- **pandas/numpy** - Financial calculations
+- **yfinance** - Market data integration
 
 ## Available Scripts
 

@@ -23,22 +23,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     error: null
   })
 
+  // Add a force reset function
+  const forceResetAuth = () => {
+    console.log('🔄 Force resetting auth state')
+    setState({ user: null, loading: false, error: null })
+  }
+
   // Initialize auth state on mount
   useEffect(() => {
     // Add a global timeout to prevent endless loading
     const globalTimeout = setTimeout(() => {
       console.log('🛑 Global auth timeout - forcing loading to false')
       setState({ user: null, loading: false, error: null })
-    }, 8000) // 8 second global timeout
+    }, 3000) // Reduced to 3 seconds for faster loading
 
     const initializeAuth = async () => {
       try {
-        // Get current user session
-        const { data: { user }, error } = await auth.getUser()
+        // Add timeout to auth.getUser() call
+        const authTimeout = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Auth timeout')), 2000)
+        )
+        
+        const authPromise = auth.getUser()
+        
+        const { data: { user }, error } = await Promise.race([authPromise, authTimeout]) as any
         
         if (error) {
           console.log('AuthContext: Error getting current user - setting loading to false')
-          // Always set loading to false for any error
           setState({ user: null, loading: false, error: null })
           return
         }
@@ -46,8 +57,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const supabaseUser = user
 
         if (supabaseUser) {
-          // Fetch user profile from database
-          const userProfile = await userProfileService.getUserProfile(supabaseUser.id)
+          // Fetch user profile from database with timeout
+          const profileTimeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
+          )
+          
+          const profilePromise = userProfileService.getUserProfile(supabaseUser.id)
+          const userProfile = await Promise.race([profilePromise, profileTimeout]) as any
           
           if (userProfile) {
             setState({
@@ -95,7 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setState({ user: null, loading: false, error: null })
         }
       } catch (error) {
-        console.log('AuthContext: Error during initialization - setting loading to false')
+        console.log('AuthContext: Error during initialization - setting loading to false', error)
         setState({ user: null, loading: false, error: null })
       } finally {
         // Clear the global timeout since we're done
@@ -274,7 +290,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const timeoutId = setTimeout(() => {
       console.log('Logout timeout - forcing state clear')
       setState({ user: null, loading: false, error: null })
-    }, 5000) // 5 second timeout
+    }, 3000) // Reduced to 3 seconds
     
     try {
       // Call Supabase auth directly for logout
@@ -294,6 +310,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Clear the state immediately
         console.log('Logout successful, clearing state')
         setState({ user: null, loading: false, error: null })
+        
+        // Clear any cached data
+        if (typeof window !== 'undefined') {
+          localStorage.clear()
+          sessionStorage.clear()
+        }
       }
     } catch (error) {
       console.error('Logout error:', error)
@@ -354,7 +376,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
-    updateProfile
+    updateProfile,
+    forceResetAuth // Add this to the context
   }
 
   return (

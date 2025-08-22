@@ -31,12 +31,10 @@ export interface UserProfile {
   investment_goals?: string[]
 }
 
-export interface AuthContextType {
-  user: User | null
-  loading: boolean
-  error: string | null
+export interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>
   register: (credentials: RegisterCredentials) => Promise<void>
   logout: () => Promise<void>
-  updateProfile: (profile: Partial<UserProfile>) => Promise<void>
+  updateProfile: (updates: Partial<UserProfile>) => Promise<void>
+  forceResetAuth: () => void // Add this
 }
