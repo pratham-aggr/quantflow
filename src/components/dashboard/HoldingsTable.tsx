@@ -1,12 +1,12 @@
 import React, { useState, useMemo } from 'react'
 import { ChevronUp, ChevronDown, TrendingUp, TrendingDown, MoreHorizontal } from 'lucide-react'
-import { Portfolio, Holding } from '../../types/portfolio'
+import { PortfolioWithHoldings, Holding } from '../../types/portfolio'
 
 interface HoldingsTableProps {
-  portfolio: Portfolio | null
+  portfolio: PortfolioWithHoldings | null
 }
 
-type SortField = 'symbol' | 'name' | 'quantity' | 'avgPrice' | 'currentPrice' | 'totalValue' | 'pnl' | 'pnlPercent'
+type SortField = 'symbol' | 'company_name' | 'quantity' | 'avgPrice' | 'currentPrice' | 'totalValue' | 'pnl' | 'pnlPercent'
 type SortDirection = 'asc' | 'desc'
 
 export const HoldingsTable: React.FC<HoldingsTableProps> = ({ portfolio }) => {
@@ -18,68 +18,66 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ portfolio }) => {
   const mockHoldings: Holding[] = [
     {
       id: '1',
+      portfolio_id: 'portfolio-1',
       symbol: 'AAPL',
-      name: 'Apple Inc.',
       quantity: 100,
       avg_price: 150.00,
-      current_price: 175.50,
-      sector: 'Technology',
+      company_name: 'Apple Inc.',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
     {
       id: '2',
+      portfolio_id: 'portfolio-1',
       symbol: 'MSFT',
-      name: 'Microsoft Corporation',
       quantity: 50,
       avg_price: 280.00,
-      current_price: 320.75,
-      sector: 'Technology',
+      company_name: 'Microsoft Corporation',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
     {
       id: '3',
+      portfolio_id: 'portfolio-1',
       symbol: 'JNJ',
-      name: 'Johnson & Johnson',
       quantity: 75,
       avg_price: 160.00,
-      current_price: 155.25,
-      sector: 'Healthcare',
+      company_name: 'Johnson & Johnson',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
     {
       id: '4',
+      portfolio_id: 'portfolio-1',
       symbol: 'JPM',
-      name: 'JPMorgan Chase & Co.',
       quantity: 60,
       avg_price: 140.00,
-      current_price: 165.80,
-      sector: 'Finance',
+      company_name: 'JPMorgan Chase & Co.',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     },
     {
       id: '5',
+      portfolio_id: 'portfolio-1',
       symbol: 'KO',
-      name: 'The Coca-Cola Company',
       quantity: 120,
       avg_price: 55.00,
-      current_price: 58.90,
-      sector: 'Consumer',
+      company_name: 'The Coca-Cola Company',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }
   ]
 
-  const holdings = portfolio?.holdings || mockHoldings
+  // Add current_price to holdings (this would come from real-time data)
+  const holdingsWithCurrentPrice = (portfolio?.holdings || mockHoldings).map(holding => ({
+    ...holding,
+    current_price: getCurrentPrice(holding.symbol) // Mock function - replace with real API
+  }))
 
   const filteredAndSortedHoldings = useMemo(() => {
-    let filtered = holdings.filter(holding =>
+    let filtered = holdingsWithCurrentPrice.filter(holding =>
       holding.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      holding.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      holding.sector.toLowerCase().includes(searchTerm.toLowerCase())
+      (holding.company_name && holding.company_name.toLowerCase().includes(searchTerm.toLowerCase()))
     )
 
     filtered.sort((a, b) => {
@@ -91,9 +89,9 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ portfolio }) => {
           aValue = a.symbol
           bValue = b.symbol
           break
-        case 'name':
-          aValue = a.name
-          bValue = b.name
+        case 'company_name':
+          aValue = a.company_name || ''
+          bValue = b.company_name || ''
           break
         case 'quantity':
           aValue = a.quantity
@@ -131,7 +129,7 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ portfolio }) => {
     })
 
     return filtered
-  }, [holdings, searchTerm, sortField, sortDirection])
+  }, [holdingsWithCurrentPrice, searchTerm, sortField, sortDirection])
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -201,14 +199,13 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ portfolio }) => {
             <tr>
               {[
                 { field: 'symbol', label: 'Symbol' },
-                { field: 'name', label: 'Name' },
+                { field: 'company_name', label: 'Company' },
                 { field: 'quantity', label: 'Quantity' },
                 { field: 'avgPrice', label: 'Avg Price' },
                 { field: 'currentPrice', label: 'Current Price' },
                 { field: 'totalValue', label: 'Total Value' },
                 { field: 'pnl', label: 'P&L' },
-                { field: 'pnlPercent', label: 'P&L %' },
-                { field: 'sector', label: 'Sector' }
+                { field: 'pnlPercent', label: 'P&L %' }
               ].map(({ field, label }) => (
                 <th
                   key={field}
@@ -238,7 +235,7 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ portfolio }) => {
                     <div className="text-sm font-medium text-gray-900">{holding.symbol}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{holding.name}</div>
+                    <div className="text-sm text-gray-900">{holding.company_name || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     {holding.quantity.toLocaleString()}
@@ -269,9 +266,6 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ portfolio }) => {
                       {pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {holding.sector}
-                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <button className="text-gray-400 hover:text-gray-600 transition-colors">
                       <MoreHorizontal className="h-4 w-4" />
@@ -300,4 +294,21 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ portfolio }) => {
       )}
     </div>
   )
+}
+
+// Mock function to get current price - replace with real API call
+function getCurrentPrice(symbol: string): number {
+  const mockPrices: { [key: string]: number } = {
+    'AAPL': 175.50,
+    'MSFT': 320.75,
+    'JNJ': 155.25,
+    'JPM': 165.80,
+    'KO': 58.90,
+    'GOOGL': 2750.00,
+    'AMZN': 3300.00,
+    'TSLA': 850.00,
+    'NVDA': 450.00,
+    'META': 350.00
+  }
+  return mockPrices[symbol] || 100.00
 }

@@ -171,17 +171,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (data?.user) {
+        const user = data.user // Store reference to avoid null issues
+        
         // Create user profile (async, don't wait for completion)
         userProfileService.createUserProfile(
-          data.user.id, 
+          user.id, 
           credentials.email, 
           credentials.full_name
         ).then(userProfile => {
           if (userProfile) {
             setState({
               user: {
-                id: data.user.id,
-                email: data.user.email!,
+                id: user.id,
+                email: user.email!,
                 full_name: userProfile.full_name,
                 risk_tolerance: userProfile.risk_tolerance,
                 investment_goals: userProfile.investment_goals,
@@ -197,13 +199,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           // Still set user state even if profile creation fails
           setState({
             user: {
-              id: data.user.id,
-              email: data.user.email!,
+              id: user.id,
+              email: user.email!,
               full_name: credentials.full_name,
               risk_tolerance: 'moderate',
               investment_goals: [],
-              created_at: data.user.created_at,
-              updated_at: data.user.updated_at
+              created_at: user.created_at,
+              updated_at: user.updated_at
             },
             loading: false,
             error: null

@@ -61,10 +61,13 @@ export const PortfolioAllocation: React.FC<PortfolioAllocationProps> = ({ data }
           },
           generateLabels: (chart) => {
             const datasets = chart.data.datasets[0]
+            const backgroundColor = datasets.backgroundColor as string[]
+            const borderColor = datasets.borderColor as string[]
+            
             return chart.data.labels!.map((label, index) => ({
               text: `${label} (${data[index].percentage}%)`,
-              fillStyle: datasets.backgroundColor![index] as string,
-              strokeStyle: datasets.borderColor![index] as string,
+              fillStyle: backgroundColor[index] || colors[index],
+              strokeStyle: borderColor[index] || colors[index] + '80',
               lineWidth: 2,
               pointStyle: 'circle',
               hidden: false,

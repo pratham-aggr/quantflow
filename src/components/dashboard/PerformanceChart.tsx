@@ -112,7 +112,6 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({ data, timeRa
         display: true,
         grid: {
           color: '#E5E7EB',
-          drawBorder: false,
         },
         ticks: {
           color: '#6B7280',

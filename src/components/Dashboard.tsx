@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePortfolio } from '../contexts/PortfolioContext'
 import { Navigation } from './Navigation'
@@ -11,19 +11,17 @@ import { SkeletonCard, SkeletonTable } from './Skeleton'
 import { useToast } from './Toast'
 import { 
   TrendingUp, 
-  TrendingDown, 
   DollarSign, 
   Shield, 
   PieChart, 
   BarChart3,
   Activity,
-  Calendar,
   RefreshCw
 } from 'lucide-react'
 
 export const Dashboard: React.FC = () => {
   const { user } = useAuth()
-  const { portfolios, currentPortfolio, loading, error, refreshPortfolios } = usePortfolio()
+  const { currentPortfolio, loading, error, refreshPortfolios } = usePortfolio()
   const { info } = useToast()
   const [timeRange, setTimeRange] = useState<'1D' | '1W' | '1M' | '1Y'>('1M')
   const [isRefreshing, setIsRefreshing] = useState(false)

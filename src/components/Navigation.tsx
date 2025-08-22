@@ -155,48 +155,49 @@ export const Navigation: React.FC = () => {
         leave="transition ease-in duration-75"
         leaveFrom="transform opacity-100 scale-100"
         leaveTo="transform opacity-0 scale-95"
-        className="md:hidden"
       >
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-          {navigation.map((item) => {
-            const isActive = location.pathname === item.href
-            return (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
-                  isActive
-                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
-                }`}
-                onClick={() => setMobileMenuOpen(false)}
+        <div className="md:hidden">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    isActive
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  }`}
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              )
+            })}
+            
+            {/* Mobile user info */}
+            <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 mt-4">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                  <span className="text-white font-medium text-sm">
+                    {user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
+                  </span>
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {user?.full_name || user?.email}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
               >
-                {item.name}
-              </Link>
-            )
-          })}
-          
-          {/* Mobile user info */}
-          <div className="px-3 py-2 border-t border-gray-200 dark:border-gray-700 mt-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                <span className="text-white font-medium text-sm">
-                  {user?.full_name?.charAt(0) || user?.email?.charAt(0) || 'U'}
-                </span>
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {user?.full_name || user?.email}
-                </p>
-              </div>
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </button>
             </div>
-            <button
-              onClick={handleLogout}
-              className="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Sign out
-            </button>
           </div>
         </div>
       </Transition>

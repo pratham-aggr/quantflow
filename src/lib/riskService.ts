@@ -202,10 +202,10 @@ class RiskService {
 
   async calculateRiskScore(request: RiskRequest): Promise<RiskScore> {
     const cacheKey = this.getCacheKey('/api/risk/score', request)
-    const cached = this.getCachedData(cacheKey)
+    const cached = this.getCachedData<RiskScore>(cacheKey)
     if (cached) return cached
 
-    const data = await this.makeRequest('/api/risk/score', {
+    const data = await this.makeRequest<RiskScore>('/api/risk/score', {
       method: 'POST',
       body: JSON.stringify({
         holdings: request.holdings,
@@ -219,10 +219,10 @@ class RiskService {
 
   async checkRiskAlerts(request: RiskRequest): Promise<RiskAlert[]> {
     const cacheKey = this.getCacheKey('/api/risk/alerts', request)
-    const cached = this.getCachedData(cacheKey)
+    const cached = this.getCachedData<RiskAlert[]>(cacheKey)
     if (cached) return cached
 
-    const data = await this.makeRequest('/api/risk/alerts', {
+    const data = await this.makeRequest<RiskAlert[]>('/api/risk/alerts', {
       method: 'POST',
       body: JSON.stringify({
         holdings: request.holdings,
