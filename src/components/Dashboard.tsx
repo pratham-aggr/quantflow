@@ -31,18 +31,18 @@ export const Dashboard: React.FC = () => {
     if (!currentPortfolio?.holdings || currentPortfolio.holdings.length === 0) {
       // Return sample data for testing if no holdings
       return {
-        totalValue: 125000,
-        dailyPnL: 1250,
+        totalValue: 125000.00,
+        dailyPnL: 1250.00,
         dailyPnLPercent: 1.01,
-        totalPnL: 15000,
+        totalPnL: 15000.00,
         totalPnLPercent: 13.64,
-        riskScore: 65,
+        riskScore: 65.00,
         allocation: [
-          { sector: 'Technology', value: 45000, percentage: 36 },
-          { sector: 'Healthcare', value: 30000, percentage: 24 },
-          { sector: 'Finance', value: 25000, percentage: 20 },
-          { sector: 'Consumer', value: 15000, percentage: 12 },
-          { sector: 'Energy', value: 10000, percentage: 8 }
+          { sector: 'Technology', value: 45000.00, percentage: 36.00 },
+          { sector: 'Healthcare', value: 30000.00, percentage: 24.00 },
+          { sector: 'Finance', value: 25000.00, percentage: 20.00 },
+          { sector: 'Consumer', value: 15000.00, percentage: 12.00 },
+          { sector: 'Energy', value: 10000.00, percentage: 8.00 }
         ],
         performance: {
           '1D': [120000, 121000, 122500, 123000, 124500, 125000],
@@ -58,7 +58,7 @@ export const Dashboard: React.FC = () => {
     // Add sample current prices if missing
     const holdingsWithPrices = holdings.map(holding => ({
       ...holding,
-      current_price: holding.current_price || holding.avg_price * (1 + Math.random() * 0.2 - 0.1), // ±10% variation
+      current_price: holding.current_price || Math.round(holding.avg_price * (1 + Math.random() * 0.2 - 0.1) * 100) / 100, // ±10% variation, rounded to 2 decimals
       sector: holding.sector || ['Technology', 'Healthcare', 'Finance', 'Consumer', 'Energy'][Math.floor(Math.random() * 5)]
     }))
     
@@ -96,13 +96,17 @@ export const Dashboard: React.FC = () => {
     }
 
     return {
-      totalValue,
-      dailyPnL: totalPnL * 0.1, // Simplified daily P&L calculation
-      dailyPnLPercent: totalPnLPercent * 0.1,
-      totalPnL,
-      totalPnLPercent,
-      riskScore: Math.min(100, Math.max(0, 50 + (totalPnLPercent / 2))), // Simplified risk score
-      allocation,
+      totalValue: Math.round(totalValue * 100) / 100,
+      dailyPnL: Math.round(totalPnL * 0.1 * 100) / 100, // Simplified daily P&L calculation
+      dailyPnLPercent: Math.round(totalPnLPercent * 0.1 * 100) / 100,
+      totalPnL: Math.round(totalPnL * 100) / 100,
+      totalPnLPercent: Math.round(totalPnLPercent * 100) / 100,
+      riskScore: Math.round(Math.min(100, Math.max(0, 50 + (totalPnLPercent / 2))) * 100) / 100, // Simplified risk score
+      allocation: allocation.map(item => ({
+        ...item,
+        value: Math.round(item.value * 100) / 100,
+        percentage: Math.round(item.percentage * 100) / 100
+      })),
       performance
     }
   }

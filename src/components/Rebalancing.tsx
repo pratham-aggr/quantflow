@@ -357,7 +357,7 @@ export const Rebalancing: React.FC = () => {
                             {targetPct.toFixed(1)}% target
                           </div>
                           <div className={`text-xs ${driftColor}`}>
-                            {drift > 0 ? '+' : ''}{drift.toFixed(1)}% drift
+                            {drift > 0 ? '+' : ''}{drift.toFixed(2)}% drift
                           </div>
                         </div>
                       </div>
@@ -371,8 +371,8 @@ export const Rebalancing: React.FC = () => {
                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
                       />
                       <div className="flex justify-between text-xs text-gray-400 mt-1">
-                        <span>Current: {currentPct.toFixed(1)}%</span>
-                        <span>Target: {targetPct.toFixed(1)}%</span>
+                        <span>Current: {currentPct.toFixed(2)}%</span>
+                        <span>Target: {targetPct.toFixed(2)}%</span>
                       </div>
                     </div>
                   )
@@ -400,7 +400,7 @@ export const Rebalancing: React.FC = () => {
                           realTimeTotalDrift > 10 ? 'text-red-600' : 
                           realTimeTotalDrift > 5 ? 'text-yellow-600' : 'text-green-600'
                         }`}>
-                          {realTimeTotalDrift.toFixed(1)}%
+                          {realTimeTotalDrift.toFixed(2)}%
                         </span>
                       </div>
                       <div>
@@ -450,7 +450,7 @@ export const Rebalancing: React.FC = () => {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Analysis Summary</h3>
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{analysis.total_drift.toFixed(1)}%</div>
+                      <div className="text-2xl font-bold text-gray-900">{analysis.total_drift.toFixed(2)}%</div>
                       <div className="text-sm text-gray-500">Total Drift</div>
                     </div>
                     <div className="text-center">
