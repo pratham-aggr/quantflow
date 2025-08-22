@@ -6,6 +6,7 @@ import { PortfolioProvider } from './contexts/PortfolioContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
 import { Dashboard } from './components/Dashboard';
+import { EnhancedDashboard } from './components/EnhancedDashboard';
 import { ProfilePage } from './components/ProfilePage';
 import { AuthPage } from './components/AuthPage';
 import { ResetPasswordForm } from './components/ResetPasswordForm';
@@ -136,7 +137,7 @@ function App() {
                     path="/dashboard" 
                     element={
                       <ProtectedRoute>
-                        <Dashboard />
+                        <EnhancedDashboard />
                       </ProtectedRoute>
                     } 
                   />
