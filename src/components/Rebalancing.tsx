@@ -82,7 +82,7 @@ export const Rebalancing: React.FC = () => {
       })
       setTargetAllocation(target)
     }
-  }, [currentPortfolio?.holdings, targetAllocation])
+  }, [currentPortfolio?.holdings]) // Removed targetAllocation from dependencies
 
   const handleAnalyzeRebalancing = async () => {
     if (!currentPortfolio?.holdings) {
@@ -412,6 +412,12 @@ export const Rebalancing: React.FC = () => {
                           {realTimeRebalancingScore.toFixed(0)}/100
                         </span>
                       </div>
+                    </div>
+                    {/* Debug info */}
+                    <div className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-200">
+                      <div>Current: {JSON.stringify(currentAllocation)}</div>
+                      <div>Target: {JSON.stringify(targetAllocation)}</div>
+                      <div>Drift: {JSON.stringify(realTimeDrift)}</div>
                     </div>
                   </div>
                 </div>
