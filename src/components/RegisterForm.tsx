@@ -3,8 +3,9 @@ import { useForm } from 'react-hook-form'
 import { useAuth } from '../contexts/AuthContext'
 import { registrationService } from '../lib/registrationService'
 import { FormInput } from './FormInput'
-import { LoadingSpinner } from './LoadingSpinner'
 import { ErrorMessage } from './ErrorMessage'
+import { PrimaryButton } from './Button'
+import { useToast } from './Toast'
 
 interface RegisterFormData {
   full_name: string
@@ -19,6 +20,7 @@ interface RegisterFormProps {
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   const { register: registerUser } = useAuth()
+  const { success, error: showError } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -56,12 +58,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           password: data.password,
           full_name: data.full_name
         })
+        
+        // Show success toast
+        success('Account created!', 'Welcome to QuantFlow! Your account has been successfully created.')
       } else {
-        setSubmitError(result.error || 'Registration failed. Please try again.')
+        const errorMessage = result.error || 'Registration failed. Please try again.'
+        setSubmitError(errorMessage)
+        showError('Registration Failed', errorMessage)
       }
     } catch (error) {
       console.error('❌ Registration error:', error)
-      setSubmitError('Registration failed. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Registration failed. Please try again.'
+      setSubmitError(errorMessage)
+      showError('Registration Failed', errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -89,6 +98,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           placeholder="Enter your full name"
           required
           error={errors.full_name?.message}
+          disabled={isSubmitting}
           {...register('full_name', {
             required: 'Full name is required',
             minLength: {
@@ -104,6 +114,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           placeholder="Enter your email"
           required
           error={errors.email?.message}
+          disabled={isSubmitting}
           {...register('email', {
             required: 'Email is required',
             pattern: {
@@ -119,6 +130,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           placeholder="Create a password"
           required
           error={errors.password?.message}
+          disabled={isSubmitting}
           {...register('password', {
             required: 'Password is required',
             minLength: {
@@ -138,6 +150,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           placeholder="Confirm your password"
           required
           error={errors.confirmPassword?.message}
+          disabled={isSubmitting}
           {...register('confirmPassword', {
             required: 'Please confirm your password',
             validate: value => value === password || 'Passwords do not match'
@@ -151,20 +164,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           </p>
         </div>
 
-        <button
+        <PrimaryButton
           type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          loading={isSubmitting}
+          loadingText="Creating Account..."
+          className="w-full"
         >
-          {isSubmitting ? (
-            <div className="flex items-center justify-center">
-              <LoadingSpinner size="sm" className="mr-2" />
-              Creating Account...
-            </div>
-          ) : (
-            'Create Account'
-          )}
-        </button>
+          Create Account
+        </PrimaryButton>
       </form>
 
       <div className="mt-6 text-center">
@@ -173,7 +180,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) =
           <button
             type="button"
             onClick={onSwitchToLogin}
-            className="text-blue-600 hover:text-blue-500 font-medium"
+            disabled={isSubmitting}
+            className="text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Sign in here
           </button>

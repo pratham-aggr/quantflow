@@ -63,34 +63,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     initializeAuth()
 
-    // Listen for auth state changes (optimized)
+    // Listen for auth state changes (simplified to prevent infinite loops)
     const { data: { subscription } } = auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state changed:', event, session?.user?.id)
       
       try {
         if (event === 'SIGNED_IN' && session?.user) {
-          // Use cached profile data if available
-          const sessionData = await loginService.getCurrentSession()
-          if (sessionData?.user) {
-            setState({
-              user: sessionData.user,
-              loading: false,
-              error: null
-            })
-          }
+          // Don't call getCurrentSession again - use the session data directly
+          // The login function already handles setting the user state
+          console.log('User signed in, state will be updated by login function')
         } else if (event === 'SIGNED_OUT') {
           console.log('Auth state change: SIGNED_OUT detected')
           loginService.clearUserCache() // Clear cache on sign out
           setState({ user: null, loading: false, error: null })
         } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          // Handle token refresh (use cached data when possible)
-          const sessionData = await loginService.getCurrentSession()
-          if (sessionData?.user) {
-            setState(prev => ({
-              ...prev,
-              user: sessionData.user
-            }))
-          }
+          // Only update if we don't already have the user
+          setState(prev => {
+            if (!prev.user || prev.user.id !== session.user.id) {
+              return {
+                ...prev,
+                user: {
+                  id: session.user.id,
+                  email: session.user.email!,
+                  full_name: prev.user?.full_name || (session.user as any).user_metadata?.full_name,
+                  risk_tolerance: prev.user?.risk_tolerance || 'moderate',
+                  investment_goals: prev.user?.investment_goals || [],
+                  created_at: prev.user?.created_at || session.user.created_at,
+                  updated_at: prev.user?.updated_at || session.user.updated_at
+                }
+              }
+            }
+            return prev
+          })
         }
       } catch (error) {
         console.error('Error handling auth state change:', error)
@@ -105,11 +109,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (credentials: LoginCredentials) => {
     setState(prev => ({ ...prev, loading: true, error: null }))
     
+    // Add a timeout to prevent infinite loading
+    const loginTimeout = setTimeout(() => {
+      console.log('🛑 Login timeout - forcing loading to false')
+      setState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: 'Login timed out. Please try again.' 
+      }))
+    }, 10000) // 10 second timeout
+    
     try {
       const result = await loginService.loginUser({
         email: credentials.email,
         password: credentials.password
       })
+      
+      clearTimeout(loginTimeout) // Clear timeout if login succeeds
       
       if (result.success && result.user) {
         setState({
@@ -126,6 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     } catch (error) {
       console.error('Login error:', error)
+      clearTimeout(loginTimeout) // Clear timeout if there's an error
       setState(prev => ({ 
         ...prev, 
         loading: false, 

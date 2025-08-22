@@ -1,10 +1,10 @@
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../contexts/AuthContext'
-import { loginService } from '../lib/loginService'
 import { FormInput } from './FormInput'
-import { LoadingSpinner } from './LoadingSpinner'
 import { ErrorMessage } from './ErrorMessage'
+import { PrimaryButton } from './Button'
+import { useToast } from './Toast'
 
 interface LoginFormData {
   email: string
@@ -18,6 +18,7 @@ interface LoginFormProps {
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForgotPassword }) => {
   const { login } = useAuth()
+  const { success, error: showError } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [loginStep, setLoginStep] = useState<'idle' | 'validating' | 'authenticating' | 'loading-profile'>('idle')
@@ -37,22 +38,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
       // Step 1: Quick validation feedback
       setLoginStep('authenticating')
       
-      // Use the optimized login service with enhanced validation and error handling
-      const result = await loginService.loginUser({
-        email: data.email,
-        password: data.password
-      })
-
-      if (result.success) {
-        setLoginStep('loading-profile')
-        // If login is successful, use the auth context to handle the session
-        await login(data)
-      } else {
-        setSubmitError(result.error || 'Login failed. Please check your credentials and try again.')
-      }
+      // Use the auth context login function which handles everything
+      await login(data)
+      
+      // If we get here, login was successful
+      setLoginStep('loading-profile')
+      
+      // Show success toast
+      success('Welcome back!', 'You have been successfully signed in.')
     } catch (error) {
       console.error('Login error:', error)
-      setSubmitError('Login failed. Please check your credentials and try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Login failed. Please check your credentials and try again.'
+      setSubmitError(errorMessage)
+      showError('Login Failed', errorMessage)
     } finally {
       setIsSubmitting(false)
       setLoginStep('idle')
@@ -125,26 +123,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
             type="button"
             onClick={onForgotPassword}
             disabled={isSubmitting}
-            className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Forgot your password?
           </button>
         </div>
 
-        <button
+        <PrimaryButton
           type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          loading={isSubmitting}
+          loadingText={getLoadingText()}
+          className="w-full"
         >
-          {isSubmitting ? (
-            <div className="flex items-center justify-center">
-              <LoadingSpinner size="sm" className="mr-2" />
-              {getLoadingText()}
-            </div>
-          ) : (
-            'Sign In'
-          )}
-        </button>
+          Sign In
+        </PrimaryButton>
       </form>
 
       <div className="mt-6 text-center">
@@ -154,7 +146,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
             type="button"
             onClick={onSwitchToRegister}
             disabled={isSubmitting}
-            className="text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Sign up here
           </button>

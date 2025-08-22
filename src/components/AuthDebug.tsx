@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { performanceMonitor } from '../lib/performance'
 
 export const AuthDebug: React.FC = () => {
-  const { user, loading, error } = useAuth()
+  const { user, loading, error, forceResetAuth } = useAuth()
   const [showDebug, setShowDebug] = useState(false)
   const [metrics, setMetrics] = useState<any[]>([])
 
@@ -56,6 +56,15 @@ export const AuthDebug: React.FC = () => {
               </div>
             ))}
           </div>
+        )}
+        
+        {loading && (
+          <button
+            onClick={forceResetAuth}
+            className="mt-2 px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+          >
+            🔄 Force Reset
+          </button>
         )}
       </div>
     </div>

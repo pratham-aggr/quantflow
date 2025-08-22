@@ -2,8 +2,9 @@ import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useAuth } from '../contexts/AuthContext'
 import { FormInput } from './FormInput'
-import { LoadingSpinner } from './LoadingSpinner'
 import { ErrorMessage } from './ErrorMessage'
+import { PrimaryButton } from './Button'
+import { useToast } from './Toast'
 
 interface ProfileFormData {
   full_name: string
@@ -29,9 +30,9 @@ const investmentGoalOptions = [
 
 export const ProfileSettings: React.FC = () => {
   const { user, updateProfile } = useAuth()
+  const { success, error: showError } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [submitSuccess, setSubmitSuccess] = useState(false)
 
   const {
     register,
@@ -61,7 +62,6 @@ export const ProfileSettings: React.FC = () => {
   const onSubmit = async (data: ProfileFormData) => {
     setIsSubmitting(true)
     setSubmitError(null)
-    setSubmitSuccess(false)
 
     try {
       await updateProfile({
@@ -69,9 +69,13 @@ export const ProfileSettings: React.FC = () => {
         risk_tolerance: data.risk_tolerance,
         investment_goals: data.investment_goals
       })
-      setSubmitSuccess(true)
+      
+      // Show success toast
+      success('Profile Updated', 'Your profile settings have been successfully updated.')
     } catch (error) {
-      setSubmitError('Failed to update profile. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile. Please try again.'
+      setSubmitError(errorMessage)
+      showError('Update Failed', errorMessage)
     } finally {
       setIsSubmitting(false)
     }
@@ -93,23 +97,6 @@ export const ProfileSettings: React.FC = () => {
           />
         )}
 
-        {submitSuccess && (
-          <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-md">
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm font-medium text-green-800">
-                  Profile updated successfully!
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Full Name */}
           <FormInput
@@ -118,6 +105,7 @@ export const ProfileSettings: React.FC = () => {
             placeholder="Enter your full name"
             required
             error={errors.full_name?.message}
+            disabled={isSubmitting}
             {...register('full_name', {
               required: 'Full name is required',
               minLength: {
@@ -139,11 +127,12 @@ export const ProfileSettings: React.FC = () => {
                     type="radio"
                     value={option.value}
                     {...register('risk_tolerance', { required: 'Please select a risk tolerance level' })}
-                    className="mt-1 h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                    disabled={isSubmitting}
+                    className="h-4 w-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-0.5"
                   />
                   <div className="ml-3">
-                    <div className="text-sm font-medium text-gray-900">{option.label}</div>
-                    <div className="text-sm text-gray-500">{option.description}</div>
+                    <span className="text-sm font-medium text-gray-900">{option.label}</span>
+                    <p className="text-sm text-gray-500">{option.description}</p>
                   </div>
                 </label>
               ))}
@@ -166,6 +155,7 @@ export const ProfileSettings: React.FC = () => {
                     value={goal.value}
                     checked={selectedGoals?.includes(goal.value) || false}
                     onChange={() => handleGoalToggle(goal.value)}
+                    disabled={isSubmitting}
                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <span className="ml-2 text-sm text-gray-900">{goal.label}</span>
@@ -176,20 +166,13 @@ export const ProfileSettings: React.FC = () => {
 
           {/* Submit Button */}
           <div className="flex justify-end">
-            <button
+            <PrimaryButton
               type="submit"
-              disabled={isSubmitting}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-6 rounded-md transition-colors flex items-center"
+              loading={isSubmitting}
+              loadingText="Updating..."
             >
-              {isSubmitting ? (
-                <>
-                  <LoadingSpinner size="sm" className="mr-2" />
-                  Updating...
-                </>
-              ) : (
-                'Save Changes'
-              )}
-            </button>
+              Save Changes
+            </PrimaryButton>
           </div>
         </form>
       </div>
