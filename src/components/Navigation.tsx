@@ -2,7 +2,8 @@ import React, { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { DarkModeToggle } from './DarkModeToggle'
-import { Menu, X, User, LogOut, Settings } from 'lucide-react'
+import { Menu, X, User, LogOut, Settings, Bell } from 'lucide-react'
+import { NotificationCenter } from './NotificationCenter'
 import { Menu as HeadlessMenu, Transition } from '@headlessui/react'
 
 const navigation = [
@@ -16,6 +17,7 @@ export const Navigation: React.FC = () => {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false)
 
   const handleLogout = async () => {
     try {
@@ -58,6 +60,16 @@ export const Navigation: React.FC = () => {
 
           {/* User Menu and Dark Mode Toggle */}
           <div className="flex items-center space-x-4">
+            {/* Notification Bell */}
+            <button
+              onClick={() => setNotificationCenterOpen(true)}
+              className="relative p-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors"
+            >
+              <Bell className="h-5 w-5" />
+              {/* Notification badge - you can add unread count here */}
+              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+            </button>
+            
             {/* Dark Mode Toggle */}
             <DarkModeToggle />
             
@@ -202,6 +214,12 @@ export const Navigation: React.FC = () => {
           </div>
         </div>
       </Transition>
+      
+      {/* Notification Center */}
+      <NotificationCenter 
+        isOpen={notificationCenterOpen}
+        onClose={() => setNotificationCenterOpen(false)}
+      />
     </nav>
   )
 }

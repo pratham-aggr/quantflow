@@ -9,6 +9,7 @@ from advanced_risk_engine import AdvancedRiskEngine
 from tax_loss_harvesting import TaxLossHarvestingEngine, TaxSettings
 from advanced_rebalancing import AdvancedRebalancingEngine, RebalancingSettings
 from paper_trading import PaperTradingEngine, BrokerageAPISimulator, OrderSide, OrderType
+from notification_engine import NotificationEngine, NotificationConfig, NotificationType, NotificationPriority, NotificationChannel, AlertRule
 
 # Load environment variables
 load_dotenv()
@@ -25,6 +26,7 @@ tax_loss_engine = TaxLossHarvestingEngine()
 advanced_rebalancing_engine = AdvancedRebalancingEngine()
 paper_trading_engine = PaperTradingEngine()
 brokerage_simulator = BrokerageAPISimulator()
+notification_engine = NotificationEngine()
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -560,6 +562,310 @@ def get_paper_portfolio_summary(portfolio_id):
         return jsonify({
             'success': True,
             **summary
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+# Notification Endpoints
+@app.route('/api/notifications/register', methods=['POST'])
+def register_notification_user():
+    """Register a user for notifications"""
+    try:
+        data = request.get_json()
+        
+        # Convert data to NotificationConfig
+        config = NotificationConfig(
+            user_id=data['userId'],
+            channels=[NotificationChannel[channel.upper()] for channel in data.get('channels', [])],
+            preferences=data.get('preferences', {}),
+            email_settings=data.get('emailSettings'),
+            slack_webhook=data.get('slackWebhook'),
+            discord_webhook=data.get('discordWebhook'),
+            push_tokens=data.get('pushTokens', []),
+            phone_number=data.get('phoneNumber'),
+            custom_webhooks=data.get('customWebhooks', []),
+            alert_thresholds=data.get('alertThresholds', {}),
+            quiet_hours=data.get('quietHours'),
+            enabled=data.get('enabled', True)
+        )
+        
+        notification_engine.register_user(data['userId'], config)
+        
+        return jsonify({
+            'success': True,
+            'message': 'User registered for notifications'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/notifications/unregister/<user_id>', methods=['DELETE'])
+def unregister_notification_user(user_id):
+    """Unregister a user from notifications"""
+    try:
+        notification_engine.unregister_user(user_id)
+        
+        return jsonify({
+            'success': True,
+            'message': 'User unregistered from notifications'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/notifications/config/<user_id>', methods=['PUT'])
+def update_notification_config(user_id):
+    """Update notification configuration for a user"""
+    try:
+        data = request.get_json()
+        
+        # Get existing config
+        config = notification_engine.configs.get(user_id)
+        if not config:
+            return jsonify({
+                'success': False,
+                'error': 'User not registered'
+            }), 404
+        
+        # Update config fields
+        if 'channels' in data:
+            config.channels = [NotificationChannel[channel.upper()] for channel in data['channels']]
+        if 'preferences' in data:
+            config.preferences.update(data['preferences'])
+        if 'emailSettings' in data:
+            config.email_settings = data['emailSettings']
+        if 'slackWebhook' in data:
+            config.slack_webhook = data['slackWebhook']
+        if 'discordWebhook' in data:
+            config.discord_webhook = data['discordWebhook']
+        if 'pushTokens' in data:
+            config.push_tokens = data['pushTokens']
+        if 'phoneNumber' in data:
+            config.phone_number = data['phoneNumber']
+        if 'customWebhooks' in data:
+            config.custom_webhooks = data['customWebhooks']
+        if 'alertThresholds' in data:
+            config.alert_thresholds.update(data['alertThresholds'])
+        if 'quietHours' in data:
+            config.quiet_hours = data['quietHours']
+        if 'enabled' in data:
+            config.enabled = data['enabled']
+        
+        return jsonify({
+            'success': True,
+            'message': 'Configuration updated'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/notifications/history/<user_id>', methods=['GET'])
+def get_notification_history(user_id):
+    """Get notification history for a user"""
+    try:
+        limit = request.args.get('limit', 50, type=int)
+        notifications = notification_engine.get_notification_history(user_id, limit)
+        
+        # Convert to serializable format
+        notifications_data = []
+        for notification in notifications:
+            notifications_data.append({
+                'id': notification.id,
+                'userId': notification.user_id,
+                'type': notification.type.value,
+                'priority': notification.priority.value,
+                'title': notification.title,
+                'message': notification.message,
+                'data': notification.data,
+                'channels': [channel.value for channel in notification.channels],
+                'createdAt': notification.created_at.isoformat(),
+                'sentAt': notification.sent_at.isoformat() if notification.sent_at else None,
+                'readAt': notification.read_at.isoformat() if notification.read_at else None,
+                'expiresAt': notification.expires_at.isoformat() if notification.expires_at else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'notifications': notifications_data
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/notifications/read/<notification_id>', methods=['PUT'])
+def mark_notification_read(notification_id):
+    """Mark a notification as read"""
+    try:
+        notification_engine.mark_notification_read(notification_id)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Notification marked as read'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/notifications/alert-rules', methods=['POST'])
+def create_alert_rule():
+    """Create a new alert rule"""
+    try:
+        data = request.get_json()
+        
+        rule = AlertRule(
+            user_id=data['userId'],
+            name=data['name'],
+            type=NotificationType[data['type'].upper()],
+            conditions=data['conditions'],
+            actions=data['actions'],
+            enabled=data.get('enabled', True)
+        )
+        
+        notification_engine.add_alert_rule(rule)
+        
+        return jsonify({
+            'success': True,
+            'rule': {
+                'id': rule.id,
+                'userId': rule.user_id,
+                'name': rule.name,
+                'type': rule.type.value,
+                'conditions': rule.conditions,
+                'actions': rule.actions,
+                'enabled': rule.enabled,
+                'createdAt': rule.created_at.isoformat()
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/notifications/alert-rules/<user_id>', methods=['GET'])
+def get_alert_rules(user_id):
+    """Get alert rules for a user"""
+    try:
+        rules = []
+        for rule in notification_engine.alert_rules.values():
+            if rule.user_id == user_id:
+                rules.append({
+                    'id': rule.id,
+                    'userId': rule.user_id,
+                    'name': rule.name,
+                    'type': rule.type.value,
+                    'conditions': rule.conditions,
+                    'actions': rule.actions,
+                    'enabled': rule.enabled,
+                    'createdAt': rule.created_at.isoformat()
+                })
+        
+        return jsonify({
+            'success': True,
+            'rules': rules
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/notifications/alert-rules/<rule_id>', methods=['PUT'])
+def update_alert_rule(rule_id):
+    """Update an alert rule"""
+    try:
+        data = request.get_json()
+        
+        rule = notification_engine.alert_rules.get(rule_id)
+        if not rule:
+            return jsonify({
+                'success': False,
+                'error': 'Rule not found'
+            }), 404
+        
+        # Update rule fields
+        if 'name' in data:
+            rule.name = data['name']
+        if 'type' in data:
+            rule.type = NotificationType[data['type'].upper()]
+        if 'conditions' in data:
+            rule.conditions = data['conditions']
+        if 'actions' in data:
+            rule.actions = data['actions']
+        if 'enabled' in data:
+            rule.enabled = data['enabled']
+        
+        return jsonify({
+            'success': True,
+            'message': 'Rule updated'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/notifications/alert-rules/<rule_id>', methods=['DELETE'])
+def delete_alert_rule(rule_id):
+    """Delete an alert rule"""
+    try:
+        notification_engine.remove_alert_rule(rule_id)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Rule deleted'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+@app.route('/api/notifications/test', methods=['POST'])
+def send_test_notification():
+    """Send a test notification"""
+    try:
+        data = request.get_json()
+        
+        from notification_engine import Notification
+        
+        notification = Notification(
+            user_id=data['user_id'],
+            type=NotificationType[data['type'].upper()],
+            priority=NotificationPriority[data.get('priority', 'MEDIUM').upper()],
+            title=data['title'],
+            message=data['message'],
+            channels=[NotificationChannel.EMAIL, NotificationChannel.PUSH]
+        )
+        
+        result = asyncio.run(notification_engine.send_notification(notification))
+        
+        return jsonify({
+            'success': True,
+            'result': result
         })
         
     except Exception as e:
