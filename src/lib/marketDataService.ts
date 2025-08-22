@@ -38,6 +38,50 @@ interface SearchResult {
   }>
 }
 
+interface HistoricalData {
+  symbol: string
+  timestamps: number[]
+  closes: number[]
+  opens: number[]
+  highs: number[]
+  lows: number[]
+  volumes: number[]
+}
+
+interface MarketNews {
+  category: string
+  datetime: number
+  headline: string
+  id: number
+  image: string
+  related: string
+  source: string
+  summary: string
+  url: string
+}
+
+interface CurrencyExchange {
+  base: string
+  target: string
+  rate: number
+  timestamp: number
+}
+
+interface WebSocketMessage {
+  type: 'trade' | 'ping'
+  data?: Array<{
+    s: string  // symbol
+    p: number  // price
+    t: number  // timestamp
+    v: number  // volume
+  }>
+}
+
+interface RealTimeSubscription {
+  symbol: string
+  callback: (data: StockQuote) => void
+}
+
 // Rate limiting configuration for Finnhub Free Plan
 const RATE_LIMIT = {
   callsPerMinute: 60, // Free plan: 60 calls per minute
@@ -166,12 +210,16 @@ class MarketDataService {
   private baseUrl = 'https://finnhub.io/api/v1'
   private rateLimiter = new RateLimiter()
   private cache = new CacheManager()
+  private websocket: WebSocket | null = null
+  private subscriptions = new Map<string, RealTimeSubscription[]>()
+  private reconnectAttempts = 0
+  private maxReconnectAttempts = 5
 
   constructor() {
     this.apiKey = process.env.REACT_APP_FINNHUB_API_KEY || ''
     
     if (!this.apiKey) {
-      throw new Error('Finnhub API key not configured. Please set REACT_APP_FINNHUB_API_KEY environment variable.')
+      console.warn('Finnhub API key not configured. Some features will not be available.')
     }
   }
 
@@ -359,10 +407,325 @@ class MarketDataService {
   isConfigured(): boolean {
     return !!this.apiKey
   }
+
+  // ========== WOW FACTOR ENHANCEMENTS ==========
+
+  // Real-time WebSocket streaming
+  connectWebSocket(): void {
+    if (!this.apiKey) {
+      console.warn('API key not configured, WebSocket connection skipped')
+      return
+    }
+
+    try {
+      this.websocket = new WebSocket(`wss://ws.finnhub.io?token=${this.apiKey}`)
+      
+      this.websocket.onopen = () => {
+        console.log('📡 WebSocket connected for real-time market data')
+        this.reconnectAttempts = 0
+      }
+
+      this.websocket.onmessage = (event) => {
+        try {
+          const message: WebSocketMessage = JSON.parse(event.data)
+          if (message.type === 'trade' && message.data) {
+            this.handleRealtimeData(message.data)
+          }
+        } catch (error) {
+          console.error('Error parsing WebSocket message:', error)
+        }
+      }
+
+      this.websocket.onclose = () => {
+        console.log('📡 WebSocket disconnected')
+        this.attemptReconnect()
+      }
+
+      this.websocket.onerror = (error) => {
+        console.error('WebSocket error:', error)
+      }
+    } catch (error) {
+      console.error('Failed to connect WebSocket:', error)
+    }
+  }
+
+  private attemptReconnect(): void {
+    if (this.reconnectAttempts < this.maxReconnectAttempts) {
+      this.reconnectAttempts++
+      const delay = Math.pow(2, this.reconnectAttempts) * 1000 // Exponential backoff
+      console.log(`🔄 Attempting WebSocket reconnection ${this.reconnectAttempts}/${this.maxReconnectAttempts} in ${delay}ms`)
+      
+      setTimeout(() => {
+        this.connectWebSocket()
+      }, delay)
+    }
+  }
+
+  private handleRealtimeData(trades: Array<{ s: string; p: number; t: number; v: number }>): void {
+    trades.forEach(trade => {
+      const subscriptions = this.subscriptions.get(trade.s)
+      if (subscriptions) {
+        const quote: StockQuote = {
+          symbol: trade.s,
+          price: trade.p,
+          change: 0, // Calculate based on previous close
+          changePercent: 0,
+          high: trade.p,
+          low: trade.p,
+          open: trade.p,
+          previousClose: trade.p,
+          volume: trade.v,
+          timestamp: trade.t
+        }
+
+        subscriptions.forEach(subscription => {
+          subscription.callback(quote)
+        })
+
+        // Update cache with real-time data
+        this.cache.set(`quote_${trade.s}`, quote)
+      }
+    })
+  }
+
+  subscribeToRealTimeUpdates(symbol: string, callback: (data: StockQuote) => void): () => void {
+    const subscription: RealTimeSubscription = { symbol, callback }
+    
+    if (!this.subscriptions.has(symbol)) {
+      this.subscriptions.set(symbol, [])
+      
+      // Subscribe to symbol via WebSocket
+      if (this.websocket?.readyState === WebSocket.OPEN) {
+        this.websocket.send(JSON.stringify({ type: 'subscribe', symbol }))
+      }
+    }
+    
+    this.subscriptions.get(symbol)?.push(subscription)
+
+    // Return unsubscribe function
+    return () => {
+      const subs = this.subscriptions.get(symbol)
+      if (subs) {
+        const index = subs.indexOf(subscription)
+        if (index > -1) {
+          subs.splice(index, 1)
+        }
+        
+        if (subs.length === 0) {
+          this.subscriptions.delete(symbol)
+          // Unsubscribe from WebSocket
+          if (this.websocket?.readyState === WebSocket.OPEN) {
+            this.websocket.send(JSON.stringify({ type: 'unsubscribe', symbol }))
+          }
+        }
+      }
+    }
+  }
+
+  // Historical price data with technical indicators
+  async getHistoricalData(symbol: string, from: Date, to: Date, resolution: 'D' | 'W' | 'M' = 'D'): Promise<HistoricalData | null> {
+    const cacheKey = `historical_${symbol}_${from.getTime()}_${to.getTime()}_${resolution}`
+    const cached = this.cache.get(cacheKey)
+    
+    if (cached) {
+      return cached
+    }
+
+    try {
+      const fromTimestamp = Math.floor(from.getTime() / 1000)
+      const toTimestamp = Math.floor(to.getTime() / 1000)
+      
+      const data = await this.makeRequest<any>('/stock/candle', {
+        symbol: symbol.toUpperCase(),
+        resolution,
+        from: fromTimestamp.toString(),
+        to: toTimestamp.toString()
+      })
+
+      if (data && data.s === 'ok') {
+        const historicalData: HistoricalData = {
+          symbol: symbol.toUpperCase(),
+          timestamps: data.t || [],
+          closes: data.c || [],
+          opens: data.o || [],
+          highs: data.h || [],
+          lows: data.l || [],
+          volumes: data.v || []
+        }
+        
+        this.cache.set(cacheKey, historicalData)
+        return historicalData
+      }
+      
+      return null
+    } catch (error) {
+      console.error(`Failed to fetch historical data for ${symbol}:`, error)
+      return null
+    }
+  }
+
+  // Market news integration
+  async getMarketNews(category: 'general' | 'forex' | 'crypto' | 'merger' = 'general', limit: number = 20): Promise<MarketNews[]> {
+    const cacheKey = `news_${category}_${limit}`
+    const cached = this.cache.get(cacheKey)
+    
+    if (cached) {
+      return cached
+    }
+
+    try {
+      const data = await this.makeRequest<MarketNews[]>('/news', {
+        category,
+        minId: '0'
+      })
+
+      if (data && Array.isArray(data)) {
+        const news = data.slice(0, limit)
+        this.cache.set(cacheKey, news)
+        return news
+      }
+      
+      return []
+    } catch (error) {
+      console.error(`Failed to fetch market news:`, error)
+      return []
+    }
+  }
+
+  // Company-specific news
+  async getCompanyNews(symbol: string, from: Date, to: Date): Promise<MarketNews[]> {
+    const cacheKey = `company_news_${symbol}_${from.getTime()}_${to.getTime()}`
+    const cached = this.cache.get(cacheKey)
+    
+    if (cached) {
+      return cached
+    }
+
+    try {
+      const fromStr = from.toISOString().split('T')[0]
+      const toStr = to.toISOString().split('T')[0]
+      
+      const data = await this.makeRequest<MarketNews[]>('/company-news', {
+        symbol: symbol.toUpperCase(),
+        from: fromStr,
+        to: toStr
+      })
+
+      if (data && Array.isArray(data)) {
+        this.cache.set(cacheKey, data)
+        return data
+      }
+      
+      return []
+    } catch (error) {
+      console.error(`Failed to fetch company news for ${symbol}:`, error)
+      return []
+    }
+  }
+
+  // Currency conversion for international stocks
+  async getCurrencyExchange(base: string, target: string): Promise<CurrencyExchange | null> {
+    const cacheKey = `forex_${base}_${target}`
+    const cached = this.cache.get(cacheKey)
+    
+    if (cached) {
+      return cached
+    }
+
+    try {
+      const data = await this.makeRequest<any>('/forex/rates', {
+        base: base.toUpperCase()
+      })
+
+      if (data && data.quote && data.quote[target.toUpperCase()]) {
+        const exchange: CurrencyExchange = {
+          base: base.toUpperCase(),
+          target: target.toUpperCase(),
+          rate: data.quote[target.toUpperCase()],
+          timestamp: Date.now()
+        }
+        
+        this.cache.set(cacheKey, exchange)
+        return exchange
+      }
+      
+      return null
+    } catch (error) {
+      console.error(`Failed to fetch currency exchange ${base}/${target}:`, error)
+      return null
+    }
+  }
+
+  // Convert price to different currency
+  async convertPrice(amount: number, fromCurrency: string, toCurrency: string): Promise<number | null> {
+    if (fromCurrency === toCurrency) return amount
+
+    const exchange = await this.getCurrencyExchange(fromCurrency, toCurrency)
+    if (exchange) {
+      return amount * exchange.rate
+    }
+    
+    return null
+  }
+
+  // Technical indicators calculation
+  calculateMovingAverage(prices: number[], period: number): number[] {
+    const ma: number[] = []
+    
+    for (let i = period - 1; i < prices.length; i++) {
+      const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0)
+      ma.push(sum / period)
+    }
+    
+    return ma
+  }
+
+  calculateRSI(prices: number[], period: number = 14): number[] {
+    const rsi: number[] = []
+    const gains: number[] = []
+    const losses: number[] = []
+
+    // Calculate price changes
+    for (let i = 1; i < prices.length; i++) {
+      const change = prices[i] - prices[i - 1]
+      gains.push(change > 0 ? change : 0)
+      losses.push(change < 0 ? Math.abs(change) : 0)
+    }
+
+    // Calculate RSI
+    for (let i = period - 1; i < gains.length; i++) {
+      const avgGain = gains.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period
+      const avgLoss = losses.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0) / period
+      
+      const rs = avgGain / avgLoss
+      const rsiValue = 100 - (100 / (1 + rs))
+      rsi.push(rsiValue)
+    }
+
+    return rsi
+  }
+
+  // Disconnect WebSocket when service is destroyed
+  disconnect(): void {
+    if (this.websocket) {
+      this.websocket.close()
+      this.websocket = null
+    }
+    this.subscriptions.clear()
+  }
 }
 
 // Export singleton instance
 export const marketDataService = new MarketDataService()
 
 // Export types
-export type { StockQuote, CompanyProfile, SearchResult }
+export type { 
+  StockQuote, 
+  CompanyProfile, 
+  SearchResult, 
+  HistoricalData, 
+  MarketNews, 
+  CurrencyExchange,
+  WebSocketMessage,
+  RealTimeSubscription
+}
