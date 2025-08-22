@@ -57,6 +57,21 @@ export const Rebalancing: React.FC = () => {
     return allocation
   }, [currentPortfolio?.holdings])
 
+  // Calculate real-time drift analysis
+  const realTimeDrift = useMemo(() => {
+    return rebalancingService.calculateDrift(currentAllocation, targetAllocation)
+  }, [currentAllocation, targetAllocation])
+
+  // Calculate real-time total drift
+  const realTimeTotalDrift = useMemo(() => {
+    return rebalancingService.calculateTotalDrift(realTimeDrift)
+  }, [realTimeDrift])
+
+  // Calculate real-time rebalancing score
+  const realTimeRebalancingScore = useMemo(() => {
+    return Math.min(100, realTimeTotalDrift * 2) // Scale drift to 0-100
+  }, [realTimeTotalDrift])
+
   // Initialize target allocation when portfolio loads
   useEffect(() => {
     if (currentPortfolio?.holdings && Object.keys(targetAllocation).length === 0) {
@@ -326,27 +341,44 @@ export const Rebalancing: React.FC = () => {
                 </div>
               </div>
               <div className="p-6">
-                {currentPortfolio.holdings.map(holding => (
-                  <div key={holding.symbol} className="mb-4 last:mb-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-900">{holding.symbol}</span>
-                      <span className="text-sm text-gray-500">
-                        {targetAllocation[holding.symbol]?.toFixed(1) || 0}%
-                      </span>
+                {currentPortfolio.holdings.map(holding => {
+                  const currentPct = currentAllocation[holding.symbol] || 0
+                  const targetPct = targetAllocation[holding.symbol] || 0
+                  const drift = realTimeDrift[holding.symbol] || 0
+                  const driftColor = Math.abs(drift) > 5 ? 'text-red-600' : 
+                                   Math.abs(drift) > 2 ? 'text-yellow-600' : 'text-green-600'
+                  
+                  return (
+                    <div key={holding.symbol} className="mb-4 last:mb-0">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-900">{holding.symbol}</span>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-500">
+                            {targetPct.toFixed(1)}% target
+                          </div>
+                          <div className={`text-xs ${driftColor}`}>
+                            {drift > 0 ? '+' : ''}{drift.toFixed(1)}% drift
+                          </div>
+                        </div>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        step="0.1"
+                        value={targetPct}
+                        onChange={(e) => handleTargetChange(holding.symbol, parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                      />
+                      <div className="flex justify-between text-xs text-gray-400 mt-1">
+                        <span>Current: {currentPct.toFixed(1)}%</span>
+                        <span>Target: {targetPct.toFixed(1)}%</span>
+                      </div>
                     </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      step="0.1"
-                      value={targetAllocation[holding.symbol] || 0}
-                      onChange={(e) => handleTargetChange(holding.symbol, parseFloat(e.target.value))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
-                    />
-                  </div>
-                ))}
+                  )
+                })}
                 
-                <div className="mt-6 pt-4 border-t border-gray-200">
+                <div className="mt-6 pt-4 border-t border-gray-200 space-y-3">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Total:</span>
                     <span className={`font-medium ${
@@ -356,6 +388,31 @@ export const Rebalancing: React.FC = () => {
                     }`}>
                       {Object.values(targetAllocation).reduce((sum, val) => sum + val, 0).toFixed(1)}%
                     </span>
+                  </div>
+                  
+                  {/* Real-time drift summary */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="text-xs text-gray-500 mb-2">Real-time Drift Analysis</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-gray-600">Total Drift:</span>
+                        <span className={`ml-1 font-medium ${
+                          realTimeTotalDrift > 10 ? 'text-red-600' : 
+                          realTimeTotalDrift > 5 ? 'text-yellow-600' : 'text-green-600'
+                        }`}>
+                          {realTimeTotalDrift.toFixed(1)}%
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-600">Score:</span>
+                        <span className={`ml-1 font-medium ${
+                          realTimeRebalancingScore > 50 ? 'text-red-600' : 
+                          realTimeRebalancingScore > 20 ? 'text-yellow-600' : 'text-green-600'
+                        }`}>
+                          {realTimeRebalancingScore.toFixed(0)}/100
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
