@@ -15,7 +15,9 @@ export interface Holding {
   symbol: string
   quantity: number
   avg_price: number
+  current_price?: number
   company_name?: string
+  sector?: string
   created_at: string
   updated_at?: string
 }
@@ -32,7 +34,7 @@ export interface Transaction {
 }
 
 export interface CreatePortfolioData { name: string; cash_balance?: number }
-export interface CreateHoldingData { portfolio_id: string; symbol: string; quantity: number; avg_price: number; company_name?: string }
+export interface CreateHoldingData { portfolio_id: string; symbol: string; quantity: number; avg_price: number; current_price?: number; company_name?: string; sector?: string }
 export interface CreateTransactionData { portfolio_id: string; symbol: string; type: 'BUY' | 'SELL'; quantity: number; price: number; date?: string }
 
 export interface PortfolioWithHoldings extends Portfolio { holdings: Holding[] }
@@ -58,7 +60,9 @@ export const HoldingSchema = z.object({
   symbol: z.string().min(1, 'Stock symbol is required').max(10, 'Stock symbol must be less than 10 characters').toUpperCase(),
   quantity: z.number().int().positive('Quantity must be positive'),
   avg_price: z.number().positive('Average price must be positive'),
+  current_price: z.number().positive().optional(),
   company_name: z.string().optional(),
+  sector: z.string().optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime().optional()
 })
@@ -68,7 +72,9 @@ export const CreateHoldingSchema = z.object({
   symbol: z.string().min(1, 'Stock symbol is required').max(10, 'Stock symbol must be less than 10 characters').toUpperCase(),
   quantity: z.number().int().positive('Quantity must be positive'),
   avg_price: z.number().positive('Average price must be positive'),
-  company_name: z.string().optional()
+  current_price: z.number().positive().optional(),
+  company_name: z.string().optional(),
+  sector: z.string().optional()
 })
 
 export const TransactionSchema = z.object({

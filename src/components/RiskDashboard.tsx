@@ -56,9 +56,7 @@ export const RiskDashboard: React.FC = () => {
         setAlerts(riskAlerts)
       } catch (err) {
         console.error('Error loading risk data:', err)
-        // For now, create mock data if the risk service fails
-        setRiskAnalysis(createMockRiskAnalysis())
-        setAlerts(createMockAlerts())
+        setError('Failed to load risk analysis data')
       } finally {
         setLoading(false)
       }
@@ -67,54 +65,7 @@ export const RiskDashboard: React.FC = () => {
     loadRiskData()
   }, [currentPortfolio, user])
 
-  // Mock data creation functions
-  const createMockRiskAnalysis = (): PortfolioRiskAnalysis => ({
-    portfolio_metrics: {
-      volatility: 12.5,
-      beta: 0.95,
-      correlation: 0.75,
-      r_squared: 0.56,
-      sharpe_ratio: 1.8,
-      max_drawdown: -8.2,
-      concentration_risk: 15.3,
-      diversification_score: 0.72,
-      var_95: -3.2,
-      var_99: -4.8
-    },
-    risk_score: {
-      score: 65,
-      level: 'Medium',
-      description: 'Moderate risk portfolio with balanced exposure',
-      components: {
-        volatility_score: 7.2,
-        beta_score: 6.8,
-        sharpe_score: 8.1,
-        concentration_score: 5.9,
-        var_score: 6.5
-      }
-    },
-    risk_tolerance: user?.risk_tolerance || 'moderate',
-    alerts: [],
-    holdings_count: currentPortfolio?.holdings.length || 0,
-    total_value: currentPortfolio?.holdings.reduce((sum, h) => sum + (h.quantity * h.avg_price), 0) || 0
-  })
 
-  const createMockAlerts = (): RiskAlert[] => [
-    {
-      type: 'concentration_warning',
-      severity: 'warning',
-      message: 'Portfolio has high concentration in Technology sector (36%)',
-      current_value: 36,
-      threshold: 30
-    },
-    {
-      type: 'volatility_alert',
-      severity: 'info',
-      message: 'Portfolio volatility is within acceptable range for your risk tolerance',
-      current_value: 12.5,
-      threshold: 15
-    }
-  ]
 
   if (loading) {
     return (

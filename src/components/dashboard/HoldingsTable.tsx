@@ -14,65 +14,15 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ portfolio }) => {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [searchTerm, setSearchTerm] = useState('')
 
-  // Mock holdings data - replace with real portfolio data
-  const mockHoldings: Holding[] = [
-    {
-      id: '1',
-      portfolio_id: 'portfolio-1',
-      symbol: 'AAPL',
-      quantity: 100,
-      avg_price: 150.00,
-      company_name: 'Apple Inc.',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '2',
-      portfolio_id: 'portfolio-1',
-      symbol: 'MSFT',
-      quantity: 50,
-      avg_price: 280.00,
-      company_name: 'Microsoft Corporation',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '3',
-      portfolio_id: 'portfolio-1',
-      symbol: 'JNJ',
-      quantity: 75,
-      avg_price: 160.00,
-      company_name: 'Johnson & Johnson',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '4',
-      portfolio_id: 'portfolio-1',
-      symbol: 'JPM',
-      quantity: 60,
-      avg_price: 140.00,
-      company_name: 'JPMorgan Chase & Co.',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    },
-    {
-      id: '5',
-      portfolio_id: 'portfolio-1',
-      symbol: 'KO',
-      quantity: 120,
-      avg_price: 55.00,
-      company_name: 'The Coca-Cola Company',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    }
-  ]
-
-  // Add current_price to holdings (this would come from real-time data)
-  const holdingsWithCurrentPrice = (portfolio?.holdings || mockHoldings).map(holding => ({
-    ...holding,
-    current_price: getCurrentPrice(holding.symbol) // Mock function - replace with real API
-  }))
+  // Use real portfolio holdings data
+  const holdingsWithCurrentPrice = useMemo(() => {
+    if (!portfolio?.holdings) return []
+    
+    return portfolio.holdings.map(holding => ({
+      ...holding,
+      current_price: holding.current_price || holding.avg_price // Use current_price if available, otherwise fallback to avg_price
+    }))
+  }, [portfolio?.holdings])
 
   const filteredAndSortedHoldings = useMemo(() => {
     let filtered = holdingsWithCurrentPrice.filter(holding =>
@@ -296,19 +246,4 @@ export const HoldingsTable: React.FC<HoldingsTableProps> = ({ portfolio }) => {
   )
 }
 
-// Mock function to get current price - replace with real API call
-function getCurrentPrice(symbol: string): number {
-  const mockPrices: { [key: string]: number } = {
-    'AAPL': 175.50,
-    'MSFT': 320.75,
-    'JNJ': 155.25,
-    'JPM': 165.80,
-    'KO': 58.90,
-    'GOOGL': 2750.00,
-    'AMZN': 3300.00,
-    'TSLA': 850.00,
-    'NVDA': 450.00,
-    'META': 350.00
-  }
-  return mockPrices[symbol] || 100.00
-}
+
