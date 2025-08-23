@@ -3,7 +3,7 @@ services:
     name: quantflow-risk-engine
     env: python
     pythonVersion: 3.9.18
-    rootDir: risk-engine
+    rootDir: risk-engine       # Important: points Render to your backend folder
     buildCommand: pip install --no-cache-dir --prefer-binary -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
     healthCheckPath: /health
