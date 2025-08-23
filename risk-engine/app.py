@@ -15,7 +15,9 @@ from notification_engine import NotificationEngine, NotificationConfig, Notifica
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, origins=['http://localhost:3000', 'http://localhost:4000', 'http://localhost:5001'])
+# Get allowed origins from environment or use defaults
+allowed_origins = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:4000,http://localhost:5001').split(',')
+CORS(app, origins=allowed_origins)
 
 # Initialize risk calculation services
 risk_calculator = RiskCalculator()

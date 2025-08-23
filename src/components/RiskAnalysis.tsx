@@ -149,10 +149,21 @@ export const RiskAnalysis: React.FC = () => {
     const checkEngineAvailability = async () => {
       setIsCheckingEngine(true)
       try {
+        console.log('Checking risk engine availability...')
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
         
-        const response = await fetch('http://localhost:5001/health', {
+        // Check if we have a risk engine URL configured
+        const riskEngineUrl = process.env.REACT_APP_RISK_ENGINE_URL
+        
+        if (!riskEngineUrl) {
+          console.log('No risk engine URL configured - using local analysis')
+          setEngineAvailable(false)
+          setUseAdvancedEngine(false)
+          setIsCheckingEngine(false)
+          return
+        }
+        const response = await fetch(`${riskEngineUrl}/health`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
           signal: controller.signal
@@ -160,15 +171,21 @@ export const RiskAnalysis: React.FC = () => {
         
         clearTimeout(timeoutId)
         
+        console.log('Risk engine response:', response.status, response.statusText)
+        
         if (response.ok) {
+          const data = await response.json()
+          console.log('Risk engine data:', data)
           setEngineAvailable(true)
           info('Advanced Engine Available', 'Using advanced risk analysis engine')
         } else {
+          console.log('Risk engine not responding properly:', response.status)
           setEngineAvailable(false)
           setUseAdvancedEngine(false)
           showError('Engine Unavailable', 'Advanced engine unavailable, using local analysis')
         }
       } catch (err) {
+        console.error('Risk engine check error:', err)
         setEngineAvailable(false)
         setUseAdvancedEngine(false)
         showError('Engine Unavailable', 'Advanced engine unavailable, using local analysis')

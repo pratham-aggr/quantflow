@@ -42,6 +42,8 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
   const [riskReport, setRiskReport] = useState<AdvancedRiskReport | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [retryCount, setRetryCount] = useState(0)
+  const [maxRetries] = useState(3)
   const [selectedAnalysis, setSelectedAnalysis] = useState<AnalysisType>('monte_carlo')
   const [viewMode, setViewMode] = useState<ViewMode>('summary')
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
@@ -60,6 +62,13 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
       return
     }
 
+    // Check retry limit
+    if (retryCount >= maxRetries) {
+      setError('Maximum retry attempts reached. Advanced engine unavailable.')
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -74,11 +83,19 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
       })
 
       setRiskReport(report)
+      setRetryCount(0) // Reset retry count on success
       success('Risk Analysis Complete', 'Advanced risk report generated successfully')
     } catch (err) {
       console.error('Advanced risk analysis error:', err)
-      setError('Failed to generate risk report - advanced engine may be unavailable')
-      showError('Analysis Failed', 'Advanced engine unavailable. Consider using local analysis mode.')
+      setRetryCount(prev => prev + 1)
+      
+      if (retryCount + 1 >= maxRetries) {
+        setError('Advanced engine unavailable after multiple attempts. Please try again later.')
+        showError('Analysis Failed', 'Advanced engine unavailable. Consider using local analysis mode.')
+      } else {
+        setError(`Attempt ${retryCount + 1} of ${maxRetries} failed. Retrying...`)
+      }
+      
       // Set a fallback report to prevent infinite retries
       setRiskReport(null)
     } finally {
@@ -88,18 +105,26 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
 
   // Auto-refresh functionality
   useEffect(() => {
-    if (!autoRefresh || !riskReport) return
+    if (!autoRefresh || !riskReport || loading) return
 
-    const interval = setInterval(generateRiskReport, refreshInterval)
+    const interval = setInterval(() => {
+      if (!loading) {
+        generateRiskReport()
+      }
+    }, refreshInterval)
     return () => clearInterval(interval)
-  }, [autoRefresh, refreshInterval, holdings, riskTolerance, riskReport])
+  }, [autoRefresh, refreshInterval, holdings, riskTolerance, riskReport, loading])
 
   // Initial report generation - only run once when component mounts or holdings change
   useEffect(() => {
-    if (holdings && holdings.length > 0 && !riskReport && !loading) {
-      generateRiskReport()
-    }
-  }, [holdings, riskTolerance, riskReport, loading])
+    const timer = setTimeout(() => {
+      if (holdings && holdings.length > 0 && !riskReport && !loading) {
+        generateRiskReport()
+      }
+    }, 500) // Add 500ms debounce to prevent rapid re-renders
+
+    return () => clearTimeout(timer)
+  }, [holdings, riskTolerance]) // Remove riskReport and loading from dependencies to prevent infinite loop
 
   // Toggle section expansion
   const toggleSection = (section: string) => {
@@ -173,6 +198,25 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
         <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
         <h3 className="text-lg font-medium text-gray-900 mb-2">Analysis Failed</h3>
         <p className="text-gray-500 mb-4">{error}</p>
+        <div className="flex gap-3 justify-center">
+          <button
+            onClick={() => {
+              setRetryCount(0)
+              setError(null)
+              generateRiskReport()
+            }}
+            disabled={loading}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+          >
+            {loading ? 'Retrying...' : 'Retry Analysis'}
+          </button>
+          <button
+            onClick={() => setError(null)}
+            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+          >
+            Switch to Local Mode
+          </button>
+        </div>
         <button
           onClick={generateRiskReport}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
