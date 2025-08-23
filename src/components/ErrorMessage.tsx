@@ -12,11 +12,11 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   className = '' 
 }) => {
   return (
-    <div className={`bg-red-50 border border-red-200 rounded-md p-4 ${className}`}>
+    <div className={`robinhood-alert robinhood-alert-error ${className}`}>
       <div className="flex">
         <div className="flex-shrink-0">
           <svg
-            className="h-5 w-5 text-red-400"
+            className="h-5 w-5 text-red-400 dark:text-red-300"
             viewBox="0 0 20 20"
             fill="currentColor"
             aria-hidden="true"
@@ -29,7 +29,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
           </svg>
         </div>
         <div className="ml-3">
-          <p className="text-sm text-red-800">{message}</p>
+          <p className="text-sm text-red-800 dark:text-red-200">{message}</p>
         </div>
         {onDismiss && (
           <div className="ml-auto pl-3">
@@ -37,7 +37,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
               <button
                 type="button"
                 onClick={onDismiss}
-                className="inline-flex rounded-md bg-red-50 p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2 focus:ring-offset-red-50"
+                className="inline-flex rounded-md bg-red-50 dark:bg-red-900/20 p-1.5 text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 focus:outline-none focus:ring-2 focus:ring-red-600 dark:focus:ring-red-400 focus:ring-offset-2 focus:ring-offset-red-50 dark:focus:ring-offset-red-900/20"
               >
                 <span className="sr-only">Dismiss</span>
                 <svg

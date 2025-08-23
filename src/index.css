@@ -151,6 +151,86 @@ pre {
   .robinhood-shimmer {
     @apply bg-gradient-to-r from-neutral-200 via-neutral-100 to-neutral-200 dark:from-neutral-700 dark:via-neutral-600 dark:to-neutral-700 bg-[length:200%_100%] animate-shimmer;
   }
+
+  /* Risk analysis specific styles */
+  .risk-card {
+    @apply robinhood-card p-6 transition-all duration-200 hover:shadow-robinhood-lg;
+  }
+
+  .risk-metric {
+    @apply flex items-center justify-between p-4 rounded-lg border border-neutral-200 dark:border-neutral-700;
+  }
+
+  .risk-metric-positive {
+    @apply bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800;
+  }
+
+  .risk-metric-warning {
+    @apply bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800;
+  }
+
+  .risk-metric-danger {
+    @apply bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800;
+  }
+
+  .risk-metric-neutral {
+    @apply bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700;
+  }
+
+  /* Table styles for dark mode */
+  .robinhood-table {
+    @apply min-w-full divide-y divide-neutral-200 dark:divide-neutral-700;
+  }
+
+  .robinhood-table-header {
+    @apply bg-neutral-50 dark:bg-neutral-800;
+  }
+
+  .robinhood-table-header-cell {
+    @apply px-6 py-3 text-left text-xs font-medium robinhood-text-secondary uppercase tracking-wider;
+  }
+
+  .robinhood-table-body {
+    @apply bg-white dark:bg-robinhood-dark-secondary divide-y divide-neutral-200 dark:divide-neutral-700;
+  }
+
+  .robinhood-table-row {
+    @apply hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors;
+  }
+
+  .robinhood-table-cell {
+    @apply px-6 py-4 whitespace-nowrap text-sm;
+  }
+
+  /* Chart and visualization styles */
+  .chart-container {
+    @apply bg-white dark:bg-robinhood-dark-secondary rounded-lg border border-neutral-200 dark:border-neutral-700 p-4;
+  }
+
+  .chart-title {
+    @apply text-lg font-semibold robinhood-text-primary mb-4;
+  }
+
+  /* Alert and notification styles */
+  .robinhood-alert {
+    @apply p-4 rounded-lg border;
+  }
+
+  .robinhood-alert-info {
+    @apply bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800;
+  }
+
+  .robinhood-alert-warning {
+    @apply bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800;
+  }
+
+  .robinhood-alert-error {
+    @apply bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800;
+  }
+
+  .robinhood-alert-success {
+    @apply bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800;
+  }
 }
 
 /* Responsive typography */
@@ -172,5 +252,45 @@ pre {
   
   .animate-scale-in {
     animation: scaleIn 0.15s ease-out;
+  }
+}
+
+/* Dark mode specific improvements */
+.dark {
+  /* Improve contrast for better readability */
+  --tw-prose-body: #e5e5e5;
+  --tw-prose-headings: #ffffff;
+  --tw-prose-links: #60a5fa;
+  --tw-prose-bold: #ffffff;
+  --tw-prose-counters: #a3a3a3;
+  --tw-prose-bullets: #525252;
+  --tw-prose-hr: #404040;
+  --tw-prose-quotes: #e5e5e5;
+  --tw-prose-quote-borders: #525252;
+  --tw-prose-captions: #a3a3a3;
+  --tw-prose-code: #ffffff;
+  --tw-prose-pre-code: #e5e5e5;
+  --tw-prose-pre-bg: #262626;
+  --tw-prose-th-borders: #525252;
+  --tw-prose-td-borders: #404040;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .robinhood-card {
+    @apply border-2;
+  }
+  
+  .robinhood-btn {
+    @apply border-2;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

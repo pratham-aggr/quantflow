@@ -52,7 +52,7 @@ class RebalancingService {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'http://localhost:5001'
+    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-risk-engine.onrender.com'
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {

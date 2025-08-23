@@ -174,14 +174,14 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Generating Risk Analysis</h3>
-          <p className="text-gray-500">Running Monte Carlo simulations and advanced analytics...</p>
+          <RefreshCw className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium robinhood-text-primary mb-2">Generating Risk Analysis</h3>
+          <p className="robinhood-text-secondary">Running Monte Carlo simulations and advanced analytics...</p>
           {error && (
             <div className="mt-4">
               <button
                 onClick={() => setError(null)}
-                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+                className="px-4 py-2 bg-neutral-600 dark:bg-neutral-700 text-white rounded-md hover:bg-neutral-700 dark:hover:bg-neutral-600 transition-colors"
               >
                 Switch to Local Mode
               </button>
@@ -195,9 +195,9 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
   if (error && !riskReport) {
     return (
       <div className="text-center py-12">
-        <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Analysis Failed</h3>
-        <p className="text-gray-500 mb-4">{error}</p>
+        <AlertTriangle className="w-12 h-12 text-red-500 dark:text-red-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium robinhood-text-primary mb-2">Analysis Failed</h3>
+        <p className="robinhood-text-secondary mb-4">{error}</p>
         <div className="flex gap-3 justify-center">
           <button
             onClick={() => {
@@ -206,20 +206,20 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
               generateRiskReport()
             }}
             disabled={loading}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 transition-colors"
           >
             {loading ? 'Retrying...' : 'Retry Analysis'}
           </button>
           <button
             onClick={() => setError(null)}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 bg-neutral-600 dark:bg-neutral-700 text-white rounded-md hover:bg-neutral-700 dark:hover:bg-neutral-600 transition-colors"
           >
             Switch to Local Mode
           </button>
         </div>
         <button
           onClick={generateRiskReport}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-4 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
         >
           Retry Analysis
         </button>
@@ -234,15 +234,15 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="robinhood-card p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Shield className="w-6 h-6 text-blue-600" />
+            <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+              <Shield className="w-6 h-6 text-blue-600 dark:text-blue-400" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Advanced Risk Analysis</h2>
-              <p className="text-sm text-gray-500">
+              <h2 className="text-xl font-semibold robinhood-text-primary">Advanced Risk Analysis</h2>
+              <p className="text-sm robinhood-text-secondary">
                 Monte Carlo simulation, correlation analysis, sector allocation, and ML predictions
               </p>
             </div>
@@ -251,14 +251,14 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowAdvancedMetrics(!showAdvancedMetrics)}
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center px-3 py-2 text-sm font-medium robinhood-text-secondary bg-neutral-100 dark:bg-neutral-800 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
             >
               {showAdvancedMetrics ? <EyeOff className="w-4 h-4 mr-2" /> : <Eye className="w-4 h-4 mr-2" />}
               {showAdvancedMetrics ? 'Hide' : 'Show'} Advanced
             </button>
             <button
               onClick={exportRiskReport}
-              className="flex items-center px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              className="flex items-center px-3 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
             >
               <Download className="w-4 h-4 mr-2" />
               Export
@@ -266,7 +266,7 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
             <button
               onClick={generateRiskReport}
               disabled={loading}
-              className="flex items-center px-3 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors disabled:opacity-50"
+              className="flex items-center px-3 py-2 text-sm font-medium text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-900/20 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh
@@ -276,53 +276,53 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
 
         {/* Risk Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+          <div className="bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-blue-600">Risk Score</p>
-                <p className="text-2xl font-bold text-blue-900">{riskReport.summary.risk_score.toFixed(1)}/10</p>
-                <p className="text-sm text-blue-700">{riskReport.summary.risk_level}</p>
+                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Risk Score</p>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">{riskReport.summary.risk_score.toFixed(1)}/10</p>
+                <p className="text-sm text-blue-700 dark:text-blue-300">{riskReport.summary.risk_level}</p>
               </div>
-              <Target className="w-8 h-8 text-blue-600" />
+              <Target className="w-8 h-8 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4">
+          <div className="bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-green-600">Volatility</p>
-                <p className="text-2xl font-bold text-green-900">
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">Volatility</p>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100">
                   {advancedRiskService.formatPercentage(riskReport.summary.portfolio_volatility)}
                 </p>
-                <p className="text-sm text-green-700">Annualized</p>
+                <p className="text-sm text-green-700 dark:text-green-300">Annualized</p>
               </div>
-              <Activity className="w-8 h-8 text-green-600" />
+              <Activity className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4">
+          <div className="bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-purple-600">Sharpe Ratio</p>
-                <p className="text-2xl font-bold text-purple-900">
+                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">Sharpe Ratio</p>
+                <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
                   {riskReport.summary.sharpe_ratio.toFixed(2)}
                 </p>
-                <p className="text-sm text-purple-700">Risk-Adjusted</p>
+                <p className="text-sm text-purple-700 dark:text-purple-300">Risk-Adjusted</p>
               </div>
-              <TrendingUp className="w-8 h-8 text-purple-600" />
+              <TrendingUp className="w-8 h-8 text-purple-600 dark:text-purple-400" />
             </div>
           </div>
 
-          <div className="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-4">
+          <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-orange-600">VaR (95%)</p>
-                <p className="text-2xl font-bold text-orange-900">
+                <p className="text-sm font-medium text-orange-600 dark:text-orange-400">VaR (95%)</p>
+                <p className="text-2xl font-bold text-orange-900 dark:text-orange-100">
                   {advancedRiskService.formatPercentage(riskReport.summary.var_95)}
                 </p>
-                <p className="text-sm text-orange-700">Daily Loss</p>
+                <p className="text-sm text-orange-700 dark:text-orange-300">Daily Loss</p>
               </div>
-              <AlertTriangle className="w-8 h-8 text-orange-600" />
+              <AlertTriangle className="w-8 h-8 text-orange-600 dark:text-orange-400" />
             </div>
           </div>
         </div>
@@ -330,16 +330,16 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
 
       {/* Risk Insights */}
       {riskInsights.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Zap className="w-5 h-5 mr-2 text-yellow-600" />
+        <div className="robinhood-card p-6">
+          <h3 className="text-lg font-semibold robinhood-text-primary mb-4 flex items-center">
+            <Zap className="w-5 h-5 mr-2 text-yellow-600 dark:text-yellow-400" />
             Risk Insights
           </h3>
           <div className="space-y-2">
             {riskInsights.map((insight, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-50 rounded-lg">
-                <AlertTriangle className="w-4 h-4 text-yellow-600 mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-yellow-800">{insight}</p>
+              <div key={index} className="flex items-start space-x-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-yellow-800 dark:text-yellow-200">{insight}</p>
               </div>
             ))}
           </div>
@@ -347,8 +347,8 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
       )}
 
       {/* Analysis Tabs */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="border-b">
+      <div className="robinhood-card">
+        <div className="border-b border-neutral-200 dark:border-neutral-700">
           <nav className="flex space-x-8 px-6">
             {[
               { id: 'monte_carlo', name: 'Monte Carlo', icon: BarChart3 },
@@ -361,8 +361,8 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
                 onClick={() => setSelectedAnalysis(tab.id as AnalysisType)}
                 className={`flex items-center py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                   selectedAnalysis === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                    : 'border-transparent robinhood-text-secondary hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
                 }`}
               >
                 <tab.icon className="w-4 h-4 mr-2" />
@@ -396,16 +396,16 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
       </div>
 
       {/* Stress Testing */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          <Layers className="w-5 h-5 mr-2 text-red-600" />
+      <div className="robinhood-card p-6">
+        <h3 className="text-lg font-semibold robinhood-text-primary mb-4 flex items-center">
+          <Layers className="w-5 h-5 mr-2 text-red-600 dark:text-red-400" />
           Stress Testing Scenarios
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(stressTests).map(([scenario, value]) => (
-            <div key={scenario} className="p-4 border rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">{scenario}</p>
-              <p className="text-lg font-bold text-gray-900">
+            <div key={scenario} className="p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+              <p className="text-sm font-medium robinhood-text-secondary mb-2">{scenario}</p>
+              <p className="text-lg font-bold robinhood-text-primary">
                 {advancedRiskService.formatCurrency(value)}
               </p>
             </div>
@@ -415,16 +415,16 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
 
       {/* Recommendations */}
       {riskReport.recommendations.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <Settings className="w-5 h-5 mr-2 text-blue-600" />
+        <div className="robinhood-card p-6">
+          <h3 className="text-lg font-semibold robinhood-text-primary mb-4 flex items-center">
+            <Settings className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
             Recommendations
           </h3>
           <div className="space-y-3">
             {riskReport.recommendations.map((recommendation, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
-                <p className="text-sm text-blue-800">{recommendation}</p>
+              <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full mt-2 flex-shrink-0" />
+                <p className="text-sm text-blue-800 dark:text-blue-200">{recommendation}</p>
               </div>
             ))}
           </div>
@@ -441,29 +441,29 @@ const MonteCarloAnalysisView: React.FC<{ analysis: MonteCarloAnalysis }> = ({ an
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Key Metrics */}
         <div className="space-y-4">
-          <h4 className="text-lg font-semibold text-gray-900">Simulation Results</h4>
+          <h4 className="text-lg font-semibold robinhood-text-primary">Simulation Results</h4>
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-green-50 rounded-lg">
-              <p className="text-sm text-green-600">Mean Return</p>
-              <p className="text-xl font-bold text-green-900">
+            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <p className="text-sm text-green-600 dark:text-green-400">Mean Return</p>
+              <p className="text-xl font-bold text-green-900 dark:text-green-100">
                 {advancedRiskService.formatPercentage(analysis.mean_return)}
               </p>
             </div>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-600">Std Deviation</p>
-              <p className="text-xl font-bold text-blue-900">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p className="text-sm text-blue-600 dark:text-blue-400">Std Deviation</p>
+              <p className="text-xl font-bold text-blue-900 dark:text-blue-100">
                 {advancedRiskService.formatPercentage(analysis.std_return)}
               </p>
             </div>
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <p className="text-sm text-purple-600">Probability Positive</p>
-              <p className="text-xl font-bold text-purple-900">
+            <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <p className="text-sm text-purple-600 dark:text-purple-400">Probability Positive</p>
+              <p className="text-xl font-bold text-purple-900 dark:text-purple-100">
                 {advancedRiskService.formatPercentage(analysis.probability_positive)}
               </p>
             </div>
-            <div className="p-4 bg-orange-50 rounded-lg">
-              <p className="text-sm text-orange-600">Worst Case</p>
-              <p className="text-xl font-bold text-orange-900">
+            <div className="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
+              <p className="text-sm text-orange-600 dark:text-orange-400">Worst Case</p>
+              <p className="text-xl font-bold text-orange-900 dark:text-orange-100">
                 {advancedRiskService.formatPercentage(analysis.worst_case)}
               </p>
             </div>
@@ -472,12 +472,12 @@ const MonteCarloAnalysisView: React.FC<{ analysis: MonteCarloAnalysis }> = ({ an
 
         {/* Percentiles */}
         <div>
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Return Percentiles</h4>
+          <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Return Percentiles</h4>
           <div className="space-y-2">
             {Object.entries(analysis.percentiles).map(([percentile, value]) => (
-              <div key={percentile} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                <span className="text-sm font-medium text-gray-700">{percentile} Percentile</span>
-                <span className="text-sm font-bold text-gray-900">
+              <div key={percentile} className="flex justify-between items-center p-2 bg-neutral-50 dark:bg-neutral-800 rounded">
+                <span className="text-sm font-medium robinhood-text-secondary">{percentile} Percentile</span>
+                <span className="text-sm font-bold robinhood-text-primary">
                   {advancedRiskService.formatPercentage(value)}
                 </span>
               </div>
@@ -488,12 +488,12 @@ const MonteCarloAnalysisView: React.FC<{ analysis: MonteCarloAnalysis }> = ({ an
 
       {/* Confidence Intervals */}
       <div>
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">Confidence Intervals</h4>
+        <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Confidence Intervals</h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {Object.entries(analysis.confidence_intervals).map(([level, [lower, upper]]) => (
-            <div key={level} className="p-4 border rounded-lg">
-              <p className="text-sm font-medium text-gray-700 mb-2">{level} Confidence</p>
-              <p className="text-sm text-gray-900">
+            <div key={level} className="p-4 border border-neutral-200 dark:border-neutral-700 rounded-lg">
+              <p className="text-sm font-medium robinhood-text-secondary mb-2">{level} Confidence</p>
+              <p className="text-sm robinhood-text-primary">
                 {advancedRiskService.formatPercentage(lower)} to {advancedRiskService.formatPercentage(upper)}
               </p>
             </div>
@@ -510,13 +510,13 @@ const CorrelationAnalysisView: React.FC<{ analysis: CorrelationAnalysis }> = ({ 
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Diversification Score */}
-        <div className="p-6 bg-gradient-to-r from-green-50 to-green-100 rounded-lg">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Diversification Score</h4>
+        <div className="p-6 bg-gradient-to-r from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-lg">
+          <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Diversification Score</h4>
           <div className="text-center">
-            <div className="text-4xl font-bold text-green-600 mb-2">
+            <div className="text-4xl font-bold text-green-600 dark:text-green-400 mb-2">
               {(analysis.diversification_score * 100).toFixed(1)}%
             </div>
-            <p className="text-sm text-green-700">
+            <p className="text-sm text-green-700 dark:text-green-300">
               {analysis.diversification_score > 0.7 ? 'Excellent' : 
                analysis.diversification_score > 0.5 ? 'Good' : 
                analysis.diversification_score > 0.3 ? 'Fair' : 'Poor'} diversification
@@ -526,22 +526,22 @@ const CorrelationAnalysisView: React.FC<{ analysis: CorrelationAnalysis }> = ({ 
 
         {/* High Correlation Pairs */}
         <div>
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">High Correlation Pairs</h4>
+          <h4 className="text-lg font-semibold robinhood-text-primary mb-4">High Correlation Pairs</h4>
           {analysis.high_correlation_pairs.length > 0 ? (
             <div className="space-y-2">
               {analysis.high_correlation_pairs.map(([symbol1, symbol2, correlation], index) => (
-                <div key={index} className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                  <span className="text-sm font-medium text-red-800">
+                <div key={index} className="flex justify-between items-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                  <span className="text-sm font-medium text-red-800 dark:text-red-200">
                     {symbol1} ↔ {symbol2}
                   </span>
-                  <span className="text-sm font-bold text-red-900">
+                  <span className="text-sm font-bold text-red-900 dark:text-red-100">
                     {correlation.toFixed(3)}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No highly correlated pairs detected</p>
+            <p className="text-sm robinhood-text-tertiary">No highly correlated pairs detected</p>
           )}
         </div>
       </div>
@@ -556,12 +556,12 @@ const SectorAnalysisView: React.FC<{ analysis: SectorAnalysis }> = ({ analysis }
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Sector Allocation */}
         <div>
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Sector Allocation</h4>
+          <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Sector Allocation</h4>
           <div className="space-y-2">
             {Object.entries(analysis.sector_allocation).map(([sector, allocation]) => (
-              <div key={sector} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">{sector}</span>
-                <span className="text-sm font-bold text-gray-900">{allocation.toFixed(1)}%</span>
+              <div key={sector} className="flex justify-between items-center p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                <span className="text-sm font-medium robinhood-text-primary">{sector}</span>
+                <span className="text-sm font-bold robinhood-text-primary">{allocation.toFixed(1)}%</span>
               </div>
             ))}
           </div>
@@ -569,12 +569,12 @@ const SectorAnalysisView: React.FC<{ analysis: SectorAnalysis }> = ({ analysis }
 
         {/* Sector Risk */}
         <div>
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Sector Risk</h4>
+          <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Sector Risk</h4>
           <div className="space-y-2">
             {Object.entries(analysis.sector_risk).map(([sector, risk]) => (
-              <div key={sector} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-                <span className="text-sm font-medium text-gray-700">{sector}</span>
-                <span className="text-sm font-bold text-gray-900">
+              <div key={sector} className="flex justify-between items-center p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+                <span className="text-sm font-medium robinhood-text-primary">{sector}</span>
+                <span className="text-sm font-bold robinhood-text-primary">
                   {advancedRiskService.formatPercentage(risk)}
                 </span>
               </div>
@@ -584,13 +584,13 @@ const SectorAnalysisView: React.FC<{ analysis: SectorAnalysis }> = ({ analysis }
       </div>
 
       {/* Concentration Risk */}
-      <div className="p-6 bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg">
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">Concentration Risk</h4>
+      <div className="p-6 bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 rounded-lg">
+        <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Concentration Risk</h4>
         <div className="text-center">
-          <div className="text-4xl font-bold text-orange-600 mb-2">
+          <div className="text-4xl font-bold text-orange-600 dark:text-orange-400 mb-2">
             {(analysis.concentration_risk * 100).toFixed(1)}%
           </div>
-          <p className="text-sm text-orange-700">
+          <p className="text-sm text-orange-700 dark:text-orange-300">
             {analysis.concentration_risk > 0.4 ? 'High' : 
              analysis.concentration_risk > 0.25 ? 'Moderate' : 'Low'} concentration risk
           </p>
@@ -600,12 +600,12 @@ const SectorAnalysisView: React.FC<{ analysis: SectorAnalysis }> = ({ analysis }
       {/* Sector Recommendations */}
       {analysis.recommendations.length > 0 && (
         <div>
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Sector Recommendations</h4>
+          <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Sector Recommendations</h4>
           <div className="space-y-2">
             {analysis.recommendations.map((recommendation, index) => (
-              <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
-                <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
-                <p className="text-sm text-blue-800">{recommendation}</p>
+              <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full mt-2 flex-shrink-0" />
+                <p className="text-sm text-blue-800 dark:text-blue-200">{recommendation}</p>
               </div>
             ))}
           </div>
@@ -621,16 +621,16 @@ const MLPredictionView: React.FC<{ prediction: MLPrediction }> = ({ prediction }
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Prediction Results */}
-        <div className="p-6 bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg">
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Volatility Prediction</h4>
+        <div className="p-6 bg-gradient-to-r from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-lg">
+          <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Volatility Prediction</h4>
           <div className="text-center">
-            <div className="text-4xl font-bold text-purple-600 mb-2">
+            <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 mb-2">
               {advancedRiskService.formatPercentage(prediction.predicted_volatility)}
             </div>
-            <p className="text-sm text-purple-700">
+            <p className="text-sm text-purple-700 dark:text-purple-300">
               Predicted volatility for next {prediction.prediction_horizon} days
             </p>
-            <p className="text-sm text-purple-600 mt-2">
+            <p className="text-sm text-purple-600 dark:text-purple-400 mt-2">
               Confidence: {prediction.model_accuracy * 100}%
             </p>
           </div>
@@ -638,11 +638,11 @@ const MLPredictionView: React.FC<{ prediction: MLPrediction }> = ({ prediction }
 
         {/* Confidence Interval */}
         <div>
-          <h4 className="text-lg font-semibold text-gray-900 mb-4">Confidence Interval</h4>
-          <div className="p-4 bg-gray-50 rounded-lg">
+          <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Confidence Interval</h4>
+          <div className="p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
             <div className="text-center">
-              <p className="text-sm text-gray-600 mb-2">Predicted Range</p>
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-sm robinhood-text-secondary mb-2">Predicted Range</p>
+              <p className="text-lg font-bold robinhood-text-primary">
                 {advancedRiskService.formatPercentage(prediction.confidence_interval[0])} - {advancedRiskService.formatPercentage(prediction.confidence_interval[1])}
               </p>
             </div>
@@ -652,14 +652,14 @@ const MLPredictionView: React.FC<{ prediction: MLPrediction }> = ({ prediction }
 
       {/* Feature Importance */}
       <div>
-        <h4 className="text-lg font-semibold text-gray-900 mb-4">Feature Importance</h4>
+        <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Feature Importance</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {Object.entries(prediction.feature_importance).map(([feature, importance]) => (
-            <div key={feature} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm font-medium text-gray-700 capitalize">
+            <div key={feature} className="flex justify-between items-center p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
+              <span className="text-sm font-medium robinhood-text-primary capitalize">
                 {feature.replace('_', ' ')}
               </span>
-              <span className="text-sm font-bold text-gray-900">
+              <span className="text-sm font-bold robinhood-text-primary">
                 {(importance * 100).toFixed(1)}%
               </span>
             </div>
