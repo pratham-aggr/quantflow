@@ -76,6 +76,14 @@ def test_advanced_risk_report():
             print(f"  📈 Risk Score: {data.get('summary', {}).get('risk_score', 'N/A')}")
             print(f"  📊 Volatility: {data.get('summary', {}).get('portfolio_volatility', 'N/A')}")
             print(f"  📋 Recommendations: {len(data.get('recommendations', []))}")
+            
+            # Check correlation analysis
+            correlation = data.get('correlation_analysis', {})
+            print(f"  🔗 Correlation Analysis:")
+            print(f"    - Diversification Score: {correlation.get('diversification_score', 'N/A')}")
+            print(f"    - High Correlation Pairs: {len(correlation.get('high_correlation_pairs', []))}")
+            print(f"    - Heatmap Data: {len(correlation.get('heatmap_data', {}).get('correlation_matrix', []))}x{len(correlation.get('heatmap_data', {}).get('correlation_matrix', [[]])[0]) if correlation.get('heatmap_data', {}).get('correlation_matrix') else 0}")
+            
             return True
         else:
             print(f"  ❌ Advanced Risk Report failed: {response.status_code}")
