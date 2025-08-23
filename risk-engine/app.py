@@ -280,8 +280,15 @@ def generate_advanced_risk_report():
         holdings = data['holdings']
         risk_tolerance = data.get('risk_tolerance', 'moderate')
         
+        print(f"Received request for advanced risk report:")
+        print(f"Number of holdings: {len(holdings)}")
+        print(f"Risk tolerance: {risk_tolerance}")
+        print(f"Holdings data: {holdings}")
+        
         # Generate comprehensive risk report
         risk_report = advanced_risk_engine.generate_risk_report(holdings, risk_tolerance)
+        
+        print(f"Generated risk report: {risk_report}")
         
         return jsonify(risk_report)
         

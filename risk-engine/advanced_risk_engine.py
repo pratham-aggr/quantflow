@@ -77,13 +77,16 @@ class AdvancedRiskEngine:
             MonteCarloResult with simulation statistics
         """
         try:
+            logger.info(f"Starting Monte Carlo simulation for {len(holdings)} holdings")
             if not holdings:
+                logger.warning("No holdings provided for Monte Carlo simulation")
                 return self._empty_monte_carlo_result()
             
             # Calculate historical returns and volatility for each holding
             returns_data = []
             weights = []
             total_value = sum(holding.get('quantity', 0) * holding.get('avg_price', 0) for holding in holdings)
+            logger.info(f"Total portfolio value: {total_value}")
             
             for holding in holdings:
                 symbol = holding.get('symbol', '')
@@ -91,21 +94,27 @@ class AdvancedRiskEngine:
                 current_price = holding.get('current_price', price)
                 quantity = holding.get('quantity', 0)
                 
+                logger.info(f"Processing holding: symbol={symbol}, quantity={quantity}, avg_price={price}, current_price={current_price}")
+                
                 if price > 0 and quantity > 0 and symbol:
                     # Calculate weight
                     weight = (price * quantity) / total_value
                     weights.append(weight)
                     
                     try:
+                        logger.info(f"Fetching data for symbol: {symbol}")
                         # Get real historical data using yfinance
                         ticker = yf.Ticker(symbol)
                         hist = ticker.history(period="1y")
+                        logger.info(f"Retrieved {len(hist)} data points for {symbol}")
                         
                         if len(hist) > 30:  # Ensure we have enough data
                             # Calculate daily returns
                             returns = hist['Close'].pct_change().dropna()
                             mean_return = returns.mean()
                             volatility = returns.std()
+                            
+                            logger.info(f"Calculated returns for {symbol}: mean={mean_return:.6f}, vol={volatility:.6f}")
                             
                             returns_data.append({
                                 'mean_return': mean_return,
@@ -114,14 +123,20 @@ class AdvancedRiskEngine:
                             })
                         else:
                             # Skip holdings without sufficient historical data
-                            logger.warning(f"Insufficient historical data for {symbol}")
+                            logger.warning(f"Insufficient historical data for {symbol}: only {len(hist)} points")
                             continue
                     except Exception as e:
                         logger.warning(f"Could not fetch data for {symbol}: {e}")
                         # Skip holdings that can't be fetched
                         continue
             
+            logger.info(f"Processed {len(returns_data)} holdings with valid data")
             if not returns_data:
+                logger.warning("No valid returns data available for Monte Carlo simulation")
+                # Try to create a basic simulation with available data
+                if len(holdings) > 0:
+                    logger.info("Attempting basic simulation with available data")
+                    return self._basic_monte_carlo_simulation(holdings)
                 return self._empty_monte_carlo_result()
             
             # Run Monte Carlo simulation
@@ -424,7 +439,7 @@ class AdvancedRiskEngine:
                     predicted_volatility=predicted_volatility,
                     confidence_interval=confidence_interval,
                     feature_importance=feature_importance,
-                    model_accuracy=0.85,  # Placeholder
+                    model_accuracy=0.0,  # No ML model trained
                     prediction_horizon=self.prediction_horizon
                 )
             else:
@@ -501,6 +516,9 @@ class AdvancedRiskEngine:
             Comprehensive risk report
         """
         try:
+            logger.info(f"Generating risk report for {len(holdings)} holdings")
+            logger.info(f"Holdings data: {holdings}")
+            
             # Run all analyses
             monte_carlo_result = self.run_monte_carlo_simulation(holdings)
             correlation_matrix = self.calculate_correlation_matrix(holdings)
@@ -588,6 +606,95 @@ class AdvancedRiskEngine:
             feature_importance={}, model_accuracy=0.0, prediction_horizon=30
         )
     
+    def _basic_monte_carlo_simulation(self, holdings: List[Dict]) -> MonteCarloResult:
+        """Basic Monte Carlo simulation using available data when real market data is unavailable"""
+        try:
+            logger.info("Running basic Monte Carlo simulation")
+            
+            # Calculate portfolio weights
+            total_value = sum(holding.get('quantity', 0) * holding.get('avg_price', 0) for holding in holdings)
+            if total_value == 0:
+                return self._empty_monte_carlo_result()
+            
+            weights = []
+            basic_returns = []
+            
+            for holding in holdings:
+                quantity = holding.get('quantity', 0)
+                avg_price = holding.get('avg_price', 0)
+                current_price = holding.get('current_price', avg_price)
+                
+                if quantity > 0 and avg_price > 0:
+                    weight = (quantity * avg_price) / total_value
+                    weights.append(weight)
+                    
+                    # Calculate basic return from current vs average price
+                    if current_price > 0 and avg_price > 0:
+                        basic_return = (current_price - avg_price) / avg_price
+                    else:
+                        basic_return = 0.0
+                    
+                    basic_returns.append(basic_return)
+            
+            if not weights:
+                return self._empty_monte_carlo_result()
+            
+            # Normalize weights
+            weights = np.array(weights) / sum(weights)
+            basic_returns = np.array(basic_returns)
+            
+            # Calculate portfolio return
+            portfolio_return = np.sum(weights * basic_returns)
+            
+            # Calculate volatility from available data
+            if len(basic_returns) > 0:
+                std_return = np.std(basic_returns) / np.sqrt(252)  # Daily volatility
+            else:
+                std_return = 0.0
+            
+            # Generate basic simulation results
+            mean_return = portfolio_return
+            
+            # Generate percentiles based on normal distribution
+            percentiles = {
+                '5th': mean_return - 1.645 * std_return,
+                '10th': mean_return - 1.282 * std_return,
+                '25th': mean_return - 0.674 * std_return,
+                '50th': mean_return,
+                '75th': mean_return + 0.674 * std_return,
+                '90th': mean_return + 1.282 * std_return,
+                '95th': mean_return + 1.645 * std_return
+            }
+            
+            # Calculate confidence intervals
+            confidence_intervals = {
+                '90%': (percentiles['5th'], percentiles['95th']),
+                '95%': (mean_return - 1.96 * std_return, mean_return + 1.96 * std_return),
+                '99%': (mean_return - 2.576 * std_return, mean_return + 2.576 * std_return)
+            }
+            
+            # Calculate probability of positive returns
+            if std_return > 0:
+                probability_positive = 1 - stats.norm.cdf(0, mean_return, std_return)
+            else:
+                probability_positive = 1.0 if mean_return > 0 else 0.0
+            
+            logger.info(f"Basic simulation completed: mean_return={mean_return:.6f}, std_return={std_return:.6f}")
+            
+            return MonteCarloResult(
+                mean_return=mean_return,
+                std_return=std_return,
+                percentiles=percentiles,
+                worst_case=percentiles['5th'],
+                best_case=percentiles['95th'],
+                probability_positive=probability_positive,
+                confidence_intervals=confidence_intervals
+            )
+            
+        except Exception as e:
+            logger.error(f"Error in basic Monte Carlo simulation: {e}")
+            return self._empty_monte_carlo_result()
+    
     def _empty_risk_report(self) -> Dict[str, Any]:
         return {
             'summary': {'risk_score': 1, 'risk_level': 'Very Low'},
@@ -665,11 +772,11 @@ class AdvancedRiskEngine:
         sectors = set(holding.get('sector', 'Unknown') for holding in holdings)
         sector_diversity = len(sectors)
         
-        # Geographic diversity (placeholder)
-        geographic_diversity = 1.0  # Would be calculated from actual data
+        # Geographic diversity (not implemented yet)
+        geographic_diversity = 0.0  # Would be calculated from actual data
         
-        # Market cap diversity (placeholder)
-        market_cap_diversity = 1.0  # Would be calculated from actual data
+        # Market cap diversity (not implemented yet)
+        market_cap_diversity = 0.0  # Would be calculated from actual data
         
         return [portfolio_size, num_holdings, avg_holding_size, sector_diversity, geographic_diversity, market_cap_diversity]
     
@@ -707,9 +814,12 @@ class AdvancedRiskEngine:
             
             price = holding.get('avg_price', 0)
             current_price = holding.get('current_price', price)
-            if price > 0:
+            if price > 0 and current_price > 0:
                 volatility = abs((current_price - price) / price)
                 weighted_volatility += weight * volatility
+            else:
+                # Skip holdings without valid price data
+                continue
         
         return weighted_volatility
     
@@ -743,9 +853,12 @@ class AdvancedRiskEngine:
             
             price = holding.get('avg_price', 0)
             current_price = holding.get('current_price', price)
-            if price > 0:
+            if price > 0 and current_price > 0:
                 return_rate = (current_price - price) / price
                 weighted_return += weight * return_rate
+            else:
+                # Skip holdings without valid price data
+                continue
         
         return weighted_return
     

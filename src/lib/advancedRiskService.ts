@@ -103,10 +103,12 @@ class AdvancedRiskService {
 
   async generateAdvancedRiskReport(request: AdvancedRiskRequest): Promise<AdvancedRiskReport> {
     try {
+      console.log('Sending advanced risk report request:', request)
       const data = await this.makeRequest<AdvancedRiskReport>('/api/risk/advanced', {
         method: 'POST',
         body: JSON.stringify(request),
       })
+      console.log('Received advanced risk report response:', data)
       return data
     } catch (error) {
       console.error('Error generating advanced risk report:', error)

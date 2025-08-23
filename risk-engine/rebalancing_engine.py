@@ -323,55 +323,7 @@ class RebalancingEngine:
             'simulated_holdings': simulated_holdings
         }
 
-# Example usage and testing
+# Testing and development
 if __name__ == "__main__":
-    # Example holdings
-    holdings = [
-        {
-            'symbol': 'AAPL',
-            'quantity': 100,
-            'avg_price': 150.0,
-            'current_price': 175.0
-        },
-        {
-            'symbol': 'MSFT',
-            'quantity': 50,
-            'avg_price': 280.0,
-            'current_price': 320.0
-        },
-        {
-            'symbol': 'GOOGL',
-            'quantity': 25,
-            'avg_price': 2500.0,
-            'current_price': 2750.0
-        }
-    ]
-    
-    # Target allocation
-    target_allocation = {
-        'AAPL': 40,
-        'MSFT': 35,
-        'GOOGL': 25
-    }
-    
-    # Initialize engine
-    engine = RebalancingEngine(transaction_cost_rate=0.005, min_trade_threshold=100.0)
-    
-    # Run analysis
-    analysis = engine.analyze_rebalancing(holdings, target_allocation)
-    
-    print("Rebalancing Analysis:")
-    print(f"Total Drift: {analysis.total_drift:.2f}%")
-    print(f"Rebalancing Score: {analysis.rebalancing_score:.1f}/100")
-    print(f"Estimated Transaction Cost: ${analysis.estimated_transaction_cost:.2f}")
-    print(f"Number of Suggestions: {len(analysis.suggestions)}")
-    
-    print("\nSuggestions:")
-    for suggestion in analysis.suggestions:
-        print(f"{suggestion.symbol}: {suggestion.action} {suggestion.quantity} shares "
-              f"(Drift: {suggestion.drift_percentage:.1f}%, Priority: {suggestion.priority})")
-    
-    # What-if analysis
-    what_if = engine.create_what_if_analysis(holdings, analysis.suggestions)
-    print(f"\nWhat-if Analysis:")
-    print(f"Net Impact: ${what_if['net_impact']:.2f} ({what_if['impact_percentage']:.2f}%)")
+    print("Rebalancing Engine - No mock data used")
+    print("This engine processes real portfolio data only")
