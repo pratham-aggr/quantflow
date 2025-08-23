@@ -1,15 +1,14 @@
 [phases.setup]
-nixPkgs = ["python39", "python39Packages.pip", "python39Packages.setuptools", "python39Packages.wheel"]
+nixPkgs = ["conda"]
 
 [phases.install]
 cmds = [
-  "pip install --upgrade pip setuptools wheel",
-  "pip install -r requirements.txt"
+  "conda env create -f environment.yml"
 ]
 
 [phases.build]
 cmds = ["echo 'Build complete'"]
 
 [start]
-cmd = "gunicorn --bind 0.0.0.0:$PORT app:app"
+cmd = "conda activate quantflow-risk-engine && gunicorn --bind 0.0.0.0:$PORT app:app"
 
