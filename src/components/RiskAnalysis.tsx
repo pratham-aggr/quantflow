@@ -206,16 +206,16 @@ export const RiskAnalysis: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-robinhood-dark dark:to-robinhood-dark-secondary flex items-center justify-center">
         <div className="robinhood-card p-12 text-center">
-          <Shield className="w-16 h-16 text-neutral-400 dark:text-neutral-500 mx-auto mb-4" />
+          <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-3xl font-bold robinhood-text-primary mb-4">
             Risk Analysis
           </h2>
           <p className="robinhood-text-secondary text-lg mb-6">
             Please add some holdings to your portfolio to view risk analysis.
           </p>
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4 rounded-lg">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
             <div className="flex items-center">
-              <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 mr-2" />
+              <Info className="w-5 h-5 text-blue-600 mr-2" />
               <p className="text-sm text-blue-800 dark:text-blue-200">
                 Risk analysis requires portfolio holdings with market data.
               </p>
@@ -230,7 +230,7 @@ export const RiskAnalysis: React.FC = () => {
     return (
       <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-robinhood-dark dark:to-robinhood-dark-secondary flex items-center justify-center">
         <div className="robinhood-card p-12 text-center">
-          <RefreshCw className="w-16 h-16 text-blue-600 dark:text-blue-400 mx-auto mb-4 animate-spin" />
+          <RefreshCw className="w-16 h-16 text-blue-600 mx-auto mb-4 animate-spin" />
           <h2 className="text-3xl font-bold robinhood-text-primary mb-4">
             Initializing Risk Analysis
           </h2>
@@ -261,7 +261,7 @@ export const RiskAnalysis: React.FC = () => {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <div className={`w-3 h-3 rounded-full ${engineAvailable ? 'bg-green-500' : 'bg-red-500'}`} />
-                <span className="text-sm robinhood-text-secondary">
+                <span className="text-sm text-gray-600">
                   {engineAvailable ? 'Advanced Engine Available' : 'Advanced Engine Offline'}
                 </span>
               </div>
@@ -285,7 +285,7 @@ export const RiskAnalysis: React.FC = () => {
           {!engineAvailable && (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
               <div className="flex items-center">
-                <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mr-2" />
+                <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2" />
                 <div>
                   <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
                     Advanced Risk Engine Unavailable
@@ -332,12 +332,12 @@ const LocalRiskDashboard: React.FC<LocalRiskDashboardProps> = ({
 }) => {
   const getRiskColor = (riskLevel: string) => {
     switch (riskLevel) {
-      case 'Very Low': return 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
-      case 'Low': return 'text-green-500 dark:text-green-400 bg-green-50 dark:bg-green-900/20'
-      case 'Moderate': return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
-      case 'High': return 'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/20'
-      case 'Very High': return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20'
-      default: return 'text-neutral-600 dark:text-neutral-400 bg-neutral-50 dark:bg-neutral-800'
+      case 'Very Low': return 'text-green-600 bg-green-50'
+      case 'Low': return 'text-green-500 bg-green-50'
+      case 'Moderate': return 'text-yellow-600 bg-yellow-50'
+      case 'High': return 'text-orange-600 bg-orange-50'
+      case 'Very High': return 'text-red-600 bg-red-50'
+      default: return 'text-gray-600 bg-gray-50'
     }
   }
 
@@ -371,105 +371,105 @@ const LocalRiskDashboard: React.FC<LocalRiskDashboardProps> = ({
     <div className="space-y-6">
       {/* Risk Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="robinhood-card p-6">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium robinhood-text-secondary">Risk Score</p>
-              <p className="text-2xl font-bold robinhood-text-primary">{riskMetrics.riskScore}/10</p>
+              <p className="text-sm font-medium text-gray-600">Risk Score</p>
+              <p className="text-2xl font-bold text-gray-900">{riskMetrics.riskScore}/10</p>
               <p className={`text-sm font-medium ${getRiskColor(riskMetrics.riskLevel)}`}>
                 {riskMetrics.riskLevel}
               </p>
             </div>
-            <Target className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <Target className="w-8 h-8 text-blue-600" />
           </div>
         </div>
 
-        <div className="robinhood-card p-6">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium robinhood-text-secondary">Portfolio Value</p>
-              <p className="text-2xl font-bold robinhood-text-primary">
+              <p className="text-sm font-medium text-gray-600">Portfolio Value</p>
+              <p className="text-2xl font-bold text-gray-900">
                 ${riskMetrics.totalValue.toLocaleString()}
               </p>
-              <p className={`text-sm font-medium ${riskMetrics.totalPnL >= 0 ? 'robinhood-gain' : 'robinhood-loss'}`}>
+              <p className={`text-sm font-medium ${riskMetrics.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {riskMetrics.totalPnL >= 0 ? '+' : ''}${riskMetrics.totalPnL.toLocaleString()} ({riskMetrics.totalPnLPercent.toFixed(2)}%)
               </p>
             </div>
-            <BarChart3 className="w-8 h-8 text-green-600 dark:text-green-400" />
+            <BarChart3 className="w-8 h-8 text-green-600" />
           </div>
         </div>
 
-        <div className="robinhood-card p-6">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium robinhood-text-secondary">Concentration Risk</p>
-              <p className="text-2xl font-bold robinhood-text-primary">{riskMetrics.concentrationRisk}%</p>
-              <p className="text-sm robinhood-text-tertiary">Top 3 holdings</p>
+              <p className="text-sm font-medium text-gray-600">Concentration Risk</p>
+              <p className="text-2xl font-bold text-gray-900">{riskMetrics.concentrationRisk}%</p>
+              <p className="text-sm text-gray-500">Top 3 holdings</p>
             </div>
-            <PieChart className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+            <PieChart className="w-8 h-8 text-purple-600" />
           </div>
         </div>
 
-        <div className="robinhood-card p-6">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium robinhood-text-secondary">Diversification</p>
-              <p className="text-2xl font-bold robinhood-text-primary">{riskMetrics.diversificationScore}%</p>
-              <p className="text-sm robinhood-text-tertiary">{holdings.length} holdings</p>
+              <p className="text-sm font-medium text-gray-600">Diversification</p>
+              <p className="text-2xl font-bold text-gray-900">{riskMetrics.diversificationScore}%</p>
+              <p className="text-sm text-gray-500">{holdings.length} holdings</p>
             </div>
-            <Activity className="w-8 h-8 text-orange-600 dark:text-orange-400" />
+            <Activity className="w-8 h-8 text-orange-600" />
           </div>
         </div>
       </div>
 
       {/* Sector Allocation */}
-      <div className="robinhood-card p-6">
-        <h3 className="text-lg font-semibold robinhood-text-primary mb-4 flex items-center">
-          <PieChart className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <PieChart className="w-5 h-5 mr-2 text-blue-600" />
           Sector Allocation
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(riskMetrics.sectorAllocation).map(([sector, percentage]) => (
-            <div key={sector} className="flex justify-between items-center p-3 bg-neutral-50 dark:bg-neutral-800 rounded-lg">
-              <span className="text-sm font-medium robinhood-text-primary">{sector}</span>
-              <span className="text-sm font-bold robinhood-text-primary">{percentage.toFixed(1)}%</span>
+            <div key={sector} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+              <span className="text-sm font-medium text-gray-700">{sector}</span>
+              <span className="text-sm font-bold text-gray-900">{percentage.toFixed(1)}%</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Recommendations */}
-      <div className="robinhood-card p-6">
-        <h3 className="text-lg font-semibold robinhood-text-primary mb-4 flex items-center">
-          <Shield className="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400" />
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <Shield className="w-5 h-5 mr-2 text-blue-600" />
           Risk Recommendations
         </h3>
         <div className="space-y-3">
           {generateRecommendations().map((recommendation, index) => (
-            <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <div className="w-2 h-2 bg-blue-600 dark:bg-blue-400 rounded-full mt-2 flex-shrink-0" />
-              <p className="text-sm text-blue-800 dark:text-blue-200">{recommendation}</p>
+            <div key={index} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-lg">
+              <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
+              <p className="text-sm text-blue-800">{recommendation}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Holdings Summary */}
-      <div className="robinhood-card p-6">
-        <h3 className="text-lg font-semibold robinhood-text-primary mb-4">Holdings Summary</h3>
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Holdings Summary</h3>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-neutral-200 dark:divide-neutral-700">
-            <thead className="bg-neutral-50 dark:bg-neutral-800">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium robinhood-text-secondary uppercase tracking-wider">Symbol</th>
-                <th className="px-6 py-3 text-left text-xs font-medium robinhood-text-secondary uppercase tracking-wider">Quantity</th>
-                <th className="px-6 py-3 text-left text-xs font-medium robinhood-text-secondary uppercase tracking-wider">Avg Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium robinhood-text-secondary uppercase tracking-wider">Current Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium robinhood-text-secondary uppercase tracking-wider">Value</th>
-                <th className="px-6 py-3 text-left text-xs font-medium robinhood-text-secondary uppercase tracking-wider">P&L</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Symbol</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Price</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">P&L</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-robinhood-dark-secondary divide-y divide-neutral-200 dark:divide-neutral-700">
+            <tbody className="bg-white divide-y divide-gray-200">
               {holdings.map((holding, index) => {
                 const currentPrice = holding.current_price || holding.avg_price
                 const value = holding.quantity * currentPrice
@@ -478,23 +478,23 @@ const LocalRiskDashboard: React.FC<LocalRiskDashboardProps> = ({
                   (pnl / (holding.quantity * holding.avg_price)) * 100 : 0
                 
                 return (
-                  <tr key={index} className="hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium robinhood-text-primary">
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {holding.symbol}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm robinhood-text-secondary">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {holding.quantity}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm robinhood-text-secondary">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       ${holding.avg_price.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm robinhood-text-secondary">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       ${currentPrice.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm robinhood-text-secondary">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       ${value.toFixed(2)}
                     </td>
-                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${pnl >= 0 ? 'robinhood-gain' : 'robinhood-loss'}`}>
+                    <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {pnl >= 0 ? '+' : ''}${pnl.toFixed(2)} ({pnlPercent.toFixed(2)}%)
                     </td>
                   </tr>
