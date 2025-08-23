@@ -67,20 +67,26 @@ class AdvancedRiskService {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'http://localhost:5002'
+    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'http://localhost:5001'
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const startTime = performance.now()
     
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
           'Content-Type': 'application/json',
           ...options.headers,
         },
+        signal: controller.signal,
         ...options,
       })
+
+      clearTimeout(timeoutId)
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)

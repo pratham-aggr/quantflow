@@ -132,12 +132,16 @@ export const InteractiveStockChart: React.FC<InteractiveStockChartProps> = ({
     }
   }
 
-  // Subscribe to real-time updates
+  // Subscribe to real-time updates (optional)
   useEffect(() => {
     if (!symbol) return
 
-    // Connect WebSocket if not already connected
-    marketDataService.connectWebSocket()
+    // Try to connect WebSocket if not already connected (optional)
+    try {
+      marketDataService.connectWebSocket()
+    } catch (error) {
+      console.log('WebSocket not available - continuing without real-time updates')
+    }
 
     // Subscribe to real-time updates
     const unsubscribe = marketDataService.subscribeToRealTimeUpdates(symbol, (quote) => {
@@ -551,7 +555,7 @@ export const InteractiveStockChart: React.FC<InteractiveStockChartProps> = ({
           {loading && (
             <div className="flex items-center justify-center h-64">
               <div className="flex items-center space-x-2">
-                <RefreshCw className="w-5 h-5 animate-spin text-blue-600" />
+                <RefreshCw className="w-5 h-5 animate-spin text-primary-600" />
                 <span className="text-gray-600">Loading chart data...</span>
               </div>
             </div>
@@ -563,7 +567,7 @@ export const InteractiveStockChart: React.FC<InteractiveStockChartProps> = ({
                 <div className="text-red-600 mb-2">{error}</div>
                 <button
                   onClick={fetchHistoricalData}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
                 >
                   Retry
                 </button>

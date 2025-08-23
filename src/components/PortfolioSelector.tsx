@@ -63,26 +63,7 @@ export const PortfolioSelector: React.FC<PortfolioSelectorProps> = ({
         </div>
       </div>
 
-      {currentPortfolio && (
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-500">Portfolio Name</p>
-            <p className="font-medium text-gray-900">{currentPortfolio.name}</p>
-          </div>
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-500">Cash Balance</p>
-            <p className="font-medium text-gray-900">
-              ${currentPortfolio.cash_balance.toLocaleString()}
-            </p>
-          </div>
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <p className="text-sm text-gray-500">Total Holdings</p>
-            <p className="font-medium text-gray-900">
-              {currentPortfolio.holdings.length}
-            </p>
-          </div>
-        </div>
-      )}
+
     </div>
   )
 }

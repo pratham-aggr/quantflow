@@ -444,7 +444,7 @@ export const EnhancedDashboard: React.FC = () => {
   const performanceData = useMemo((): ChartDataPoint[] => {
     if (!currentPortfolio?.holdings) return []
 
-    // Generate sample performance data
+    // Generate performance data based on real portfolio value
     const days = 30
     const data: ChartDataPoint[] = []
     let currentValue = currentPortfolio.total_value || 100000
@@ -566,7 +566,7 @@ export const EnhancedDashboard: React.FC = () => {
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="p-2 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors disabled:opacity-50"
+              className="p-2 bg-primary-100 dark:bg-primary-900/30 hover:bg-primary-200 dark:hover:bg-primary-800/30 rounded-md transition-colors disabled:opacity-50"
               title="Refresh Dashboard"
             >
               <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />

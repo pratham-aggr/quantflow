@@ -193,7 +193,7 @@ export const AdvancedPasswordResetForm: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {isLoading ? (
                 <div className="flex items-center justify-center">
@@ -238,7 +238,7 @@ export const AdvancedPasswordResetForm: React.FC = () => {
               <button
                 type="button"
                 onClick={generateNewSuggestions}
-                className="text-blue-600 hover:text-blue-700 text-sm flex items-center"
+                className="text-primary-600 hover:text-primary-700 text-sm flex items-center"
               >
                 <RefreshCw className="w-4 h-4 mr-1" />
                 New
@@ -338,7 +338,7 @@ export const AdvancedPasswordResetForm: React.FC = () => {
                 })}
                 type={showConfirmPassword ? 'text' : 'password'}
                 id="confirmPassword"
-                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 placeholder="Confirm new password"
               />
               <button
@@ -366,7 +366,7 @@ export const AdvancedPasswordResetForm: React.FC = () => {
           <button
             type="submit"
             disabled={isLoading || passwordStrength.score < 3 || watchedPassword !== watchedConfirmPassword}
-            className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full bg-primary-600 text-white py-3 px-4 rounded-lg hover:bg-primary-700 focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isLoading ? (
               <div className="flex items-center justify-center">

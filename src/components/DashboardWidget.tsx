@@ -385,10 +385,10 @@ export const DashboardWidget: React.FC<DashboardWidgetProps> = ({
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
+            className="p-1 hover:bg-primary-100 dark:hover:bg-primary-900/30 rounded transition-colors disabled:opacity-50"
             title="Refresh"
           >
-            <RefreshCw className={`w-4 h-4 text-gray-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 text-primary-600 ${isRefreshing ? 'animate-spin' : ''}`} />
           </button>
 
           {/* Minimize/Maximize button */}

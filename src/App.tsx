@@ -8,10 +8,11 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { PublicRoute } from './components/PublicRoute';
 import { SimpleDashboard } from './components/SimpleDashboard';
 import { Settings } from './components/Settings';
+import { Profile } from './components/Profile';
 import { AuthPage } from './components/AuthPage';
 import { ResetPasswordForm } from './components/ResetPasswordForm';
 import { PortfolioManagement } from './components/PortfolioManagement';
-import { Rebalancing } from './components/Rebalancing';
+import Rebalancing from './components/Rebalancing';
 import { RiskAnalysis } from './components/RiskAnalysis';
 import { MarketData } from './components/MarketData';
 import { Navigation } from './components/Navigation';
@@ -156,6 +157,14 @@ function App() {
                         element={
                           <ProtectedRoute>
                             <Settings />
+                          </ProtectedRoute>
+                        } 
+                      />
+                      <Route 
+                        path="/profile" 
+                        element={
+                          <ProtectedRoute>
+                            <Profile />
                           </ProtectedRoute>
                         } 
                       />

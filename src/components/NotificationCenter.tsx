@@ -78,10 +78,13 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     }
   }, [isOpen, user])
 
-  // Connect to WebSocket for real-time notifications
+  // Connect to WebSocket for real-time notifications (optional)
   useEffect(() => {
     if (user) {
-      notificationService.connectWebSocket(user.id)
+      // Try to connect to WebSocket, but don't fail if it's not available
+      notificationService.connectWebSocket(user.id).catch(() => {
+        console.log('WebSocket not available - continuing without real-time notifications')
+      })
       
       const unsubscribe = notificationService.addNotificationListener(
         user.id,

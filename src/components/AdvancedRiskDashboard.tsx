@@ -55,6 +55,11 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
       return
     }
 
+    // Prevent multiple simultaneous requests
+    if (loading) {
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -71,8 +76,11 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
       setRiskReport(report)
       success('Risk Analysis Complete', 'Advanced risk report generated successfully')
     } catch (err) {
-      setError('Failed to generate risk report')
-      showError('Analysis Failed', 'Unable to generate advanced risk analysis')
+      console.error('Advanced risk analysis error:', err)
+      setError('Failed to generate risk report - advanced engine may be unavailable')
+      showError('Analysis Failed', 'Advanced engine unavailable. Consider using local analysis mode.')
+      // Set a fallback report to prevent infinite retries
+      setRiskReport(null)
     } finally {
       setLoading(false)
     }
@@ -80,16 +88,18 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
 
   // Auto-refresh functionality
   useEffect(() => {
-    if (!autoRefresh) return
+    if (!autoRefresh || !riskReport) return
 
     const interval = setInterval(generateRiskReport, refreshInterval)
     return () => clearInterval(interval)
-  }, [autoRefresh, refreshInterval, holdings, riskTolerance])
+  }, [autoRefresh, refreshInterval, holdings, riskTolerance, riskReport])
 
-  // Initial report generation
+  // Initial report generation - only run once when component mounts or holdings change
   useEffect(() => {
-    generateRiskReport()
-  }, [holdings, riskTolerance])
+    if (holdings && holdings.length > 0 && !riskReport && !loading) {
+      generateRiskReport()
+    }
+  }, [holdings, riskTolerance, riskReport, loading])
 
   // Toggle section expansion
   const toggleSection = (section: string) => {
@@ -142,6 +152,16 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
           <RefreshCw className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">Generating Risk Analysis</h3>
           <p className="text-gray-500">Running Monte Carlo simulations and advanced analytics...</p>
+          {error && (
+            <div className="mt-4">
+              <button
+                onClick={() => setError(null)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors"
+              >
+                Switch to Local Mode
+              </button>
+            </div>
+          )}
         </div>
       </div>
     )
@@ -202,7 +222,7 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
             <button
               onClick={generateRiskReport}
               disabled={loading}
-              className="flex items-center px-3 py-2 text-sm font-medium text-green-600 bg-green-50 rounded-lg hover:bg-green-100 transition-colors disabled:opacity-50"
+              className="flex items-center px-3 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
               Refresh

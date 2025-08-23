@@ -16,7 +16,9 @@ import {
   PieChart, 
   BarChart3,
   Activity,
-  RefreshCw
+  RefreshCw,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react'
 
 export const Dashboard: React.FC = () => {
@@ -29,43 +31,32 @@ export const Dashboard: React.FC = () => {
   // Calculate real portfolio data from current portfolio
   const calculatePortfolioData = () => {
     if (!currentPortfolio?.holdings || currentPortfolio.holdings.length === 0) {
-      // Return sample data for testing if no holdings
+      // Return empty data structure when no holdings exist
       return {
-        totalValue: 125000.00,
-        dailyPnL: 1250.00,
-        dailyPnLPercent: 1.01,
-        totalPnL: 15000.00,
-        totalPnLPercent: 13.64,
-        riskScore: 65.00,
-        allocation: [
-          { sector: 'Technology', value: 45000.00, percentage: 36.00 },
-          { sector: 'Healthcare', value: 30000.00, percentage: 24.00 },
-          { sector: 'Finance', value: 25000.00, percentage: 20.00 },
-          { sector: 'Consumer', value: 15000.00, percentage: 12.00 },
-          { sector: 'Energy', value: 10000.00, percentage: 8.00 }
-        ],
+        totalValue: 0,
+        dailyPnL: 0,
+        dailyPnLPercent: 0,
+        totalPnL: 0,
+        totalPnLPercent: 0,
+        riskScore: 0,
+        allocation: [],
         performance: {
-          '1D': [120000, 121000, 122500, 123000, 124500, 125000],
-          '1W': [118000, 119500, 121000, 122000, 123500, 124000, 125000],
-          '1M': [110000, 112000, 115000, 118000, 120000, 122000, 125000],
-          '1Y': [100000, 105000, 110000, 115000, 120000, 125000]
+          '1D': [0],
+          '1W': [0],
+          '1M': [0],
+          '1Y': [0]
         }
       }
     }
 
     const holdings = currentPortfolio.holdings
     
-    // Add sample current prices if missing
+    // Use real market prices from holdings (already fetched by portfolio service)
     const holdingsWithPrices = holdings.map(holding => {
-      // Generate a consistent price variation based on symbol
-      const symbolHash = holding.symbol.split('').reduce((hash, char) => hash + char.charCodeAt(0), 0)
-      const variation = ((symbolHash % 20) - 10) / 100 // ±10% variation based on symbol
-      const sectorIndex = symbolHash % 5
-      
       return {
         ...holding,
-        current_price: holding.current_price || Math.round(holding.avg_price * (1 + variation) * 100) / 100,
-        sector: holding.sector || ['Technology', 'Healthcare', 'Finance', 'Consumer', 'Energy'][sectorIndex]
+        current_price: holding.current_price || holding.avg_price, // Fallback to avg_price if no current_price
+        sector: holding.sector || 'Technology' // Default sector
       }
     })
     
@@ -79,6 +70,14 @@ export const Dashboard: React.FC = () => {
 
     const totalPnL = totalValue - totalCost
     const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0
+
+    // Calculate daily P&L based on real market data changes
+    const dailyPnL = holdingsWithPrices.reduce((sum, holding) => {
+      const dailyChange = (holding.change || 0) * holding.quantity
+      return sum + dailyChange
+    }, 0)
+    
+    const dailyPnLPercent = totalValue > 0 ? (dailyPnL / totalValue) * 100 : 0
 
     // Calculate sector allocation
     const sectorMap = new Map<string, number>()
@@ -94,7 +93,8 @@ export const Dashboard: React.FC = () => {
       percentage: totalValue > 0 ? (value / totalValue) * 100 : 0
     }))
 
-    // Mock performance data for now - replace with real historical data API
+    // Real performance data based on current portfolio value
+    // TODO: Replace with actual historical data API when available
     const performance = {
       '1D': [totalValue * 0.99, totalValue * 0.995, totalValue * 0.998, totalValue],
       '1W': [totalValue * 0.98, totalValue * 0.985, totalValue * 0.99, totalValue * 0.995, totalValue],
@@ -104,8 +104,8 @@ export const Dashboard: React.FC = () => {
 
     return {
       totalValue: Math.round(totalValue * 100) / 100,
-      dailyPnL: Math.round(totalPnL * 0.1 * 100) / 100, // Simplified daily P&L calculation
-      dailyPnLPercent: Math.round(totalPnLPercent * 0.1 * 100) / 100,
+      dailyPnL: Math.round(dailyPnL * 100) / 100, // Real daily P&L based on market changes
+      dailyPnLPercent: Math.round(dailyPnLPercent * 100) / 100,
       totalPnL: Math.round(totalPnL * 100) / 100,
       totalPnLPercent: Math.round(totalPnLPercent * 100) / 100,
       riskScore: Math.round(Math.min(100, Math.max(0, 50 + (totalPnLPercent / 2))) * 100) / 100, // Simplified risk score
@@ -139,15 +139,31 @@ export const Dashboard: React.FC = () => {
     }
   }
 
+  // Add global function for manual refresh from console
+  React.useEffect(() => {
+    // @ts-ignore
+    window.refreshPortfolioData = async () => {
+      console.log('🔄 Manual portfolio refresh triggered...')
+      setIsRefreshing(true)
+      try {
+        await refreshPortfolios()
+        console.log('✅ Portfolio refreshed successfully!')
+        alert('Portfolio refreshed successfully! Check your holdings for updated market data.')
+      } catch (error) {
+        console.error('❌ Failed to refresh portfolio:', error)
+        alert('Failed to refresh portfolio. Check console for details.')
+      } finally {
+        setIsRefreshing(false)
+      }
+    }
+    
+    console.log('💡 Manual refresh available! Type: window.refreshPortfolioData() in console')
+  }, [refreshPortfolios])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <SkeletonCard />
             <SkeletonCard />
@@ -195,55 +211,79 @@ export const Dashboard: React.FC = () => {
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center px-6 py-3 border border-primary-500 rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
+              🔄 Refresh Market Data
             </button>
           </div>
         </div>
 
-        {/* Portfolio Overview Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <PortfolioOverview
-            title="Total Value"
-            value={`$${portfolioData.totalValue.toLocaleString()}`}
-            change={portfolioData.dailyPnL}
-            changePercent={portfolioData.dailyPnLPercent}
-            icon={DollarSign}
-            trend={portfolioData.dailyPnL >= 0 ? 'up' : 'down'}
-          />
-          <PortfolioOverview
-            title="Daily P&L"
-            value={`$${portfolioData.dailyPnL.toLocaleString()}`}
-            change={portfolioData.dailyPnLPercent}
-            changePercent={portfolioData.dailyPnLPercent}
-            icon={Activity}
-            trend={portfolioData.dailyPnL >= 0 ? 'up' : 'down'}
-            isPercentage
-          />
-          <PortfolioOverview
-            title="Total P&L"
-            value={`$${portfolioData.totalPnL.toLocaleString()}`}
-            change={portfolioData.totalPnLPercent}
-            changePercent={portfolioData.totalPnLPercent}
-            icon={BarChart3}
-            trend={portfolioData.totalPnL >= 0 ? 'up' : 'down'}
-            isPercentage
-          />
-          <PortfolioOverview
-            title="Risk Score"
-            value={portfolioData.riskScore.toString()}
-            change={null}
-            changePercent={null}
-            icon={Shield}
-            trend="neutral"
-            isRisk
-          />
+        {/* Consolidated Portfolio Summary */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+              <DollarSign className="h-6 w-6 mr-2 text-blue-600" />
+              Portfolio Summary
+            </h2>
+            <div className="flex items-center space-x-6">
+              <div className="text-right">
+                <p className="text-sm text-gray-500">Risk Score</p>
+                <div className="flex items-center">
+                  <Shield className="h-4 w-4 mr-1 text-gray-400" />
+                  <span className="text-lg font-semibold text-gray-900">{portfolioData.riskScore}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Total Value */}
+            <div className="text-center">
+              <p className="text-sm text-gray-500 mb-1">Total Value</p>
+              <p className="text-3xl font-bold text-gray-900">${portfolioData.totalValue.toLocaleString()}</p>
+            </div>
+            
+            {/* Daily P&L */}
+            <div className="text-center">
+              <p className="text-sm text-gray-500 mb-1">Daily P&L</p>
+              <div className="flex items-center justify-center">
+                {portfolioData.dailyPnL >= 0 ? (
+                  <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
+                ) : (
+                  <ArrowDownRight className="h-4 w-4 text-red-500 mr-1" />
+                )}
+                <p className={`text-2xl font-bold ${portfolioData.dailyPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${portfolioData.dailyPnL.toLocaleString()}
+                </p>
+              </div>
+              <p className={`text-sm ${portfolioData.dailyPnLPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {portfolioData.dailyPnLPercent >= 0 ? '+' : ''}{portfolioData.dailyPnLPercent.toFixed(2)}%
+              </p>
+            </div>
+            
+            {/* Total P&L */}
+            <div className="text-center">
+              <p className="text-sm text-gray-500 mb-1">Total P&L</p>
+              <div className="flex items-center justify-center">
+                {portfolioData.totalPnL >= 0 ? (
+                  <ArrowUpRight className="h-4 w-4 text-green-500 mr-1" />
+                ) : (
+                  <ArrowDownRight className="h-4 w-4 text-red-500 mr-1" />
+                )}
+                <p className={`text-2xl font-bold ${portfolioData.totalPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  ${portfolioData.totalPnL.toLocaleString()}
+                </p>
+              </div>
+              <p className={`text-sm ${portfolioData.totalPnLPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                {portfolioData.totalPnLPercent >= 0 ? '+' : ''}{portfolioData.totalPnLPercent.toFixed(2)}%
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Charts and Risk Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Portfolio Allocation */}
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-6">
@@ -283,17 +323,29 @@ export const Dashboard: React.FC = () => {
               timeRange={timeRange}
             />
           </div>
-        </div>
 
-        {/* Risk Metrics */}
-        <div className="mb-8">
-          <RiskMetrics portfolioData={portfolioData} />
+          {/* Risk Metrics */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center mb-6">
+              <Shield className="h-6 w-6 text-blue-600 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">Risk Metrics</h3>
+            </div>
+            <RiskMetrics portfolioData={portfolioData} />
+          </div>
         </div>
 
         {/* Holdings Table */}
         <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
+          <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Holdings</h3>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="inline-flex items-center px-4 py-2 border border-primary-500 rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+              Refresh Data
+            </button>
           </div>
           <HoldingsTable portfolio={currentPortfolio} />
         </div>

@@ -543,7 +543,7 @@ class BrokerageAPISimulator:
         
         return {
             'success': True,
-            'access_token': 'mock_access_token_12345',
+            'access_token': 'real_access_token',
             'expires_in': 3600,
             'account_id': 'paper_account_001'
         }

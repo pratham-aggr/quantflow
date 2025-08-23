@@ -438,7 +438,11 @@ class MarketDataService {
 
       this.websocket.onclose = () => {
         console.log('📡 WebSocket disconnected')
-        this.attemptReconnect()
+        if (this.reconnectAttempts < this.maxReconnectAttempts) {
+          this.attemptReconnect()
+        } else {
+          console.log('Max WebSocket reconnection attempts reached - continuing without real-time data')
+        }
       }
 
       this.websocket.onerror = (error) => {
@@ -446,6 +450,7 @@ class MarketDataService {
       }
     } catch (error) {
       console.error('Failed to connect WebSocket:', error)
+      console.log('Continuing without real-time market data')
     }
   }
 
@@ -458,6 +463,8 @@ class MarketDataService {
       setTimeout(() => {
         this.connectWebSocket()
       }, delay)
+    } else {
+      console.log('Max WebSocket reconnection attempts reached - continuing without real-time data')
     }
   }
 

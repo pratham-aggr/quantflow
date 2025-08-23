@@ -7,15 +7,14 @@ import {
   X, 
   User, 
   LogOut, 
-  Settings, 
-  Bell, 
   BarChart3, 
   Briefcase, 
   TrendingUp, 
   Shield, 
-  Globe 
+  Globe,
+  Settings
 } from 'lucide-react'
-import { NotificationCenter } from './NotificationCenter'
+
 import { Menu as HeadlessMenu, Transition } from '@headlessui/react'
 
 const navigation = [
@@ -23,15 +22,13 @@ const navigation = [
   { name: 'Portfolios', href: '/portfolios', icon: Briefcase },
   { name: 'Rebalancing', href: '/rebalancing', icon: TrendingUp },
   { name: 'Risk Analysis', href: '/risk-analysis', icon: Shield },
-  { name: 'Market Data', href: '/market-data', icon: Globe },
-  { name: 'Settings', href: '/settings', icon: Settings }
+  { name: 'Market Data', href: '/market-data', icon: Globe }
 ]
 
 export const Navigation: React.FC = () => {
   const { user, logout } = useAuth()
   const location = useLocation()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false)
 
   const handleLogout = async () => {
     try {
@@ -81,15 +78,6 @@ export const Navigation: React.FC = () => {
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-4">
-            {/* Notification Bell */}
-            <button
-              onClick={() => setNotificationCenterOpen(true)}
-              className="relative p-2 robinhood-text-secondary hover:robinhood-text-primary transition-colors duration-200 rounded-robinhood hover:bg-neutral-50 dark:hover:bg-robinhood-dark-tertiary"
-            >
-              <Bell className="h-5 w-5" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-loss-500 rounded-full animate-pulse"></span>
-            </button>
-            
             {/* Dark Mode Toggle */}
             <DarkModeToggle />
             
@@ -120,10 +108,23 @@ export const Navigation: React.FC = () => {
                       <HeadlessMenu.Item>
                         {({ active }) => (
                           <Link
+                            to="/profile"
+                            className={`${
+                              active ? 'bg-neutral-50 dark:bg-robinhood-dark-tertiary' : ''
+                            } flex items-center w-full px-4 py-3 text-sm robinhood-text-secondary transition-colors duration-200`}
+                          >
+                            <User className="mr-3 h-4 w-4" />
+                            Profile
+                          </Link>
+                        )}
+                      </HeadlessMenu.Item>
+                      <HeadlessMenu.Item>
+                        {({ active }) => (
+                          <Link
                             to="/settings"
                             className={`${
                               active ? 'bg-neutral-50 dark:bg-robinhood-dark-tertiary' : ''
-                            } flex items-center px-4 py-3 text-sm robinhood-text-secondary transition-colors duration-200`}
+                            } flex items-center w-full px-4 py-3 text-sm robinhood-text-secondary transition-colors duration-200`}
                           >
                             <Settings className="mr-3 h-4 w-4" />
                             Settings
@@ -199,7 +200,7 @@ export const Navigation: React.FC = () => {
               )
             })}
             
-            {/* Mobile user info */}
+            {/* Mobile user menu */}
             <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-robinhood-dark-border">
               <div className="flex items-center space-x-3 px-4 py-3">
                 <div className="w-10 h-10 bg-gradient-robinhood rounded-full flex items-center justify-center shadow-robinhood">
@@ -216,6 +217,26 @@ export const Navigation: React.FC = () => {
                   </p>
                 </div>
               </div>
+              
+              {/* Mobile Profile & Settings Links */}
+              <Link
+                to="/profile"
+                className="w-full flex items-center space-x-3 px-4 py-3 text-sm robinhood-text-secondary hover:robinhood-text-primary hover:bg-neutral-50 dark:hover:bg-robinhood-dark-tertiary rounded-robinhood transition-colors duration-200"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <User className="w-4 h-4" />
+                <span>Profile</span>
+              </Link>
+              
+              <Link
+                to="/settings"
+                className="w-full flex items-center space-x-3 px-4 py-3 text-sm robinhood-text-secondary hover:robinhood-text-primary hover:bg-neutral-50 dark:hover:bg-robinhood-dark-tertiary rounded-robinhood transition-colors duration-200"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <Settings className="w-4 h-4" />
+                <span>Settings</span>
+              </Link>
+              
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center space-x-3 px-4 py-3 text-sm robinhood-text-secondary hover:robinhood-text-primary hover:bg-neutral-50 dark:hover:bg-robinhood-dark-tertiary rounded-robinhood transition-colors duration-200"
@@ -228,11 +249,6 @@ export const Navigation: React.FC = () => {
         </div>
       </Transition>
       
-      {/* Notification Center */}
-      <NotificationCenter 
-        isOpen={notificationCenterOpen}
-        onClose={() => setNotificationCenterOpen(false)}
-      />
     </nav>
   )
 }

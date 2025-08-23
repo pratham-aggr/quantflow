@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { Portfolio, Holding, Transaction, CreatePortfolioData, CreateHoldingData, CreateTransactionData, PortfolioWithHoldings } from '../types/portfolio'
+import { marketDataService } from './marketDataService'
 
 const isSupabaseConfigured = process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_ANON_KEY && process.env.REACT_APP_SUPABASE_URL !== 'https://placeholder.supabase.co' && process.env.REACT_APP_SUPABASE_ANON_KEY !== 'placeholder-key'
 
@@ -114,18 +115,101 @@ export const portfolioService = {
       throw new Error('Supabase not configured. Please set up your Supabase credentials.')
     }
     
-    const { data: holding, error } = await supabase
-      .from('holdings')
-      .insert(data)
-      .select()
-      .single()
+    console.log('🚀 Starting createHolding for:', data.symbol)
     
-    if (error) { 
-      console.error('Error creating holding:', error)
-      return null 
+    try {
+      // Create the holding
+      console.log('📝 Creating holding in database...')
+      const { data: holding, error: holdingError } = await supabase
+        .from('holdings')
+        .insert(data)
+        .select()
+        .single()
+      
+      if (holdingError) { 
+        console.error('❌ Error creating holding:', holdingError)
+        return null 
+      }
+      
+      console.log('✅ Holding created successfully:', holding)
+
+      // Create a corresponding BUY transaction
+      console.log('💳 Creating BUY transaction...')
+      const transactionData: CreateTransactionData = {
+        portfolio_id: data.portfolio_id,
+        symbol: data.symbol,
+        type: 'BUY',
+        quantity: data.quantity,
+        price: data.avg_price,
+        date: new Date().toISOString()
+      }
+
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert(transactionData)
+        .select()
+        .single()
+
+      if (transactionError) {
+        console.error('❌ Error creating transaction for holding:', transactionError)
+        // Don't fail the holding creation if transaction fails
+        console.warn('⚠️ Holding created but transaction failed')
+      } else {
+        console.log('✅ Transaction created successfully')
+      }
+
+      // Immediately fetch current market data for the new holding
+      console.log(`📈 Fetching current market data for ${data.symbol}...`)
+      console.log('🔍 Checking if marketDataService is available:', !!marketDataService)
+      
+      try {
+        const quote = await marketDataService.getStockQuote(data.symbol)
+        console.log('📊 Quote received:', quote)
+        
+        if (quote) {
+          console.log(`✅ Got market data for ${data.symbol}: $${quote.price} (${quote.change >= 0 ? '+' : ''}$${quote.change}, ${quote.change >= 0 ? '+' : ''}${quote.changePercent}%)`)
+          
+          // Update the holding with current market data
+          console.log('🔄 Updating holding with market data...')
+          const { error: updateError } = await supabase
+            .from('holdings')
+            .update({
+              current_price: quote.price,
+              change: quote.change,
+              changePercent: quote.changePercent,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', holding.id)
+          
+          if (updateError) {
+            console.error(`❌ Error updating ${data.symbol} with market data:`, updateError)
+          } else {
+            console.log(`✅ Updated ${data.symbol} with current market data`)
+            // Return the updated holding with market data
+            const updatedHolding = {
+              ...holding,
+              current_price: quote.price,
+              change: quote.change,
+              changePercent: quote.changePercent
+            }
+            console.log('🎉 Returning updated holding:', updatedHolding)
+            return updatedHolding
+          }
+        } else {
+          console.warn(`⚠️ No market data available for ${data.symbol}`)
+        }
+      } catch (marketDataError) {
+        console.error(`❌ Error fetching market data for ${data.symbol}:`, marketDataError)
+        console.error('Market data error details:', marketDataError)
+        // Don't fail the holding creation if market data fails
+      }
+      
+      console.log('🏁 Returning original holding (no market data update)')
+      return holding
+    } catch (error) {
+      console.error('❌ Error in createHolding:', error)
+      return null
     }
-    
-    return holding
   },
 
   async updateHolding(holdingId: string, updates: Partial<Holding>): Promise<Holding | null> {
@@ -286,6 +370,100 @@ export const portfolioService = {
       }
     } catch (error) {
       console.error('Error updating holding from transaction:', error)
+    }
+  },
+
+  // Update holdings with current market prices
+  async updateHoldingsWithMarketPrices(holdings: Holding[]): Promise<Holding[]> {
+    const updatedHoldings = await Promise.all(
+      holdings.map(async (holding) => {
+        try {
+          const quote = await marketDataService.getStockQuote(holding.symbol)
+          if (quote) {
+            return {
+              ...holding,
+              current_price: quote.price,
+              change: quote.change,
+              changePercent: quote.changePercent
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch price for ${holding.symbol}:`, error)
+        }
+        return holding
+      })
+    )
+    
+    return updatedHoldings
+  },
+
+  // Get portfolio with real-time market prices
+  async getPortfolioWithMarketPrices(portfolioId: string): Promise<PortfolioWithHoldings | null> {
+    const portfolio = await this.getPortfolioWithHoldings(portfolioId)
+    if (!portfolio) return null
+
+    // Update holdings with current market prices
+    const updatedHoldings = await this.updateHoldingsWithMarketPrices(portfolio.holdings)
+    
+    return {
+      ...portfolio,
+      holdings: updatedHoldings
+    }
+  },
+
+  // Get transactions for a portfolio
+  async getTransactions(portfolioId: string): Promise<Transaction[]> {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase not configured. Please set up your Supabase credentials.')
+    }
+    
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('portfolio_id', portfolioId)
+      .order('date', { ascending: false })
+    
+    if (error) { 
+      console.error('Error fetching transactions:', error)
+      return [] 
+    }
+    
+    return data || []
+  },
+
+  // Refresh all holdings with current market data
+  async refreshHoldingsWithMarketData(portfolioId: string): Promise<boolean> {
+    if (!isSupabaseConfigured) {
+      throw new Error('Supabase not configured. Please set up your Supabase credentials.')
+    }
+    
+    try {
+      // Get current holdings
+      const portfolio = await this.getPortfolioWithHoldings(portfolioId)
+      if (!portfolio) return false
+
+      // Update each holding with current market data
+      for (const holding of portfolio.holdings) {
+        try {
+          const quote = await marketDataService.getStockQuote(holding.symbol)
+          if (quote) {
+            // Update the holding with current market data
+            await this.updateHolding(holding.id, {
+              current_price: quote.price,
+              change: quote.change,
+              changePercent: quote.changePercent
+            })
+            console.log(`✅ Updated ${holding.symbol} with current market data`)
+          }
+        } catch (error) {
+          console.warn(`Failed to update ${holding.symbol}:`, error)
+        }
+      }
+      
+      return true
+    } catch (error) {
+      console.error('Error refreshing holdings with market data:', error)
+      return false
     }
   }
 }

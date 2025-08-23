@@ -159,8 +159,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
   return (
     <div className="max-w-md mx-auto">
       <div className="mb-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-2">Add New Stock</h3>
-        <p className="text-sm text-gray-600">
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Add New Stock</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           Add a new stock holding to your portfolio
         </p>
       </div>
@@ -198,16 +198,16 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
           
           {/* Search Results Dropdown */}
           {showSearchResults && searchResults.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+            <div className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
               {searchResults.map((stock) => (
                 <button
                   key={stock.symbol}
                   type="button"
                   onClick={() => selectStock(stock)}
-                  className="w-full text-left px-4 py-2 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 focus:bg-gray-100 dark:focus:bg-gray-700 focus:outline-none transition-colors"
                 >
-                  <div className="font-medium text-gray-900">{stock.symbol}</div>
-                  <div className="text-sm text-gray-500">{stock.name}</div>
+                  <div className="font-medium text-gray-900 dark:text-white">{stock.symbol}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{stock.name}</div>
                 </button>
               ))}
             </div>
@@ -276,8 +276,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
         
         {/* Auto-fill notification */}
         {priceAutoFilled && (
-          <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-sm text-green-800">
+          <div className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+            <p className="text-sm text-green-800 dark:text-green-200">
               ✅ Current market price auto-filled. You can adjust this value if needed.
             </p>
           </div>
@@ -285,8 +285,8 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
 
         {/* Total Value Preview */}
         {watch('quantity') && watch('avg_price') && (
-          <div className="bg-blue-50 p-3 rounded-md">
-            <p className="text-sm text-blue-900">
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-900 dark:text-blue-100">
               Total Value: ${((watch('quantity') || 0) * (watch('avg_price') || 0)).toLocaleString()}
             </p>
           </div>
@@ -295,7 +295,7 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="w-full bg-blue-600 dark:bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {isSubmitting ? (
             <div className="flex items-center justify-center">
@@ -308,7 +308,7 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
         </button>
       </form>
 
-      <div className="mt-4 text-sm text-gray-600">
+      <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
         <p>Tip: Use the stock symbol search to quickly find and add stocks</p>
         <p>Popular stocks: AAPL, GOOGL, MSFT, AMZN, TSLA</p>
       </div>

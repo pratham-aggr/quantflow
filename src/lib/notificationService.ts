@@ -136,7 +136,10 @@ class NotificationService {
         this.websocket.onclose = () => {
           console.log('WebSocket disconnected')
           this.isConnected = false
-          this.handleReconnect(userId)
+          // Don't attempt to reconnect if WebSocket server is not available
+          if (this.reconnectAttempts < this.maxReconnectAttempts) {
+            this.handleReconnect(userId)
+          }
         }
 
         this.websocket.onerror = (error) => {
@@ -146,7 +149,8 @@ class NotificationService {
 
       } catch (error) {
         console.error('Failed to connect WebSocket:', error)
-        throw error
+        // Don't throw error, just log it and continue without WebSocket
+        console.log('Continuing without WebSocket notifications')
       }
     })
   }
@@ -160,7 +164,8 @@ class NotificationService {
         this.connectWebSocket(userId)
       }, this.reconnectDelay * this.reconnectAttempts)
     } else {
-      console.error('Max reconnection attempts reached')
+      console.error('Max reconnection attempts reached - WebSocket server not available')
+      console.log('Continuing without real-time notifications')
     }
   }
 

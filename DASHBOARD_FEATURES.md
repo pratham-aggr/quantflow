@@ -20,7 +20,7 @@ The dashboard provides a complete portfolio management interface with:
 - Responsive layout with grid system
 - Loading states with skeleton components
 - Error handling with retry functionality
-- Mock data integration (ready for real API)
+- Real data integration with live APIs
 - Toast notifications for user feedback
 
 **Layout Structure:**

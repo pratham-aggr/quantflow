@@ -6,8 +6,8 @@ export const ConfigStatus: React.FC = () => {
   
   const isConfigured = supabaseUrl && 
     supabaseKey && 
-    supabaseUrl !== 'https://placeholder.supabase.co' && 
-    supabaseKey !== 'placeholder-key'
+    supabaseUrl !== '' &&
+    supabaseKey !== ''
 
   return (
     <div className="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-md">
@@ -20,9 +20,9 @@ export const ConfigStatus: React.FC = () => {
         {supabaseUrl && (
           <div className="text-xs text-gray-500">
             <p className="break-all">URL: {supabaseUrl}</p>
-            {supabaseUrl === 'https://placeholder.supabase.co' && (
-              <p className="text-red-500 font-medium">⚠️ Using placeholder URL - need real Supabase credentials!</p>
-            )}
+                    {(!supabaseUrl || supabaseUrl === '') && (
+          <p className="text-red-500 font-medium">⚠️ Supabase URL not configured!</p>
+        )}
           </div>
         )}
       </div>

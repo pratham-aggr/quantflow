@@ -20,6 +20,8 @@ export interface Holding {
   quantity: number
   avg_price: number
   current_price?: number
+  change?: number
+  changePercent?: number
   company_name?: string
   sector?: string
   created_at: string
@@ -40,7 +42,7 @@ export interface Transaction {
 }
 
 export interface CreatePortfolioData { name: string; cash_balance?: number }
-export interface CreateHoldingData { portfolio_id: string; symbol: string; quantity: number; avg_price: number; current_price?: number; company_name?: string; sector?: string }
+export interface CreateHoldingData { portfolio_id: string; symbol: string; quantity: number; avg_price: number; current_price?: number; change?: number; changePercent?: number; company_name?: string; sector?: string }
 export interface CreateTransactionData { portfolio_id: string; symbol: string; type: 'BUY' | 'SELL'; quantity: number; price: number; date?: string }
 
 export interface PortfolioWithHoldings extends Portfolio { holdings: Holding[] }
@@ -67,6 +69,8 @@ export const HoldingSchema = z.object({
   quantity: z.number().int().positive('Quantity must be positive'),
   avg_price: z.number().positive('Average price must be positive'),
   current_price: z.number().positive().optional(),
+  change: z.number().optional(),
+  changePercent: z.number().optional(),
   company_name: z.string().optional(),
   sector: z.string().optional(),
   created_at: z.string().datetime(),
@@ -79,6 +83,8 @@ export const CreateHoldingSchema = z.object({
   quantity: z.number().int().positive('Quantity must be positive'),
   avg_price: z.number().positive('Average price must be positive'),
   current_price: z.number().positive().optional(),
+  change: z.number().optional(),
+  changePercent: z.number().optional(),
   company_name: z.string().optional(),
   sector: z.string().optional()
 })

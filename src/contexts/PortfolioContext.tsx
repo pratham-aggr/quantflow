@@ -69,7 +69,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 
         // Select the first portfolio if available and no current portfolio
         if (portfolios.length > 0 && !state.currentPortfolio) {
-          return portfolioService.getPortfolioWithHoldings(portfolios[0].id)
+          return portfolioService.getPortfolioWithMarketPrices(portfolios[0].id)
         }
         return null
       })
@@ -194,7 +194,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
-      const portfolioWithHoldings = await portfolioService.getPortfolioWithHoldings(portfolioId)
+      const portfolioWithHoldings = await portfolioService.getPortfolioWithMarketPrices(portfolioId)
       setState(prev => ({
         ...prev,
         currentPortfolio: portfolioWithHoldings,
@@ -330,13 +330,17 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     if (!state.currentPortfolio) return
 
     try {
-      const updatedPortfolio = await portfolioService.getPortfolioWithHoldings(state.currentPortfolio.id)
+      // First refresh holdings with current market data
+      await portfolioService.refreshHoldingsWithMarketData(state.currentPortfolio.id)
+      
+      // Then get the updated portfolio with market prices
+      const updatedPortfolio = await portfolioService.getPortfolioWithMarketPrices(state.currentPortfolio.id)
       if (updatedPortfolio) {
         setState(prev => ({
           ...prev,
           currentPortfolio: updatedPortfolio
         }))
-        console.log('✅ Current portfolio holdings refreshed')
+        console.log('✅ Current portfolio holdings refreshed with real market prices and changes')
       }
     } catch (error) {
       console.error('Error refreshing current portfolio:', error)
