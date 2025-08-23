@@ -63,7 +63,8 @@ class MarketDataService {
       return true
     } catch (error) {
       console.error('Rate limit check failed:', error)
-      return false
+      // If Redis fails, allow the request to proceed (graceful degradation)
+      return true
     }
   }
 
@@ -128,10 +129,14 @@ class MarketDataService {
     
     try {
       // Check cache first
-      const cached = await redisClient.get(cacheKey)
-      if (cached) {
-        console.log(`Returning cached quote for ${symbol}`)
-        return JSON.parse(cached)
+      try {
+        const cached = await redisClient.get(cacheKey)
+        if (cached) {
+          console.log(`Returning cached quote for ${symbol}`)
+          return JSON.parse(cached)
+        }
+      } catch (cacheError) {
+        console.warn(`Cache check failed for ${symbol}, proceeding with API call`)
       }
 
       // Fetch from API
@@ -152,10 +157,14 @@ class MarketDataService {
           timestamp: Date.now() // current timestamp
         }
         
-        // Cache the result
-        await redisClient.set(cacheKey, JSON.stringify(mappedData), 'EX', CACHE_CONFIG.STOCK_QUOTE_TTL)
+        // Cache the result (ignore cache errors)
+        try {
+          await redisClient.set(cacheKey, JSON.stringify(mappedData), 'EX', CACHE_CONFIG.STOCK_QUOTE_TTL)
+          console.log(`Cached quote for ${symbol}`)
+        } catch (cacheError) {
+          console.warn(`Failed to cache quote for ${symbol}:`, cacheError.message)
+        }
         
-        console.log(`Cached quote for ${symbol}`)
         return mappedData
       }
       
@@ -172,17 +181,25 @@ class MarketDataService {
     
     try {
       // Check cache first
-      const cached = await redisClient.get(cacheKey)
-      if (cached) {
-        return JSON.parse(cached)
+      try {
+        const cached = await redisClient.get(cacheKey)
+        if (cached) {
+          return JSON.parse(cached)
+        }
+      } catch (cacheError) {
+        console.warn(`Cache check failed for ${symbol} profile, proceeding with API call`)
       }
 
       // Fetch from API
       const data = await this.makeRequest('/stock/profile2', { symbol: symbol.toUpperCase() })
       
       if (data && data.name) {
-        // Cache the result
-        await redisClient.set(cacheKey, JSON.stringify(data), 'EX', CACHE_CONFIG.COMPANY_PROFILE_TTL)
+        // Cache the result (ignore cache errors)
+        try {
+          await redisClient.set(cacheKey, JSON.stringify(data), 'EX', CACHE_CONFIG.COMPANY_PROFILE_TTL)
+        } catch (cacheError) {
+          console.warn(`Failed to cache profile for ${symbol}:`, cacheError.message)
+        }
         return data
       }
       
@@ -326,7 +343,13 @@ class MarketDataService {
       }
     } catch (error) {
       console.error('Failed to get cache stats:', error.message)
-      return {}
+      return {
+        totalCacheEntries: 0,
+        rateLimitEntries: 0,
+        popularStocksCached: false,
+        cacheKeys: [],
+        error: 'Redis not available'
+      }
     }
   }
 }

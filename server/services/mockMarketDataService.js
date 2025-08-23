@@ -77,7 +77,7 @@ class MockMarketDataService {
     
     for (const symbol of symbols) {
       try {
-        const quote = await this.getQuote(symbol)
+        const quote = await this.getStockQuote(symbol)
         quotes.push(quote)
       } catch (error) {
         console.warn(`Failed to get quote for ${symbol}:`, error.message)
