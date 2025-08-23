@@ -3,6 +3,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 import math
+import logging
 from risk_calculator import RiskCalculator
 from portfolio_analyzer import PortfolioAnalyzer
 from rebalancing_engine import RebalancingEngine
@@ -14,6 +15,16 @@ from notification_engine import NotificationEngine, NotificationConfig, Notifica
 
 # Load environment variables
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('risk_engine.log')
+    ]
+)
 
 app = Flask(__name__)
 # Get allowed origins from environment or use defaults
@@ -298,11 +309,18 @@ def generate_advanced_risk_report():
         print(f"Risk tolerance: {risk_tolerance}")
         print(f"Holdings data: {holdings}")
         
+        # Log each holding in detail
+        for i, holding in enumerate(holdings):
+            print(f"Holding {i+1}: symbol={holding.get('symbol')}, quantity={holding.get('quantity')}, avg_price={holding.get('avg_price')}, current_price={holding.get('current_price')}")
+        
         # Generate comprehensive risk report
+        print("Starting risk report generation...")
         risk_report = advanced_risk_engine.generate_risk_report(holdings, risk_tolerance)
         
         print(f"Generated risk report: {risk_report}")
         print(f"Correlation analysis before conversion: {risk_report.get('correlation_analysis', {})}")
+        print(f"Monte Carlo analysis before conversion: {risk_report.get('monte_carlo_analysis', {})}")
+        print(f"ML prediction before conversion: {risk_report.get('ml_prediction', {})}")
         
         # Convert NaN values to null for JSON serialization
         risk_report = convert_nan_to_null(risk_report)

@@ -78,12 +78,17 @@ class AdvancedRiskEngine:
         """
         try:
             logger.info(f"Starting Monte Carlo simulation for {len(holdings)} holdings")
+            logger.info(f"Holdings data: {holdings}")
+            
             if not holdings:
                 logger.warning("No holdings provided for Monte Carlo simulation")
                 return self._empty_monte_carlo_result()
             
             # Check if portfolio has any meaningful holdings
             valid_holdings = [h for h in holdings if h.get('quantity', 0) > 0 and h.get('avg_price', 0) > 0]
+            logger.info(f"Valid holdings count: {len(valid_holdings)}")
+            logger.info(f"Valid holdings: {valid_holdings}")
+            
             if not valid_holdings:
                 logger.warning("Portfolio is empty - no valid holdings found")
                 return self._empty_monte_carlo_result()
@@ -111,8 +116,11 @@ class AdvancedRiskEngine:
                         logger.info(f"Fetching data for symbol: {symbol}")
                         # Get real historical data using yfinance
                         ticker = yf.Ticker(symbol)
+                        logger.info(f"Created yfinance ticker for {symbol}")
+                        
                         hist = ticker.history(period="1y")
                         logger.info(f"Retrieved {len(hist)} data points for {symbol}")
+                        logger.info(f"Data columns: {list(hist.columns) if len(hist) > 0 else 'No data'}")
                         
                         if len(hist) > 30:  # Ensure we have enough data
                             # Calculate daily returns
@@ -120,7 +128,7 @@ class AdvancedRiskEngine:
                             mean_return = returns.mean()
                             volatility = returns.std()
                             
-                            logger.info(f"Calculated returns for {symbol}: mean={mean_return:.6f}, vol={volatility:.6f}")
+                            logger.info(f"Calculated returns for {symbol}: mean={mean_return:.6f}, vol={volatility:.6f}, data_points={len(returns)}")
                             
                             returns_data.append({
                                 'mean_return': mean_return,
@@ -132,7 +140,8 @@ class AdvancedRiskEngine:
                             logger.warning(f"Insufficient historical data for {symbol}: only {len(hist)} points")
                             continue
                     except Exception as e:
-                        logger.warning(f"Could not fetch data for {symbol}: {e}")
+                        logger.error(f"Exception fetching data for {symbol}: {str(e)}")
+                        logger.error(f"Exception type: {type(e).__name__}")
                         # Skip holdings that can't be fetched
                         continue
             
@@ -238,9 +247,14 @@ class AdvancedRiskEngine:
                 symbol = holding.get('symbol', '')
                 if symbol and symbol != 'Unknown':
                     try:
+                        logger.info(f"Fetching correlation data for symbol: {symbol}")
                         ticker = yf.Ticker(symbol)
+                        logger.info(f"Created yfinance ticker for correlation: {symbol}")
+                        
                         hist = ticker.history(period="1y")
                         logger.info(f"Fetched {len(hist)} data points for {symbol}")
+                        logger.info(f"Correlation data columns: {list(hist.columns) if len(hist) > 0 else 'No data'}")
+                        
                         if len(hist) > 30:
                             price_data[symbol] = hist['Close']
                             valid_symbols.append(symbol)
@@ -248,7 +262,8 @@ class AdvancedRiskEngine:
                         else:
                             logger.warning(f"Insufficient data for {symbol}: {len(hist)} points")
                     except Exception as e:
-                        logger.warning(f"Could not fetch data for {symbol}: {e}")
+                        logger.error(f"Exception fetching correlation data for {symbol}: {str(e)}")
+                        logger.error(f"Exception type: {type(e).__name__}")
                 else:
                     logger.warning(f"Skipping invalid symbol: {symbol}")
             
