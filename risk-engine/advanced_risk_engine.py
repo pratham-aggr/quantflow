@@ -12,6 +12,7 @@ from typing import List, Dict, Any, Tuple, Optional
 import logging
 from dataclasses import dataclass
 import warnings
+import yfinance as yf
 warnings.filterwarnings('ignore')
 
 logger = logging.getLogger(__name__)
@@ -85,25 +86,51 @@ class AdvancedRiskEngine:
             total_value = sum(holding.get('quantity', 0) * holding.get('avg_price', 0) for holding in holdings)
             
             for holding in holdings:
-                # Generate synthetic returns based on price data
+                symbol = holding.get('symbol', '')
                 price = holding.get('avg_price', 0)
                 current_price = holding.get('current_price', price)
                 quantity = holding.get('quantity', 0)
                 
-                if price > 0 and quantity > 0:
+                if price > 0 and quantity > 0 and symbol:
                     # Calculate weight
                     weight = (price * quantity) / total_value
                     weights.append(weight)
                     
-                    # Generate synthetic daily returns (normal distribution)
-                    # In a real implementation, you'd use historical price data
-                    daily_return = (current_price - price) / price / 252  # Annualized daily return
-                    volatility = abs(daily_return) * 2  # Estimate volatility
-                    
-                    returns_data.append({
-                        'mean_return': daily_return,
-                        'volatility': volatility
-                    })
+                    try:
+                        # Get real historical data using yfinance
+                        ticker = yf.Ticker(symbol)
+                        hist = ticker.history(period="1y")
+                        
+                        if len(hist) > 30:  # Ensure we have enough data
+                            # Calculate daily returns
+                            returns = hist['Close'].pct_change().dropna()
+                            mean_return = returns.mean()
+                            volatility = returns.std()
+                            
+                            returns_data.append({
+                                'mean_return': mean_return,
+                                'volatility': volatility,
+                                'returns': returns
+                            })
+                        else:
+                            # Fallback to synthetic data if insufficient historical data
+                            daily_return = (current_price - price) / price / 252
+                            volatility = abs(daily_return) * 2
+                            returns_data.append({
+                                'mean_return': daily_return,
+                                'volatility': volatility,
+                                'returns': None
+                            })
+                    except Exception as e:
+                        logger.warning(f"Could not fetch data for {symbol}: {e}")
+                        # Fallback to synthetic data
+                        daily_return = (current_price - price) / price / 252
+                        volatility = abs(daily_return) * 2
+                        returns_data.append({
+                            'mean_return': daily_return,
+                            'volatility': volatility,
+                            'returns': None
+                        })
             
             if not returns_data:
                 return self._empty_monte_carlo_result()
@@ -115,8 +142,13 @@ class AdvancedRiskEngine:
                 # Generate random returns for each holding
                 holding_returns = []
                 for i, data in enumerate(returns_data):
-                    # Generate random return from normal distribution
-                    random_return = np.random.normal(data['mean_return'], data['volatility'])
+                    if data['returns'] is not None and len(data['returns']) > 0:
+                        # Use real historical returns with bootstrapping
+                        random_return = np.random.choice(data['returns'])
+                    else:
+                        # Fallback to normal distribution
+                        random_return = np.random.normal(data['mean_return'], data['volatility'])
+                    
                     holding_returns.append(random_return * weights[i])
                 
                 # Calculate portfolio return
@@ -177,14 +209,45 @@ class AdvancedRiskEngine:
             
             symbols = [holding.get('symbol', f'Holding_{i}') for i, holding in enumerate(holdings)]
             
-            # Generate synthetic correlation matrix based on sectors
-            # In a real implementation, you'd use historical price data
-            n_holdings = len(holdings)
-            correlation_matrix = np.random.uniform(-0.3, 0.8, (n_holdings, n_holdings))
+            # Get real historical data for correlation calculation
+            price_data = {}
+            valid_symbols = []
             
-            # Make matrix symmetric and set diagonal to 1
-            correlation_matrix = (correlation_matrix + correlation_matrix.T) / 2
-            np.fill_diagonal(correlation_matrix, 1.0)
+            for holding in holdings:
+                symbol = holding.get('symbol', '')
+                if symbol:
+                    try:
+                        ticker = yf.Ticker(symbol)
+                        hist = ticker.history(period="1y")
+                        if len(hist) > 30:
+                            price_data[symbol] = hist['Close']
+                            valid_symbols.append(symbol)
+                    except Exception as e:
+                        logger.warning(f"Could not fetch data for {symbol}: {e}")
+            
+            if len(valid_symbols) >= 2:
+                # Create DataFrame with aligned dates
+                df = pd.DataFrame(price_data)
+                df = df.dropna()
+                
+                if len(df) > 30:
+                    # Calculate real correlation matrix
+                    correlation_matrix = df.corr().values
+                    symbols = valid_symbols
+                else:
+                    # Fallback to synthetic correlation matrix
+                    n_holdings = len(holdings)
+                    correlation_matrix = np.random.uniform(-0.3, 0.8, (n_holdings, n_holdings))
+                    correlation_matrix = (correlation_matrix + correlation_matrix.T) / 2
+                    np.fill_diagonal(correlation_matrix, 1.0)
+                    symbols = [holding.get('symbol', f'Holding_{i}') for i, holding in enumerate(holdings)]
+            else:
+                # Fallback to synthetic correlation matrix
+                n_holdings = len(holdings)
+                correlation_matrix = np.random.uniform(-0.3, 0.8, (n_holdings, n_holdings))
+                correlation_matrix = (correlation_matrix + correlation_matrix.T) / 2
+                np.fill_diagonal(correlation_matrix, 1.0)
+                symbols = [holding.get('symbol', f'Holding_{i}') for i, holding in enumerate(holdings)]
             
             # Ensure positive semi-definite
             eigenvalues = np.linalg.eigvals(correlation_matrix)
