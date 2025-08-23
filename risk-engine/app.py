@@ -16,7 +16,12 @@ load_dotenv()
 
 app = Flask(__name__)
 # Get allowed origins from environment or use defaults
-allowed_origins = os.getenv('ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:4000,http://localhost:5001').split(',')
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:4000", 
+    "http://localhost:5001",
+    r"https://.*\.vercel\.app"  # Regex: all Vercel preview URLs
+]
 CORS(app, origins=allowed_origins)
 
 # Initialize risk calculation services
