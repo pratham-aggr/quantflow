@@ -1,8 +1,11 @@
 [phases.setup]
-nixPkgs = ["conda"]
+nixPkgs = ["wget", "bzip2"]
 
 [phases.install]
 cmds = [
+  "wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh",
+  "bash miniconda.sh -b -p /opt/conda",
+  "export PATH=/opt/conda/bin:$PATH",
   "conda env create -f environment.yml"
 ]
 
@@ -10,5 +13,5 @@ cmds = [
 cmds = ["echo 'Build complete'"]
 
 [start]
-cmd = "conda activate quantflow-risk-engine && gunicorn --bind 0.0.0.0:$PORT app:app"
+cmd = "export PATH=/opt/conda/bin:$PATH && conda activate quantflow-risk-engine && gunicorn --bind 0.0.0.0:$PORT app:app"
 

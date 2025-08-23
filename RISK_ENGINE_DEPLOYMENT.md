@@ -7,9 +7,14 @@ If you're getting Nix build errors on Railway like:
 error: builder for '/nix/store/504kp7hrb2zpz043h4wdcpbhlz8rd7w9-python3.9-setuptools-75.1.0.drv' failed with exit code 1
 ```
 
+Or Docker build errors like:
+```
+exit code: 127 - conda command not found
+```
+
 Here are the solutions:
 
-## Solution 1: Use Docker Deployment (Recommended)
+## Solution 1: Use Dockerfile Deployment (Recommended)
 
 1. **Enable Docker on Railway:**
    - Go to your Railway project
@@ -18,8 +23,8 @@ Here are the solutions:
 
 2. **Deploy with Dockerfile:**
    - Railway will automatically detect the `Dockerfile`
-   - This bypasses nixpacks entirely
-   - More reliable and faster builds
+   - This properly installs conda and creates your environment
+   - Most reliable deployment method
 
 ## Solution 2: Use Procfile Instead of nixpacks
 
@@ -38,13 +43,6 @@ Here are the solutions:
 3. **Configure as Python service:**
    - Build Command: `pip install -r requirements.txt`
    - Start Command: `gunicorn --bind 0.0.0.0:$PORT app:app`
-
-## Solution 4: Fix nixpacks Configuration
-
-The updated `nixpacks.toml` includes:
-- Explicit setuptools and wheel packages
-- Upgraded pip before installing requirements
-- Better error handling
 
 ## 🚀 Quick Deployment Steps
 
@@ -110,17 +108,18 @@ REACT_APP_RISK_ENGINE_URL=https://your-risk-engine-url.com
 
 ## 📁 Files Overview
 
-- `Dockerfile` - Docker deployment (most reliable)
+- `Dockerfile` - Docker deployment with conda (most reliable)
 - `Procfile` - Alternative to nixpacks
 - `nixpacks.toml` - Railway nixpacks config (may have issues)
 - `railway.json` - Railway configuration
-- `requirements.txt` - Python dependencies
+- `environment.yml` - Conda environment specification
+- `requirements.txt` - Python dependencies (for pip-based deployment)
 - `runtime.txt` - Python version specification
 
 ## 🆘 Troubleshooting
 
 ### Build Fails
-1. Try Docker deployment
+1. Try Docker deployment (recommended)
 2. Use Render.com instead
 3. Check Python version compatibility
 
