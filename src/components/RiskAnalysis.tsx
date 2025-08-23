@@ -195,7 +195,7 @@ export const RiskAnalysis: React.FC = () => {
     }
 
     checkEngineAvailability()
-  }, [info, showError])
+  }, []) // Remove dependencies to prevent infinite re-runs
 
   // Calculate local risk metrics
   const localRiskMetrics = useMemo(() => {
