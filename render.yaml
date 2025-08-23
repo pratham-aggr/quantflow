@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: quantflow-risk-engine
+    env: python
+    rootDir: risk-engine
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.18
