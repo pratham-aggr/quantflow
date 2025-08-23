@@ -1,11 +1,10 @@
 import express from 'express'
 import { marketDataService } from '../services/marketDataService.js'
-import { mockMarketDataService } from '../services/mockMarketDataService.js'
 import { schedulerService } from '../services/schedulerService.js'
 
-// Use mock service if real service is not configured
+// Get market data service (only real service)
 const getMarketDataService = () => {
-  return marketDataService.isConfigured() ? marketDataService : mockMarketDataService
+  return marketDataService
 }
 
 const router = express.Router()

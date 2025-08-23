@@ -6,7 +6,6 @@ import { createClient } from '@supabase/supabase-js'
 // Import our services
 import { connectRedis, disconnectRedis } from './config/redis.js'
 import { marketDataService } from './services/marketDataService.js'
-import { mockMarketDataService } from './services/mockMarketDataService.js'
 import { schedulerService } from './services/schedulerService.js'
 import marketDataRoutes from './routes/marketData.js'
 
@@ -70,21 +69,10 @@ async function initializeServices() {
       console.warn('⚠️ Failed to update initial popular stocks cache:', error.message)
     }
   } else {
-    console.log('🔄 Market data service not configured - using mock data service')
+    console.log('⚠️ Market data service not configured - some features may be limited')
     
-    // Use mock service instead
-    global.marketDataService = mockMarketDataService
-    
-    // Start scheduler with mock service
+    // Start scheduler without market data service
     schedulerService.start()
-    
-    // Initial popular stocks cache update with mock service
-    try {
-      await mockMarketDataService.updatePopularStocksCache()
-      console.log('✅ Initial mock popular stocks cache updated')
-    } catch (error) {
-      console.warn('⚠️ Failed to update initial mock popular stocks cache:', error.message)
-    }
   }
   
   console.log('✅ Services initialized successfully')
@@ -105,6 +93,32 @@ app.get('/api/health', (req, res) => {
 
 // Market data routes (public - no auth required for market data)
 app.use('/api/market-data', marketDataRoutes)
+
+// Manual refresh endpoint for holdings
+app.post('/api/refresh-holdings', async (req, res) => {
+  try {
+    const { portfolioId } = req.body
+    
+    if (!portfolioId) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Portfolio ID is required' 
+      })
+    }
+    
+    // For now, just return success - we'll implement the actual refresh later
+    res.json({ 
+      success: true, 
+      message: 'Refresh endpoint ready - implement portfolio service integration' 
+    })
+  } catch (error) {
+    console.error('Error in refresh endpoint:', error)
+    res.status(500).json({ 
+      success: false, 
+      error: 'Internal server error' 
+    })
+  }
+})
 
 // Protected example
 app.get('/api/protected', requireAuth, (req, res) => {
