@@ -3,7 +3,14 @@ services:
     name: quantflow-risk-engine
     env: python
     pythonVersion: 3.9.18
-    rootDir: risk-engine       # Important: points Render to your backend folder
+    rootDir: risk-engine
     buildCommand: pip install --no-cache-dir --prefer-binary -r requirements.txt
-    startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 2 --timeout 120 app:app
     healthCheckPath: /health
+    healthCheckTimeout: 300
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: PYTHONUNBUFFERED
+        value: 1
+    autoDeploy: true
