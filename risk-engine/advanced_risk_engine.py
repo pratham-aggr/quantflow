@@ -113,24 +113,13 @@ class AdvancedRiskEngine:
                                 'returns': returns
                             })
                         else:
-                            # Fallback to synthetic data if insufficient historical data
-                            daily_return = (current_price - price) / price / 252
-                            volatility = abs(daily_return) * 2
-                            returns_data.append({
-                                'mean_return': daily_return,
-                                'volatility': volatility,
-                                'returns': None
-                            })
+                            # Skip holdings without sufficient historical data
+                            logger.warning(f"Insufficient historical data for {symbol}")
+                            continue
                     except Exception as e:
                         logger.warning(f"Could not fetch data for {symbol}: {e}")
-                        # Fallback to synthetic data
-                        daily_return = (current_price - price) / price / 252
-                        volatility = abs(daily_return) * 2
-                        returns_data.append({
-                            'mean_return': daily_return,
-                            'volatility': volatility,
-                            'returns': None
-                        })
+                        # Skip holdings that can't be fetched
+                        continue
             
             if not returns_data:
                 return self._empty_monte_carlo_result()
@@ -142,13 +131,8 @@ class AdvancedRiskEngine:
                 # Generate random returns for each holding
                 holding_returns = []
                 for i, data in enumerate(returns_data):
-                    if data['returns'] is not None and len(data['returns']) > 0:
-                        # Use real historical returns with bootstrapping
-                        random_return = np.random.choice(data['returns'])
-                    else:
-                        # Fallback to normal distribution
-                        random_return = np.random.normal(data['mean_return'], data['volatility'])
-                    
+                    # Use real historical returns with bootstrapping
+                    random_return = np.random.choice(data['returns'])
                     holding_returns.append(random_return * weights[i])
                 
                 # Calculate portfolio return
@@ -235,19 +219,11 @@ class AdvancedRiskEngine:
                     correlation_matrix = df.corr().values
                     symbols = valid_symbols
                 else:
-                    # Fallback to synthetic correlation matrix
-                    n_holdings = len(holdings)
-                    correlation_matrix = np.random.uniform(-0.3, 0.8, (n_holdings, n_holdings))
-                    correlation_matrix = (correlation_matrix + correlation_matrix.T) / 2
-                    np.fill_diagonal(correlation_matrix, 1.0)
-                    symbols = [holding.get('symbol', f'Holding_{i}') for i, holding in enumerate(holdings)]
+                    # Not enough data for correlation analysis
+                    return self._empty_correlation_matrix()
             else:
-                # Fallback to synthetic correlation matrix
-                n_holdings = len(holdings)
-                correlation_matrix = np.random.uniform(-0.3, 0.8, (n_holdings, n_holdings))
-                correlation_matrix = (correlation_matrix + correlation_matrix.T) / 2
-                np.fill_diagonal(correlation_matrix, 1.0)
-                symbols = [holding.get('symbol', f'Holding_{i}') for i, holding in enumerate(holdings)]
+                # Not enough data for correlation analysis
+                return self._empty_correlation_matrix()
             
             # Ensure positive semi-definite
             eigenvalues = np.linalg.eigvals(correlation_matrix)
@@ -330,17 +306,60 @@ class AdvancedRiskEngine:
                     sector_volatility = self._calculate_sector_volatility(data['holdings'])
                     sector_risk[sector] = sector_volatility
             
-            # Calculate sector correlations (simplified)
+            # Calculate sector correlations using real market data
             sector_correlation = {}
             sectors = list(sector_data.keys())
-            for i, sector1 in enumerate(sectors):
-                sector_correlation[sector1] = {}
-                for j, sector2 in enumerate(sectors):
-                    if i == j:
-                        sector_correlation[sector1][sector2] = 1.0
-                    else:
-                        # Generate synthetic correlation
-                        sector_correlation[sector1][sector2] = np.random.uniform(-0.2, 0.6)
+            
+            # Get sector ETFs for correlation calculation
+            sector_etfs = {
+                'Technology': 'XLK',
+                'Healthcare': 'XLV', 
+                'Financial': 'XLF',
+                'Consumer Discretionary': 'XLY',
+                'Consumer Staples': 'XLP',
+                'Energy': 'XLE',
+                'Industrials': 'XLI',
+                'Materials': 'XLB',
+                'Utilities': 'XLU',
+                'Real Estate': 'XLRE'
+            }
+            
+            try:
+                # Fetch sector ETF data for correlation
+                etf_data = {}
+                for sector, etf in sector_etfs.items():
+                    if sector in sectors:
+                        try:
+                            ticker = yf.Ticker(etf)
+                            hist = ticker.history(period="1y")
+                            if len(hist) > 30:
+                                etf_data[sector] = hist['Close'].pct_change().dropna()
+                        except Exception as e:
+                            logger.warning(f"Could not fetch ETF data for {sector}: {e}")
+                
+                # Calculate sector correlations
+                for i, sector1 in enumerate(sectors):
+                    sector_correlation[sector1] = {}
+                    for j, sector2 in enumerate(sectors):
+                        if i == j:
+                            sector_correlation[sector1][sector2] = 1.0
+                        else:
+                            if sector1 in etf_data and sector2 in etf_data:
+                                # Calculate real correlation
+                                corr = etf_data[sector1].corr(etf_data[sector2])
+                                sector_correlation[sector1][sector2] = corr if not np.isnan(corr) else 0.0
+                            else:
+                                sector_correlation[sector1][sector2] = 0.0
+            except Exception as e:
+                logger.warning(f"Error calculating sector correlations: {e}")
+                # Set default correlations
+                for i, sector1 in enumerate(sectors):
+                    sector_correlation[sector1] = {}
+                    for j, sector2 in enumerate(sectors):
+                        if i == j:
+                            sector_correlation[sector1][sector2] = 1.0
+                        else:
+                            sector_correlation[sector1][sector2] = 0.0
             
             # Calculate concentration risk
             concentration_risk = max(sector_allocation.values()) / 100

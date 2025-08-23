@@ -82,54 +82,43 @@ class PaperPortfolio:
     updated_at: datetime = field(default_factory=datetime.now)
 
 class MarketDataProvider:
-    """Mock market data provider for paper trading."""
+    """Real market data provider for paper trading using yfinance."""
     
     def __init__(self):
-        # Simulated market data with realistic price movements
-        self.market_data = {
-            'AAPL': {'price': 150.0, 'bid': 149.95, 'ask': 150.05, 'volume': 1000000},
-            'MSFT': {'price': 300.0, 'bid': 299.90, 'ask': 300.10, 'volume': 800000},
-            'GOOGL': {'price': 2500.0, 'bid': 2499.50, 'ask': 2500.50, 'volume': 500000},
-            'AMZN': {'price': 3200.0, 'bid': 3199.00, 'ask': 3201.00, 'volume': 600000},
-            'TSLA': {'price': 800.0, 'bid': 799.50, 'ask': 800.50, 'volume': 1200000},
-            'SPY': {'price': 400.0, 'bid': 399.98, 'ask': 400.02, 'volume': 5000000},
-            'VTI': {'price': 200.0, 'bid': 199.99, 'ask': 200.01, 'volume': 2000000},
-            'QQQ': {'price': 320.0, 'bid': 319.95, 'ask': 320.05, 'volume': 3000000}
-        }
-        
-        # Add random price movements
+        import yfinance as yf
+        self.yf = yf
+        self.market_data = {}
         self._update_prices()
     
     def get_current_price(self, symbol: str) -> Optional[float]:
-        """Get current market price for symbol."""
-        data = self.market_data.get(symbol.upper())
-        return data['price'] if data else None
+        """Get current market price for symbol using yfinance."""
+        try:
+            ticker = self.yf.Ticker(symbol.upper())
+            info = ticker.info
+            return info.get('regularMarketPrice', info.get('currentPrice'))
+        except Exception as e:
+            print(f"Error fetching price for {symbol}: {e}")
+            return None
     
     def get_bid_ask(self, symbol: str) -> Tuple[Optional[float], Optional[float]]:
-        """Get bid/ask prices for symbol."""
-        data = self.market_data.get(symbol.upper())
-        if data:
-            return data['bid'], data['ask']
-        return None, None
+        """Get bid/ask prices for symbol using yfinance."""
+        try:
+            ticker = self.yf.Ticker(symbol.upper())
+            info = ticker.info
+            current_price = info.get('regularMarketPrice', info.get('currentPrice'))
+            if current_price:
+                spread_pct = 0.001  # 0.1% spread
+                spread = current_price * spread_pct / 2
+                return current_price - spread, current_price + spread
+            return None, None
+        except Exception as e:
+            print(f"Error fetching bid/ask for {symbol}: {e}")
+            return None, None
     
     def _update_prices(self):
-        """Simulate realistic price movements."""
-        for symbol in self.market_data:
-            current_price = self.market_data[symbol]['price']
-            
-            # Random walk with slight positive bias
-            change_pct = np.random.normal(0.0001, 0.01)  # 0.01% mean, 1% std dev
-            new_price = current_price * (1 + change_pct)
-            
-            # Update bid/ask based on new price
-            spread_pct = 0.001  # 0.1% spread
-            spread = new_price * spread_pct / 2
-            
-            self.market_data[symbol].update({
-                'price': round(new_price, 2),
-                'bid': round(new_price - spread, 2),
-                'ask': round(new_price + spread, 2)
-            })
+        """Update prices using real market data."""
+        # This method is now a no-op since we fetch real-time data
+        pass
 
 class PaperTradingEngine:
     """Core paper trading engine."""
@@ -360,20 +349,9 @@ class PaperTradingEngine:
         # Update market prices
         self.market_data._update_prices()
         
-        # Apply volatility factor
-        for symbol in self.market_data.market_data:
-            current_price = self.market_data.market_data[symbol]['price']
-            additional_change = np.random.normal(0, 0.005 * volatility_factor)  # Additional volatility
-            new_price = current_price * (1 + additional_change)
-            
-            spread_pct = 0.001
-            spread = new_price * spread_pct / 2
-            
-            self.market_data.market_data[symbol].update({
-                'price': round(new_price, 2),
-                'bid': round(new_price - spread, 2),
-                'ask': round(new_price + spread, 2)
-            })
+        # Apply volatility factor using real market data
+        # Note: Real market data already includes volatility, so we just update prices
+        pass
         
         # Process pending orders for all portfolios
         for portfolio in self.portfolios.values():
