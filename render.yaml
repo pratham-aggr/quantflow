@@ -4,6 +4,6 @@ services:
     env: python
     pythonVersion: 3.9.18
     rootDir: risk-engine
-    buildCommand: pip install --no-cache-dir -r requirements.txt
+    buildCommand: pip install --no-cache-dir --prefer-binary -r requirements.txt
     startCommand: gunicorn --bind 0.0.0.0:$PORT app:app
     healthCheckPath: /health
