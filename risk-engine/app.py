@@ -68,6 +68,63 @@ def health_check():
         'version': '1.0.0'
     })
 
+@app.route('/test-yfinance/<symbol>', methods=['GET'])
+def test_yfinance(symbol):
+    """Test yfinance data fetching for a specific symbol"""
+    try:
+        import yfinance as yf
+        
+        print(f"Testing yfinance for symbol: {symbol}")
+        
+        ticker = yf.Ticker(symbol)
+        print(f"Created ticker for {symbol}")
+        
+        # Get basic info
+        info = ticker.info
+        print(f"Company info retrieved: {info.get('longName', 'N/A')}")
+        
+        # Get historical data
+        hist = ticker.history(period="30d")
+        print(f"Historical data points: {len(hist)}")
+        
+        if len(hist) > 0:
+            # Calculate simple metrics
+            returns = hist['Close'].pct_change().dropna()
+            mean_return = returns.mean()
+            volatility = returns.std()
+            
+            result = {
+                'symbol': symbol,
+                'company_name': info.get('longName', 'N/A'),
+                'sector': info.get('sector', 'N/A'),
+                'data_points': len(hist),
+                'date_range': {
+                    'start': hist.index[0].isoformat(),
+                    'end': hist.index[-1].isoformat()
+                },
+                'latest_price': float(hist['Close'].iloc[-1]),
+                'mean_return': float(mean_return),
+                'volatility': float(volatility),
+                'status': 'success'
+            }
+        else:
+            result = {
+                'symbol': symbol,
+                'status': 'error',
+                'message': 'No historical data available'
+            }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"Error testing yfinance for {symbol}: {e}")
+        return jsonify({
+            'symbol': symbol,
+            'status': 'error',
+            'message': str(e),
+            'error_type': type(e).__name__
+        }), 500
+
 @app.route('/api/risk/portfolio', methods=['POST'])
 def calculate_portfolio_risk():
     """Calculate comprehensive risk metrics for a portfolio"""
