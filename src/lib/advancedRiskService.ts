@@ -202,6 +202,9 @@ class AdvancedRiskService {
   }
 
   formatPercentage(value: number): string {
+    if (isNaN(value) || !isFinite(value)) {
+      return 'N/A'
+    }
     return `${(value * 100).toFixed(2)}%`
   }
 

@@ -272,6 +272,9 @@ class CSVService {
 
   // Format percentage
   private formatPercentage(percentage: number): string {
+    if (isNaN(percentage) || !isFinite(percentage)) {
+      return 'N/A'
+    }
     return `${percentage.toFixed(2)}%`
   }
 

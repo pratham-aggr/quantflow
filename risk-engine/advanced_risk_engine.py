@@ -82,6 +82,12 @@ class AdvancedRiskEngine:
                 logger.warning("No holdings provided for Monte Carlo simulation")
                 return self._empty_monte_carlo_result()
             
+            # Check if portfolio has any meaningful holdings
+            valid_holdings = [h for h in holdings if h.get('quantity', 0) > 0 and h.get('avg_price', 0) > 0]
+            if not valid_holdings:
+                logger.warning("Portfolio is empty - no valid holdings found")
+                return self._empty_monte_carlo_result()
+            
             # Calculate historical returns and volatility for each holding
             returns_data = []
             weights = []
@@ -133,10 +139,6 @@ class AdvancedRiskEngine:
             logger.info(f"Processed {len(returns_data)} holdings with valid data")
             if not returns_data:
                 logger.warning("No valid returns data available for Monte Carlo simulation")
-                # Try to create a basic simulation with available data
-                if len(holdings) > 0:
-                    logger.info("Attempting basic simulation with available data")
-                    return self._basic_monte_carlo_simulation(holdings)
                 return self._empty_monte_carlo_result()
             
             # Run Monte Carlo simulation
@@ -155,6 +157,11 @@ class AdvancedRiskEngine:
                 portfolio_returns.append(portfolio_return)
             
             portfolio_returns = np.array(portfolio_returns)
+            
+            # Check for valid data
+            if len(portfolio_returns) == 0 or np.any(np.isnan(portfolio_returns)):
+                logger.warning("Invalid portfolio returns data")
+                return self._empty_monte_carlo_result()
             
             # Calculate statistics
             mean_return = np.mean(portfolio_returns)
@@ -178,12 +185,16 @@ class AdvancedRiskEngine:
                 '99%': (np.percentile(portfolio_returns, 0.5), np.percentile(portfolio_returns, 99.5))
             }
             
+            # Get worst and best case values
+            worst_case = np.min(portfolio_returns)
+            best_case = np.max(portfolio_returns)
+            
             return MonteCarloResult(
                 mean_return=mean_return,
                 std_return=std_return,
                 percentiles=percentiles,
-                worst_case=np.min(portfolio_returns),
-                best_case=np.max(portfolio_returns),
+                worst_case=worst_case,
+                best_case=best_case,
                 probability_positive=np.mean(portfolio_returns > 0),
                 confidence_intervals=confidence_intervals
             )
@@ -203,41 +214,70 @@ class AdvancedRiskEngine:
             CorrelationMatrix with correlation analysis
         """
         try:
+            logger.info(f"Starting correlation analysis for {len(holdings)} holdings")
             if len(holdings) < 2:
+                logger.warning("Not enough holdings for correlation analysis (need >=2)")
                 return self._empty_correlation_matrix()
             
             symbols = [holding.get('symbol', f'Holding_{i}') for i, holding in enumerate(holdings)]
+            logger.info(f"Processing symbols: {symbols}")
+            logger.info(f"Holdings data: {holdings}")
             
             # Get real historical data for correlation calculation
             price_data = {}
             valid_symbols = []
             
+            # Check if we have valid symbols
+            valid_symbols_count = sum(1 for symbol in symbols if symbol and symbol != 'Unknown')
+            logger.info(f"Valid symbols count: {valid_symbols_count}")
+            if valid_symbols_count < 2:
+                logger.warning(f"Not enough valid symbols for correlation: {valid_symbols_count} (need >=2)")
+                return self._empty_correlation_matrix()
+            
             for holding in holdings:
                 symbol = holding.get('symbol', '')
-                if symbol:
+                if symbol and symbol != 'Unknown':
                     try:
                         ticker = yf.Ticker(symbol)
                         hist = ticker.history(period="1y")
+                        logger.info(f"Fetched {len(hist)} data points for {symbol}")
                         if len(hist) > 30:
                             price_data[symbol] = hist['Close']
                             valid_symbols.append(symbol)
+                            logger.info(f"Added {symbol} to correlation analysis")
+                        else:
+                            logger.warning(f"Insufficient data for {symbol}: {len(hist)} points")
                     except Exception as e:
                         logger.warning(f"Could not fetch data for {symbol}: {e}")
+                else:
+                    logger.warning(f"Skipping invalid symbol: {symbol}")
             
             if len(valid_symbols) >= 2:
                 # Create DataFrame with aligned dates
                 df = pd.DataFrame(price_data)
                 df = df.dropna()
                 
+                logger.info(f"Correlation analysis: {len(valid_symbols)} valid symbols, {len(df)} data points")
+                
                 if len(df) > 30:
                     # Calculate real correlation matrix
                     correlation_matrix = df.corr().values
                     symbols = valid_symbols
+                    logger.info(f"Correlation matrix shape: {correlation_matrix.shape}")
+                    
+                    # Check if correlation matrix is valid
+                    if np.any(np.isnan(correlation_matrix)):
+                        logger.warning("Correlation matrix contains NaN values")
+                        return self._empty_correlation_matrix()
+                    
+                    logger.info(f"Correlation matrix is valid")
                 else:
                     # Not enough data for correlation analysis
+                    logger.warning(f"Not enough data for correlation: {len(df)} points (need >30)")
                     return self._empty_correlation_matrix()
             else:
                 # Not enough data for correlation analysis
+                logger.warning(f"Not enough valid symbols for correlation: {len(valid_symbols)} (need >=2)")
                 return self._empty_correlation_matrix()
             
             # Ensure positive semi-definite
@@ -247,6 +287,7 @@ class AdvancedRiskEngine:
             
             # Find high correlation pairs
             high_correlation_pairs = []
+            n_holdings = len(symbols)
             for i in range(n_holdings):
                 for j in range(i + 1, n_holdings):
                     corr = correlation_matrix[i, j]
@@ -263,6 +304,14 @@ class AdvancedRiskEngine:
                 'high_correlation_pairs': high_correlation_pairs,
                 'diversification_score': diversification_score
             }
+            
+            logger.info(f"Heatmap data prepared: {len(heatmap_data['correlation_matrix'])}x{len(heatmap_data['correlation_matrix'][0]) if heatmap_data['correlation_matrix'] else 0} matrix")
+            logger.info(f"Symbols in heatmap: {heatmap_data['symbols']}")
+            logger.info(f"High correlation pairs: {len(heatmap_data['high_correlation_pairs'])}")
+            
+            logger.info(f"Correlation analysis completed successfully")
+            logger.info(f"Diversification score: {diversification_score}")
+            logger.info(f"High correlation pairs: {len(high_correlation_pairs)}")
             
             return CorrelationMatrix(
                 matrix=correlation_matrix,
@@ -296,6 +345,11 @@ class AdvancedRiskEngine:
             
             for holding in holdings:
                 sector = holding.get('sector', 'Unknown')
+                # Try to infer sector from symbol if not provided
+                if sector == 'Unknown':
+                    symbol = holding.get('symbol', '').upper()
+                    sector = self._infer_sector_from_symbol(symbol)
+                
                 value = holding.get('quantity', 0) * holding.get('avg_price', 0)
                 
                 if sector not in sector_data:
@@ -519,6 +573,37 @@ class AdvancedRiskEngine:
             logger.info(f"Generating risk report for {len(holdings)} holdings")
             logger.info(f"Holdings data: {holdings}")
             
+            # Check if portfolio is empty
+            if not holdings:
+                logger.warning("Portfolio is empty - cannot generate risk report")
+                return {
+                    'summary': {'risk_score': 0, 'risk_level': 'No Data'},
+                    'monte_carlo_analysis': {},
+                    'correlation_analysis': {},
+                    'sector_analysis': {},
+                    'ml_prediction': {},
+                    'recommendations': ['Please add stocks to your portfolio to generate a risk analysis'],
+                    'risk_tolerance': risk_tolerance,
+                    'timestamp': pd.Timestamp.now().isoformat(),
+                    'error': 'Portfolio is empty'
+                }
+            
+            # Check if portfolio has any meaningful holdings
+            valid_holdings = [h for h in holdings if h.get('quantity', 0) > 0 and h.get('avg_price', 0) > 0]
+            if not valid_holdings:
+                logger.warning("Portfolio has no valid holdings - cannot generate risk report")
+                return {
+                    'summary': {'risk_score': 0, 'risk_level': 'No Data'},
+                    'monte_carlo_analysis': {},
+                    'correlation_analysis': {},
+                    'sector_analysis': {},
+                    'ml_prediction': {},
+                    'recommendations': ['Please add stocks with valid quantities and prices to your portfolio'],
+                    'risk_tolerance': risk_tolerance,
+                    'timestamp': pd.Timestamp.now().isoformat(),
+                    'error': 'No valid holdings'
+                }
+            
             # Run all analyses
             monte_carlo_result = self.run_monte_carlo_simulation(holdings)
             correlation_matrix = self.calculate_correlation_matrix(holdings)
@@ -552,6 +637,8 @@ class AdvancedRiskEngine:
                     'mean_return': monte_carlo_result.mean_return,
                     'std_return': monte_carlo_result.std_return,
                     'percentiles': monte_carlo_result.percentiles,
+                    'worst_case': monte_carlo_result.worst_case,
+                    'best_case': monte_carlo_result.best_case,
                     'probability_positive': monte_carlo_result.probability_positive,
                     'confidence_intervals': monte_carlo_result.confidence_intervals
                 },
@@ -584,125 +671,38 @@ class AdvancedRiskEngine:
     # Helper methods
     def _empty_monte_carlo_result(self) -> MonteCarloResult:
         return MonteCarloResult(
-            mean_return=0.0, std_return=0.0, percentiles={}, worst_case=0.0,
-            best_case=0.0, probability_positive=0.0, confidence_intervals={}
+            mean_return=float('nan'), std_return=float('nan'), percentiles={}, worst_case=float('nan'),
+            best_case=float('nan'), probability_positive=float('nan'), confidence_intervals={}
         )
     
     def _empty_correlation_matrix(self) -> CorrelationMatrix:
         return CorrelationMatrix(
             matrix=np.array([]), symbols=[], heatmap_data={},
-            high_correlation_pairs=[], diversification_score=0.0
+            high_correlation_pairs=[], diversification_score=float('nan')
         )
     
     def _empty_sector_analysis(self) -> SectorAnalysis:
         return SectorAnalysis(
             sector_allocation={}, sector_risk={}, sector_correlation={},
-            concentration_risk=0.0, sector_recommendations=[]
+            concentration_risk=float('nan'), sector_recommendations=[]
         )
     
     def _empty_ml_prediction(self) -> MLVolatilityPrediction:
         return MLVolatilityPrediction(
-            predicted_volatility=0.0, confidence_interval=(0.0, 0.0),
-            feature_importance={}, model_accuracy=0.0, prediction_horizon=30
+            predicted_volatility=float('nan'), confidence_interval=(float('nan'), float('nan')),
+            feature_importance={}, model_accuracy=float('nan'), prediction_horizon=30
         )
     
-    def _basic_monte_carlo_simulation(self, holdings: List[Dict]) -> MonteCarloResult:
-        """Basic Monte Carlo simulation using available data when real market data is unavailable"""
-        try:
-            logger.info("Running basic Monte Carlo simulation")
-            
-            # Calculate portfolio weights
-            total_value = sum(holding.get('quantity', 0) * holding.get('avg_price', 0) for holding in holdings)
-            if total_value == 0:
-                return self._empty_monte_carlo_result()
-            
-            weights = []
-            basic_returns = []
-            
-            for holding in holdings:
-                quantity = holding.get('quantity', 0)
-                avg_price = holding.get('avg_price', 0)
-                current_price = holding.get('current_price', avg_price)
-                
-                if quantity > 0 and avg_price > 0:
-                    weight = (quantity * avg_price) / total_value
-                    weights.append(weight)
-                    
-                    # Calculate basic return from current vs average price
-                    if current_price > 0 and avg_price > 0:
-                        basic_return = (current_price - avg_price) / avg_price
-                    else:
-                        basic_return = 0.0
-                    
-                    basic_returns.append(basic_return)
-            
-            if not weights:
-                return self._empty_monte_carlo_result()
-            
-            # Normalize weights
-            weights = np.array(weights) / sum(weights)
-            basic_returns = np.array(basic_returns)
-            
-            # Calculate portfolio return
-            portfolio_return = np.sum(weights * basic_returns)
-            
-            # Calculate volatility from available data
-            if len(basic_returns) > 0:
-                std_return = np.std(basic_returns) / np.sqrt(252)  # Daily volatility
-            else:
-                std_return = 0.0
-            
-            # Generate basic simulation results
-            mean_return = portfolio_return
-            
-            # Generate percentiles based on normal distribution
-            percentiles = {
-                '5th': mean_return - 1.645 * std_return,
-                '10th': mean_return - 1.282 * std_return,
-                '25th': mean_return - 0.674 * std_return,
-                '50th': mean_return,
-                '75th': mean_return + 0.674 * std_return,
-                '90th': mean_return + 1.282 * std_return,
-                '95th': mean_return + 1.645 * std_return
-            }
-            
-            # Calculate confidence intervals
-            confidence_intervals = {
-                '90%': (percentiles['5th'], percentiles['95th']),
-                '95%': (mean_return - 1.96 * std_return, mean_return + 1.96 * std_return),
-                '99%': (mean_return - 2.576 * std_return, mean_return + 2.576 * std_return)
-            }
-            
-            # Calculate probability of positive returns
-            if std_return > 0:
-                probability_positive = 1 - stats.norm.cdf(0, mean_return, std_return)
-            else:
-                probability_positive = 1.0 if mean_return > 0 else 0.0
-            
-            logger.info(f"Basic simulation completed: mean_return={mean_return:.6f}, std_return={std_return:.6f}")
-            
-            return MonteCarloResult(
-                mean_return=mean_return,
-                std_return=std_return,
-                percentiles=percentiles,
-                worst_case=percentiles['5th'],
-                best_case=percentiles['95th'],
-                probability_positive=probability_positive,
-                confidence_intervals=confidence_intervals
-            )
-            
-        except Exception as e:
-            logger.error(f"Error in basic Monte Carlo simulation: {e}")
-            return self._empty_monte_carlo_result()
+
     
     def _empty_risk_report(self) -> Dict[str, Any]:
         return {
-            'summary': {'risk_score': 1, 'risk_level': 'Very Low'},
+            'summary': {'risk_score': float('nan'), 'risk_level': 'No Data'},
             'monte_carlo_analysis': {},
             'correlation_analysis': {},
             'sector_analysis': {},
             'ml_prediction': {},
-            'recommendations': [],
+            'recommendations': ['Unable to generate risk analysis - insufficient data'],
             'error': 'Failed to generate risk report'
         }
     
@@ -714,12 +714,16 @@ class AdvancedRiskEngine:
     
     def _calculate_diversification_score(self, correlation_matrix: np.ndarray) -> float:
         """Calculate diversification score based on correlation matrix"""
+        logger.info(f"Calculating diversification score for matrix shape: {correlation_matrix.shape}")
+        
         if correlation_matrix.size == 0:
+            logger.warning("Empty correlation matrix")
             return 0.0
         
         # Average absolute correlation (excluding diagonal)
         n = correlation_matrix.shape[0]
         if n <= 1:
+            logger.info("Single stock - perfect diversification")
             return 1.0
         
         # Calculate average correlation excluding diagonal
@@ -727,7 +731,10 @@ class AdvancedRiskEngine:
         avg_correlation = np.mean(np.abs(correlation_matrix[mask]))
         
         # Diversification score: 1 - average correlation
-        return max(0.0, 1.0 - avg_correlation)
+        diversification_score = max(0.0, 1.0 - avg_correlation)
+        logger.info(f"Average correlation: {avg_correlation}, Diversification score: {diversification_score}")
+        
+        return diversification_score
     
     def _calculate_sector_volatility(self, holdings: List[Dict]) -> float:
         """Calculate weighted average volatility for a sector"""
@@ -752,6 +759,49 @@ class AdvancedRiskEngine:
         
         return weighted_volatility
     
+    def _infer_sector_from_symbol(self, symbol: str) -> str:
+        """Infer sector from stock symbol"""
+        # Common sector mappings for major stocks
+        sector_mappings = {
+            # Technology
+            'AAPL': 'Technology', 'MSFT': 'Technology', 'GOOGL': 'Technology', 'GOOG': 'Technology',
+            'AMZN': 'Technology', 'META': 'Technology', 'NVDA': 'Technology', 'TSLA': 'Technology',
+            'NFLX': 'Technology', 'ADBE': 'Technology', 'CRM': 'Technology', 'ORCL': 'Technology',
+            
+            # Healthcare
+            'JNJ': 'Healthcare', 'PFE': 'Healthcare', 'UNH': 'Healthcare', 'ABBV': 'Healthcare',
+            'MRK': 'Healthcare', 'TMO': 'Healthcare', 'ABT': 'Healthcare', 'DHR': 'Healthcare',
+            
+            # Financial
+            'JPM': 'Financial', 'BAC': 'Financial', 'WFC': 'Financial', 'GS': 'Financial',
+            'MS': 'Financial', 'C': 'Financial', 'BLK': 'Financial', 'SCHW': 'Financial',
+            
+            # Consumer Discretionary
+            'HD': 'Consumer Discretionary', 'MCD': 'Consumer Discretionary', 'NKE': 'Consumer Discretionary',
+            'SBUX': 'Consumer Discretionary', 'LOW': 'Consumer Discretionary', 'TJX': 'Consumer Discretionary',
+            
+            # Consumer Staples
+            'PG': 'Consumer Staples', 'KO': 'Consumer Staples', 'PEP': 'Consumer Staples',
+            'WMT': 'Consumer Staples', 'COST': 'Consumer Staples', 'PM': 'Consumer Staples',
+            
+            # Energy
+            'XOM': 'Energy', 'CVX': 'Energy', 'COP': 'Energy', 'EOG': 'Energy',
+            
+            # Industrials
+            'BA': 'Industrials', 'CAT': 'Industrials', 'MMM': 'Industrials', 'HON': 'Industrials',
+            
+            # Materials
+            'LIN': 'Materials', 'APD': 'Materials', 'FCX': 'Materials', 'NEM': 'Materials',
+            
+            # Utilities
+            'NEE': 'Utilities', 'DUK': 'Utilities', 'SO': 'Utilities', 'D': 'Utilities',
+            
+            # Real Estate
+            'AMT': 'Real Estate', 'PLD': 'Real Estate', 'CCI': 'Real Estate', 'EQIX': 'Real Estate'
+        }
+        
+        return sector_mappings.get(symbol, 'Unknown')
+
     def _extract_ml_features(self, holdings: List[Dict]) -> List[float]:
         """Extract features for ML model"""
         if not holdings:
@@ -787,6 +837,12 @@ class AdvancedRiskEngine:
         
         # Simple statistical prediction based on current volatility
         current_volatility = self._calculate_portfolio_volatility(holdings)
+        
+        # If we can't calculate volatility, use a reasonable default
+        if current_volatility == 0.0:
+            # Use average market volatility as fallback
+            current_volatility = 0.15  # 15% annual volatility
+        
         predicted_volatility = current_volatility * 1.1  # Slight increase
         
         return MLVolatilityPrediction(
@@ -798,7 +854,7 @@ class AdvancedRiskEngine:
         )
     
     def _calculate_portfolio_volatility(self, holdings: List[Dict]) -> float:
-        """Calculate portfolio volatility"""
+        """Calculate portfolio volatility using real market data when available"""
         if not holdings:
             return 0.0
         
@@ -808,18 +864,38 @@ class AdvancedRiskEngine:
             return 0.0
         
         weighted_volatility = 0.0
+        valid_holdings = 0
+        
         for holding in holdings:
             value = holding.get('quantity', 0) * holding.get('avg_price', 0)
             weight = value / total_value
             
+            # Try to get real volatility from market data
+            symbol = holding.get('symbol', '')
+            if symbol:
+                try:
+                    ticker = yf.Ticker(symbol)
+                    hist = ticker.history(period="1y")
+                    if len(hist) > 30:
+                        returns = hist['Close'].pct_change().dropna()
+                        volatility = returns.std() * np.sqrt(252)  # Annualized volatility
+                        weighted_volatility += weight * volatility
+                        valid_holdings += 1
+                        continue
+                except Exception as e:
+                    logger.warning(f"Could not fetch volatility data for {symbol}: {e}")
+            
+            # Fallback to price-based volatility
             price = holding.get('avg_price', 0)
             current_price = holding.get('current_price', price)
             if price > 0 and current_price > 0:
                 volatility = abs((current_price - price) / price)
                 weighted_volatility += weight * volatility
-            else:
-                # Skip holdings without valid price data
-                continue
+                valid_holdings += 1
+        
+        # If no valid holdings, return default volatility
+        if valid_holdings == 0:
+            return 0.15  # 15% annual volatility as default
         
         return weighted_volatility
     

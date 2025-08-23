@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 import os
+import math
 from risk_calculator import RiskCalculator
 from portfolio_analyzer import PortfolioAnalyzer
 from rebalancing_engine import RebalancingEngine
@@ -34,6 +35,18 @@ advanced_rebalancing_engine = AdvancedRebalancingEngine()
 paper_trading_engine = PaperTradingEngine()
 brokerage_simulator = BrokerageAPISimulator()
 notification_engine = NotificationEngine()
+
+def convert_nan_to_null(obj):
+    """Convert NaN values to null for JSON serialization"""
+    if isinstance(obj, dict):
+        return {k: convert_nan_to_null(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_nan_to_null(v) for v in obj]
+    elif isinstance(obj, float) and (math.isnan(obj) or not math.isfinite(obj)):
+        print(f"Converting NaN to null: {obj}")
+        return None
+    else:
+        return obj
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -289,6 +302,10 @@ def generate_advanced_risk_report():
         risk_report = advanced_risk_engine.generate_risk_report(holdings, risk_tolerance)
         
         print(f"Generated risk report: {risk_report}")
+        print(f"Correlation analysis before conversion: {risk_report.get('correlation_analysis', {})}")
+        
+        # Convert NaN values to null for JSON serialization
+        risk_report = convert_nan_to_null(risk_report)
         
         return jsonify(risk_report)
         
@@ -321,6 +338,9 @@ def run_monte_carlo_simulation():
             'confidence_intervals': monte_carlo_result.confidence_intervals
         }
         
+        # Convert NaN values to null for JSON serialization
+        result = convert_nan_to_null(result)
+        
         return jsonify(result)
         
     except Exception as e:
@@ -346,6 +366,9 @@ def calculate_correlation_matrix():
             'high_correlation_pairs': correlation_result.high_correlation_pairs,
             'heatmap_data': correlation_result.heatmap_data
         }
+        
+        # Convert NaN values to null for JSON serialization
+        result = convert_nan_to_null(result)
         
         return jsonify(result)
         
