@@ -1,111 +1,136 @@
 # Risk Engine Deployment Guide
 
-Since your QuantFlow app is deployed on Vercel (serverless), the Python risk engine needs to be deployed separately to a platform that supports Python applications.
+## 🚨 Nix Build Error Solutions
 
-## 🚀 Quick Deployment Options
+If you're getting Nix build errors on Railway like:
+```
+error: builder for '/nix/store/504kp7hrb2zpz043h4wdcpbhlz8rd7w9-python3.9-setuptools-75.1.0.drv' failed with exit code 1
+```
 
-### Option 1: Railway (Recommended - Free Tier)
+Here are the solutions:
 
-1. **Fork/Clone the repository** to a separate repository for the risk engine
-2. **Go to [Railway.app](https://railway.app)** and sign up
-3. **Create a new project** and connect your GitHub repository
-4. **Deploy the risk-engine directory** as a new service
-5. **Get the deployment URL** (e.g., `https://your-risk-engine.railway.app`)
-6. **Add environment variable** to your Vercel deployment:
-   - Name: `REACT_APP_RISK_ENGINE_URL`
-   - Value: `https://your-risk-engine.railway.app`
+## Solution 1: Use Docker Deployment (Recommended)
 
-### Option 2: Render (Free Tier)
+1. **Enable Docker on Railway:**
+   - Go to your Railway project
+   - Go to Settings → General
+   - Enable "Use Dockerfile for deployment"
 
-1. **Go to [Render.com](https://render.com)** and sign up
-2. **Create a new Web Service**
-3. **Connect your GitHub repository**
-4. **Configure the service**:
+2. **Deploy with Dockerfile:**
+   - Railway will automatically detect the `Dockerfile`
+   - This bypasses nixpacks entirely
+   - More reliable and faster builds
+
+## Solution 2: Use Procfile Instead of nixpacks
+
+1. **Disable nixpacks:**
+   - Rename `nixpacks.toml` to `nixpacks.toml.backup`
+   - Railway will use the `Procfile` instead
+
+2. **Deploy:**
+   - Railway will use the Procfile configuration
+   - Simpler build process
+
+## Solution 3: Use Render.com (Alternative Platform)
+
+1. **Create account on Render.com**
+2. **Connect your repository**
+3. **Configure as Python service:**
    - Build Command: `pip install -r requirements.txt`
-   - Start Command: `python app.py`
+   - Start Command: `gunicorn --bind 0.0.0.0:$PORT app:app`
+
+## Solution 4: Fix nixpacks Configuration
+
+The updated `nixpacks.toml` includes:
+- Explicit setuptools and wheel packages
+- Upgraded pip before installing requirements
+- Better error handling
+
+## 🚀 Quick Deployment Steps
+
+### Option A: Railway with Docker (Recommended)
+
+1. **Push your code to GitHub**
+2. **Connect to Railway**
+3. **Enable Docker deployment**
+4. **Deploy**
+
+### Option B: Railway with Procfile
+
+1. **Rename nixpacks.toml:**
+   ```bash
+   mv risk-engine/nixpacks.toml risk-engine/nixpacks.toml.backup
+   ```
+
+2. **Deploy to Railway**
+
+### Option C: Render.com
+
+1. **Sign up at render.com**
+2. **Connect your GitHub repository**
+3. **Create new Web Service**
+4. **Configure:**
    - Environment: Python 3
-5. **Deploy and get the URL**
-6. **Add the environment variable** to Vercel as above
-
-### Option 3: Heroku (Paid)
-
-1. **Install Heroku CLI**
-2. **Create a new Heroku app**
-3. **Deploy using the Procfile**
-4. **Add the environment variable** to Vercel
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `gunicorn --bind 0.0.0.0:$PORT app:app`
 
 ## 🔧 Environment Variables
 
-Add this to your Vercel deployment:
+Set these in your deployment platform:
+
+```
+PORT=5000
+FLASK_ENV=production
+```
+
+## 🧪 Testing Your Deployment
+
+After deployment, test with:
+
+```bash
+curl https://your-risk-engine-url.com/health
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "service": "Risk Assessment Engine",
+  "version": "1.0.0"
+}
+```
+
+## 🔗 Connect to Frontend
+
+Add this environment variable to your Vercel deployment:
 
 ```
 REACT_APP_RISK_ENGINE_URL=https://your-risk-engine-url.com
 ```
 
-## 📁 Required Files for Deployment
+## 📁 Files Overview
 
-The risk-engine directory contains all necessary files:
-- `app.py` - Main Flask application
+- `Dockerfile` - Docker deployment (most reliable)
+- `Procfile` - Alternative to nixpacks
+- `nixpacks.toml` - Railway nixpacks config (may have issues)
+- `railway.json` - Railway configuration
 - `requirements.txt` - Python dependencies
-- `Procfile` - Deployment configuration
-- `railway.json` - Railway-specific config
-- `nixpacks.toml` - Nixpacks configuration
+- `runtime.txt` - Python version specification
 
-## 🧪 Testing the Deployment
+## 🆘 Troubleshooting
 
-After deployment, test the risk engine:
+### Build Fails
+1. Try Docker deployment
+2. Use Render.com instead
+3. Check Python version compatibility
 
-```bash
-# Health check
-curl https://your-risk-engine-url.com/health
+### App Won't Start
+1. Check PORT environment variable
+2. Verify gunicorn is in requirements.txt
+3. Check logs for specific errors
 
-# Advanced risk analysis
-curl -X POST https://your-risk-engine-url.com/api/risk/advanced \
-  -H "Content-Type: application/json" \
-  -d '{"holdings":[],"risk_tolerance":"moderate"}'
-```
-
-## 🔄 Automatic Deployment
-
-Both Railway and Render support automatic deployments:
-- Connect your GitHub repository
-- Every push to main branch triggers a new deployment
-- No manual intervention required
-
-## 💰 Cost Considerations
-
-- **Railway**: Free tier includes 500 hours/month
-- **Render**: Free tier includes 750 hours/month
-- **Heroku**: Paid plans only (no free tier)
-
-## 🚨 Troubleshooting
-
-### Common Issues:
-
-1. **CORS Errors**: The risk engine includes CORS headers for `http://localhost:3000`
-2. **Port Issues**: The app uses `PORT` environment variable
-3. **Dependencies**: All required packages are in `requirements.txt`
-
-### Debug Commands:
-
-```bash
-# Check if the service is running
-curl https://your-risk-engine-url.com/health
-
-# Check logs (Railway/Render dashboard)
-# Look for Python errors or missing dependencies
-```
-
-## 📈 Performance
-
-The risk engine is optimized for:
-- **Caching**: Historical data cached for 1 hour
-- **Rate Limiting**: Respects Yahoo Finance API limits
-- **Error Handling**: Graceful degradation when data unavailable
-
-## 🔐 Security
-
-- The risk engine only accepts requests from your frontend domain
-- No sensitive data is stored
-- All calculations are performed in memory
+### Health Check Fails
+1. Verify the `/health` endpoint exists
+2. Check if app is binding to correct port
+3. Review application logs
 

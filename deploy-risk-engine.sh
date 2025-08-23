@@ -18,6 +18,13 @@ echo ""
 echo "🔗 Deployment Options:"
 echo "• Railway (Recommended): https://railway.app"
 echo "• Render: https://render.com"
+echo "• Railway with Docker (Alternative): Use Dockerfile"
+echo ""
+
+echo "🚨 If you get Nix build errors on Railway:"
+echo "1. Try using the Dockerfile instead of nixpacks"
+echo "2. Or use Render.com which has better Python support"
+echo "3. Or use Railway's Docker deployment option"
 echo ""
 
 echo "📝 Environment Variable to add to Vercel:"
@@ -36,7 +43,13 @@ echo ""
 if [ -d "risk-engine" ]; then
     echo "✅ Risk engine directory found"
     echo "📁 Files ready for deployment:"
-    ls -la risk-engine/ | grep -E "\.(py|txt|json|toml|Procfile)$"
+    ls -la risk-engine/ | grep -E "\.(py|txt|json|toml|Procfile|Dockerfile)$"
+    echo ""
+    echo "🔧 Deployment files available:"
+    echo "• nixpacks.toml (may have Nix build issues)"
+    echo "• Procfile (alternative to nixpacks)"
+    echo "• Dockerfile (most reliable option)"
+    echo "• railway.json (Railway configuration)"
 else
     echo "❌ Risk engine directory not found"
 fi
