@@ -1,6 +1,12 @@
 import express from 'express'
 import { marketDataService } from '../services/marketDataService.js'
+import { mockMarketDataService } from '../services/mockMarketDataService.js'
 import { schedulerService } from '../services/schedulerService.js'
+
+// Use mock service if real service is not configured
+const getMarketDataService = () => {
+  return marketDataService.isConfigured() ? marketDataService : mockMarketDataService
+}
 
 const router = express.Router()
 
@@ -32,7 +38,7 @@ router.get('/quote/:symbol', validateSymbol, async (req, res) => {
     const { symbol } = req.params
     console.log(`API: Fetching quote for ${symbol}`)
     
-    const quote = await marketDataService.getStockQuote(symbol)
+    const quote = await getMarketDataService().getStockQuote(symbol)
     
     if (!quote) {
       return res.status(404).json({ 
@@ -82,7 +88,7 @@ router.get('/quotes', async (req, res) => {
     
     console.log(`API: Fetching quotes for ${symbolArray.length} symbols`)
     
-    const quotes = await marketDataService.getMultipleQuotes(symbolArray)
+    const quotes = await getMarketDataService().getMultipleQuotes(symbolArray)
     
     res.json({
       success: true,
@@ -106,7 +112,7 @@ router.get('/profile/:symbol', validateSymbol, async (req, res) => {
     const { symbol } = req.params
     console.log(`API: Fetching profile for ${symbol}`)
     
-    const profile = await marketDataService.getCompanyProfile(symbol)
+    const profile = await getMarketDataService().getCompanyProfile(symbol)
     
     if (!profile) {
       return res.status(404).json({ 
@@ -135,7 +141,7 @@ router.get('/search', validateSearchQuery, async (req, res) => {
     const { q } = req.query
     console.log(`API: Searching for "${q}"`)
     
-    const results = await marketDataService.searchStocks(q)
+    const results = await getMarketDataService().searchStocks(q)
     
     if (!results) {
       return res.json({
@@ -167,7 +173,7 @@ router.get('/popular', async (req, res) => {
   try {
     console.log('API: Fetching popular stocks')
     
-    const popularStocks = await marketDataService.getPopularStocks()
+    const popularStocks = await getMarketDataService().getPopularStocks()
     
     res.json({
       success: true,
@@ -188,8 +194,9 @@ router.get('/popular', async (req, res) => {
 // GET /api/market-data/status - Get service status
 router.get('/status', async (req, res) => {
   try {
-    const isConfigured = marketDataService.isConfigured()
-    const cacheStats = await marketDataService.getCacheStats()
+    const currentService = getMarketDataService()
+    const isConfigured = currentService.isConfigured()
+    const cacheStats = await currentService.getCacheStats()
     const schedulerStatus = schedulerService.getStatus()
     
     res.json({

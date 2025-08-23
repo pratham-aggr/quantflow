@@ -106,7 +106,7 @@ class NotificationService {
   private isConnected = false
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'http://localhost:5001'
+    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'http://localhost:5002'
   }
 
   // WebSocket Connection Management

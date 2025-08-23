@@ -48,51 +48,53 @@ export const SimpleDashboard: React.FC = () => {
   const isGain = (portfolioMetrics?.totalPnL || 0) >= 0
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-black">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-robinhood-dark dark:to-robinhood-dark-secondary">
       {/* Header Section */}
-      <div className="bg-white dark:bg-black border-b border-neutral-200 dark:border-neutral-800">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="bg-white/80 dark:bg-robinhood-dark/80 backdrop-blur-robinhood border-b border-neutral-200 dark:border-robinhood-dark-border">
+        <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Greeting */}
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white mb-2">
+            <h1 className="text-3xl font-bold robinhood-text-primary mb-2">
               Good morning, {user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Investor'}
             </h1>
-            <p className="text-neutral-600 dark:text-neutral-400">
+            <p className="robinhood-text-secondary text-lg">
               Here's your portfolio performance
             </p>
           </div>
 
           {/* Portfolio Value Section */}
           <div className="mb-8">
-            <div className="mb-4">
-              <h2 className="text-4xl font-bold text-neutral-900 dark:text-white mb-2">
+            <div className="mb-6">
+              <h2 className="text-5xl font-bold robinhood-text-primary mb-3">
                 {formatCurrency(portfolioMetrics?.totalValue || 0)}
               </h2>
-              <div className={`flex items-center space-x-2 ${
-                isGain ? 'text-gain-600' : 'text-loss-600'
+              <div className={`flex items-center space-x-3 text-xl font-semibold ${
+                isGain ? 'robinhood-gain' : 'robinhood-loss'
               }`}>
                 {isGain ? (
-                  <TrendingUp className="w-5 h-5" />
+                  <TrendingUp className="w-6 h-6" />
                 ) : (
-                  <TrendingDown className="w-5 h-5" />
+                  <TrendingDown className="w-6 h-6" />
                 )}
-                <span className="text-lg font-medium">
+                <span>
                   {formatCurrency(Math.abs(portfolioMetrics?.totalPnL || 0))} ({formatPercent(portfolioMetrics?.totalPnLPercent || 0)})
                 </span>
               </div>
             </div>
             
             {/* Quick Stats */}
-            <div className="flex items-center space-x-8 text-sm text-neutral-600 dark:text-neutral-400">
-              <div>
-                <span className="mr-2">Today:</span>
-                <span className={isGain ? 'text-gain-600' : 'text-loss-600'}>
+            <div className="flex items-center space-x-8 text-sm robinhood-text-secondary">
+              <div className="flex items-center space-x-2">
+                <span>Today:</span>
+                <span className={`font-medium ${isGain ? 'robinhood-gain' : 'robinhood-loss'}`}>
                   {formatCurrency(portfolioMetrics?.totalPnL || 0)}
                 </span>
               </div>
-              <div>
-                <span className="mr-2">Cash:</span>
-                <span>{formatCurrency(portfolioMetrics?.cashBalance || 0)}</span>
+              <div className="flex items-center space-x-2">
+                <span>Cash:</span>
+                <span className="font-medium robinhood-text-primary">
+                  {formatCurrency(portfolioMetrics?.cashBalance || 0)}
+                </span>
               </div>
             </div>
           </div>
@@ -100,20 +102,20 @@ export const SimpleDashboard: React.FC = () => {
       </div>
 
       {/* Holdings Section */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Section Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-xl font-semibold text-neutral-900 dark:text-white">
+        <div className="flex items-center justify-between mb-8">
+          <h3 className="text-2xl font-semibold robinhood-text-primary">
             Holdings
           </h3>
-          <button className="flex items-center space-x-2 text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors">
-            <Plus className="w-4 h-4" />
-            <span className="text-sm font-medium">Add to Portfolio</span>
+          <button className="robinhood-btn-primary">
+            <Plus className="w-4 h-4 mr-2" />
+            <span>Add to Portfolio</span>
           </button>
         </div>
 
         {/* Holdings List */}
-        <div className="space-y-3">
+        <div className="space-y-4">
           {currentPortfolio?.holdings?.map((holding) => {
             const currentPrice = holding.current_price || holding.avg_price
             const totalValue = holding.quantity * currentPrice
@@ -124,21 +126,21 @@ export const SimpleDashboard: React.FC = () => {
             return (
               <div
                 key={holding.id}
-                className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors cursor-pointer"
+                className="robinhood-card-hover p-6 cursor-pointer"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
-                        <span className="text-primary-600 dark:text-primary-400 font-semibold text-sm">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 rounded-robinhood flex items-center justify-center">
+                        <span className="text-primary-600 dark:text-primary-400 font-bold text-lg">
                           {holding.symbol.charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <h4 className="font-medium text-neutral-900 dark:text-white">
+                        <h4 className="font-semibold text-lg robinhood-text-primary">
                           {holding.symbol}
                         </h4>
-                        <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                        <p className="robinhood-text-secondary">
                           {holding.company_name || holding.symbol}
                         </p>
                       </div>
@@ -146,16 +148,16 @@ export const SimpleDashboard: React.FC = () => {
                   </div>
                   
                   <div className="text-right">
-                    <div className="font-medium text-neutral-900 dark:text-white">
+                    <div className="font-bold text-xl robinhood-text-primary">
                       {formatCurrency(totalValue)}
                     </div>
-                    <div className={`text-sm flex items-center justify-end space-x-1 ${
-                      isHoldingGain ? 'text-gain-600' : 'text-loss-600'
+                    <div className={`text-lg font-medium flex items-center justify-end space-x-2 ${
+                      isHoldingGain ? 'robinhood-gain' : 'robinhood-loss'
                     }`}>
                       {isHoldingGain ? (
-                        <TrendingUp className="w-3 h-3" />
+                        <TrendingUp className="w-4 h-4" />
                       ) : (
-                        <TrendingDown className="w-3 h-3" />
+                        <TrendingDown className="w-4 h-4" />
                       )}
                       <span>
                         {formatCurrency(Math.abs(pnl))} ({formatPercent(pnlPercent)})
@@ -170,18 +172,18 @@ export const SimpleDashboard: React.FC = () => {
 
         {/* Empty State */}
         {!currentPortfolio?.holdings?.length && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-neutral-100 dark:bg-neutral-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Target className="w-8 h-8 text-neutral-400" />
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-700 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Target className="w-10 h-10 text-neutral-400 dark:text-neutral-500" />
             </div>
-            <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-2">
+            <h3 className="text-2xl font-semibold robinhood-text-primary mb-3">
               No holdings yet
             </h3>
-            <p className="text-neutral-600 dark:text-neutral-400 mb-6">
+            <p className="robinhood-text-secondary text-lg mb-8 max-w-md mx-auto">
               Start building your portfolio by adding your first stock
             </p>
-            <button className="inline-flex items-center space-x-2 px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-              <Plus className="w-4 h-4" />
+            <button className="robinhood-btn-primary text-lg px-8 py-4">
+              <Plus className="w-5 h-5 mr-2" />
               <span>Add Your First Stock</span>
             </button>
           </div>
@@ -189,34 +191,34 @@ export const SimpleDashboard: React.FC = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="max-w-4xl mx-auto px-4 pb-8">
-        <div className="grid grid-cols-2 gap-4">
-          <button className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 text-left hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+      <div className="max-w-7xl mx-auto px-4 pb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <button className="robinhood-card-hover p-6 text-left">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 rounded-robinhood flex items-center justify-center">
+                <DollarSign className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               </div>
               <div>
-                <h4 className="font-medium text-neutral-900 dark:text-white">
+                <h4 className="font-semibold text-lg robinhood-text-primary">
                   Invest
                 </h4>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                <p className="robinhood-text-secondary">
                   Buy stocks and ETFs
                 </p>
               </div>
             </div>
           </button>
           
-          <button className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-4 text-left hover:border-neutral-300 dark:hover:border-neutral-700 transition-colors">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-primary-100 dark:bg-primary-900/20 rounded-lg flex items-center justify-center">
-                <Eye className="w-5 h-5 text-primary-600 dark:text-primary-400" />
+          <button className="robinhood-card-hover p-6 text-left">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 rounded-robinhood flex items-center justify-center">
+                <Eye className="w-6 h-6 text-primary-600 dark:text-primary-400" />
               </div>
               <div>
-                <h4 className="font-medium text-neutral-900 dark:text-white">
+                <h4 className="font-semibold text-lg robinhood-text-primary">
                   Watchlist
                 </h4>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                <p className="robinhood-text-secondary">
                   Track your interests
                 </p>
               </div>

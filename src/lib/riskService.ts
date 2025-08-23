@@ -75,7 +75,7 @@ class RiskService {
 
   constructor() {
     // Use environment variable or default to local development
-    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'http://localhost:5001'
+    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'http://localhost:5002'
   }
 
   private getCacheKey(endpoint: string, data?: any): string {

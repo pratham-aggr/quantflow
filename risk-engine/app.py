@@ -861,7 +861,8 @@ def send_test_notification():
             channels=[NotificationChannel.EMAIL, NotificationChannel.PUSH]
         )
         
-        result = asyncio.run(notification_engine.send_notification(notification))
+        # Send the notification
+        result = notification_engine.send_notification(notification)
         
         return jsonify({
             'success': True,
@@ -875,5 +876,22 @@ def send_test_notification():
         }), 400
 
 if __name__ == '__main__':
+    import asyncio
+    import threading
+    
+    # Start WebSocket server in a separate thread
+    def start_websocket_server():
+        try:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(notification_engine.start_websocket_server())
+            loop.run_forever()
+        except Exception as e:
+            print(f"WebSocket server error: {e}")
+    
+    websocket_thread = threading.Thread(target=start_websocket_server, daemon=True)
+    websocket_thread.start()
+    
+    # Start Flask server
     port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port, debug=True)

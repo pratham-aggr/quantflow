@@ -182,7 +182,7 @@ class AdvancedRebalancingService {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'http://localhost:5001'
+    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'http://localhost:5002'
   }
 
   // Tax-Loss Harvesting Methods

@@ -26,16 +26,22 @@ export const PortfolioManagement: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'holdings' | 'transactions' | 'add-stock'>('overview')
 
   if (!user) {
-    return <div>Please log in to access portfolio management.</div>
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-robinhood-dark dark:to-robinhood-dark-secondary flex items-center justify-center">
+        <div className="robinhood-card p-8 text-center">
+          <p className="robinhood-text-primary text-lg">Please log in to access portfolio management.</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-black">
-      <main className="max-w-4xl mx-auto py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-robinhood-dark dark:to-robinhood-dark-secondary">
+      <main className="max-w-7xl mx-auto py-8 px-4">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">Portfolio Management</h1>
-          <p className="text-neutral-600 dark:text-neutral-400">Manage your investment portfolios and track your holdings</p>
+          <h1 className="text-4xl font-bold robinhood-text-primary mb-3">Portfolio Management</h1>
+          <p className="robinhood-text-secondary text-lg">Manage your investment portfolios and track your holdings</p>
         </div>
 
         {/* Error Display */}
@@ -49,21 +55,21 @@ export const PortfolioManagement: React.FC = () => {
 
         {/* Loading State */}
         {loading && (
-          <div className="flex justify-center items-center py-8">
+          <div className="flex justify-center items-center py-12">
             <LoadingSpinner size="lg" />
           </div>
         )}
 
         {/* Portfolio Creation or Selection */}
         {portfolios.length === 0 ? (
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
-            <h2 className="text-xl font-semibold text-neutral-900 dark:text-white mb-4">Create Your First Portfolio</h2>
+          <div className="robinhood-card p-8">
+            <h2 className="text-2xl font-semibold robinhood-text-primary mb-6">Create Your First Portfolio</h2>
             <PortfolioCreationForm />
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="space-y-8">
             {/* Portfolio Selector */}
-            <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
+            <div className="robinhood-card p-6">
               <PortfolioSelector 
                 portfolios={portfolios}
                 currentPortfolio={currentPortfolio}
@@ -73,16 +79,16 @@ export const PortfolioManagement: React.FC = () => {
 
             {/* Portfolio Summary */}
             {currentPortfolio && (
-              <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6">
+              <div className="robinhood-card p-6">
                 <PortfolioSummary portfolio={currentPortfolio} />
               </div>
             )}
 
             {/* Navigation Tabs */}
             {currentPortfolio && (
-              <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg">
-                <div className="border-b border-neutral-200 dark:border-neutral-700">
-                  <nav className="-mb-px flex space-x-8 px-6">
+              <div className="robinhood-card">
+                <div className="border-b border-neutral-200 dark:border-robinhood-dark-border">
+                  <nav className="-mb-px flex space-x-8 px-8">
                     {[
                       { id: 'overview', name: 'Overview' },
                       { id: 'holdings', name: 'Holdings' },
@@ -92,10 +98,10 @@ export const PortfolioManagement: React.FC = () => {
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                        className={`py-4 px-1 border-b-2 font-medium text-base transition-all duration-200 ${
                           activeTab === tab.id
                             ? 'border-primary-500 text-primary-600 dark:text-primary-400'
-                            : 'border-transparent text-neutral-500 dark:text-neutral-400 hover:text-neutral-700 dark:hover:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
+                            : 'border-transparent robinhood-text-secondary hover:robinhood-text-primary hover:border-neutral-300 dark:hover:border-neutral-600'
                         }`}
                       >
                         {tab.name}
@@ -105,28 +111,28 @@ export const PortfolioManagement: React.FC = () => {
                 </div>
 
                 {/* Tab Content */}
-                <div className="p-6">
+                <div className="p-8">
                   {activeTab === 'overview' && currentPortfolio && (
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="bg-primary-50 dark:bg-primary-900/20 p-4 rounded-lg border border-primary-200 dark:border-primary-800">
-                          <h3 className="text-sm font-medium text-primary-900 dark:text-primary-100">Total Value</h3>
-                          <p className="text-2xl font-bold text-primary-700 dark:text-primary-300">
+                        <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-6 rounded-robinhood border border-primary-200 dark:border-primary-800">
+                          <h3 className="text-sm font-medium text-primary-900 dark:text-primary-100 mb-2">Total Value</h3>
+                          <p className="text-3xl font-bold text-primary-700 dark:text-primary-300">
                             ${(currentPortfolio.cash_balance + 
                               currentPortfolio.holdings.reduce((sum, holding) => 
                                 sum + (holding.quantity * holding.avg_price), 0
                               )).toLocaleString()}
                           </p>
                         </div>
-                        <div className="bg-gain-50 dark:bg-gain-900/20 p-4 rounded-lg border border-gain-200 dark:border-gain-800">
-                          <h3 className="text-sm font-medium text-gain-900 dark:text-gain-100">Cash Balance</h3>
-                          <p className="text-2xl font-bold text-gain-700 dark:text-gain-300">
+                        <div className="bg-gradient-to-br from-gain-50 to-gain-100 dark:from-gain-900/20 dark:to-gain-800/20 p-6 rounded-robinhood border border-gain-200 dark:border-gain-800">
+                          <h3 className="text-sm font-medium text-gain-900 dark:text-gain-100 mb-2">Cash Balance</h3>
+                          <p className="text-3xl font-bold text-gain-700 dark:text-gain-300">
                             ${currentPortfolio.cash_balance.toLocaleString()}
                           </p>
                         </div>
-                        <div className="bg-neutral-50 dark:bg-neutral-800 p-4 rounded-lg border border-neutral-200 dark:border-neutral-700">
-                          <h3 className="text-sm font-medium text-neutral-900 dark:text-neutral-100">Total Holdings</h3>
-                          <p className="text-2xl font-bold text-neutral-700 dark:text-neutral-300">
+                        <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-700 p-6 rounded-robinhood border border-neutral-200 dark:border-neutral-700">
+                          <h3 className="text-sm font-medium robinhood-text-primary mb-2">Total Holdings</h3>
+                          <p className="text-3xl font-bold robinhood-text-primary">
                             {currentPortfolio.holdings.length}
                           </p>
                         </div>
@@ -134,7 +140,7 @@ export const PortfolioManagement: React.FC = () => {
                       
                       {currentPortfolio.holdings.length > 0 && (
                         <div>
-                          <h3 className="text-lg font-medium text-neutral-900 dark:text-white mb-4">Recent Holdings</h3>
+                          <h3 className="text-xl font-semibold robinhood-text-primary mb-6">Recent Holdings</h3>
                           <HoldingsTable holdings={currentPortfolio.holdings.slice(0, 5)} compact />
                         </div>
                       )}

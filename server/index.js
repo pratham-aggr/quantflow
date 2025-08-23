@@ -6,6 +6,7 @@ import { createClient } from '@supabase/supabase-js'
 // Import our services
 import { connectRedis, disconnectRedis } from './config/redis.js'
 import { marketDataService } from './services/marketDataService.js'
+import { mockMarketDataService } from './services/mockMarketDataService.js'
 import { schedulerService } from './services/schedulerService.js'
 import marketDataRoutes from './routes/marketData.js'
 
@@ -56,7 +57,7 @@ async function initializeServices() {
   
   // Initialize market data service
   if (marketDataService.isConfigured()) {
-    console.log('✅ Market data service configured')
+    console.log('✅ Market data service configured (using Finnhub API)')
     
     // Start scheduler
     schedulerService.start()
@@ -69,7 +70,21 @@ async function initializeServices() {
       console.warn('⚠️ Failed to update initial popular stocks cache:', error.message)
     }
   } else {
-    console.warn('⚠️ Market data service not configured. Set FINNHUB_API_KEY environment variable.')
+    console.log('🔄 Market data service not configured - using mock data service')
+    
+    // Use mock service instead
+    global.marketDataService = mockMarketDataService
+    
+    // Start scheduler with mock service
+    schedulerService.start()
+    
+    // Initial popular stocks cache update with mock service
+    try {
+      await mockMarketDataService.updatePopularStocksCache()
+      console.log('✅ Initial mock popular stocks cache updated')
+    } catch (error) {
+      console.warn('⚠️ Failed to update initial mock popular stocks cache:', error.message)
+    }
   }
   
   console.log('✅ Services initialized successfully')

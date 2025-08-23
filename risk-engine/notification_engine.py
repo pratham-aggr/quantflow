@@ -775,7 +775,7 @@ class NotificationEngine:
                 if user_id:
                     await self.push_service.unregister_client(user_id)
         
-        self.websocket_server = await websockets.serve(handler, host, port)
+        self.websocket_server = await websockets.serve(handler, host, port, process_request=None)
         self.is_running = True
         print(f"WebSocket server started on ws://{host}:{port}")
     

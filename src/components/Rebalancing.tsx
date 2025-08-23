@@ -2,35 +2,27 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { usePortfolio } from '../contexts/PortfolioContext'
 
-import { rebalancingService, RebalancingAnalysis, RebalancingSuggestion, WhatIfAnalysis } from '../lib/rebalancingService'
+import { rebalancingService, RebalancingAnalysis, WhatIfAnalysis } from '../lib/rebalancingService'
 import { useToast } from './Toast'
 import { 
-  TrendingUp, 
-  TrendingDown, 
   Target, 
   BarChart3, 
   Calculator,
   Eye,
-  RefreshCw,
   AlertTriangle,
   CheckCircle,
-  XCircle,
-  Settings,
-  Download,
-  Upload
+  Settings
 } from 'lucide-react'
 import { PrimaryButton, SecondaryButton } from './Button'
 import { SkeletonCard } from './Skeleton'
 
 export const Rebalancing: React.FC = () => {
-  const { user } = useAuth()
   const { currentPortfolio, loading: portfolioLoading } = usePortfolio()
   const { success, error: showError } = useToast()
   
   const [analysis, setAnalysis] = useState<RebalancingAnalysis | null>(null)
   const [whatIfAnalysis, setWhatIfAnalysis] = useState<WhatIfAnalysis | null>(null)
   const [targetAllocation, setTargetAllocation] = useState<Record<string, number>>({})
-  const [constraints, setConstraints] = useState<Record<string, [number, number]>>({})
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isWhatIfLoading, setIsWhatIfLoading] = useState(false)
   const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set())
@@ -82,7 +74,7 @@ export const Rebalancing: React.FC = () => {
       })
       setTargetAllocation(target)
     }
-  }, [currentPortfolio?.holdings]) // Removed targetAllocation from dependencies
+  }, [currentPortfolio?.holdings, targetAllocation])
 
   const handleAnalyzeRebalancing = async () => {
     if (!currentPortfolio?.holdings) {
@@ -90,18 +82,24 @@ export const Rebalancing: React.FC = () => {
       return
     }
 
+    console.log('Starting rebalancing analysis...')
+    console.log('Current portfolio:', currentPortfolio)
+    console.log('Target allocation:', targetAllocation)
+    
     setIsAnalyzing(true)
     try {
       const result = await rebalancingService.analyzeRebalancing(
         currentPortfolio.holdings,
         targetAllocation,
-        constraints
+        {}
       )
+      console.log('Rebalancing analysis result:', result)
       setAnalysis(result)
       success('Rebalancing analysis completed')
     } catch (err) {
       console.error('Rebalancing analysis failed:', err)
-      showError('Failed to analyze rebalancing needs')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to analyze rebalancing needs'
+      showError('Analysis Failed', errorMessage)
     } finally {
       setIsAnalyzing(false)
     }
@@ -190,17 +188,17 @@ export const Rebalancing: React.FC = () => {
 
   const getDriftColor = (drift: number) => {
     const absDrift = Math.abs(drift)
-    if (absDrift <= 2) return 'text-green-600'
-    if (absDrift <= 5) return 'text-yellow-600'
-    return 'text-red-600'
+    if (absDrift <= 2) return 'robinhood-gain'
+    if (absDrift <= 5) return 'text-yellow-600 dark:text-yellow-400'
+    return 'robinhood-loss'
   }
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'HIGH': return 'text-red-600 bg-red-50 border-red-200'
-      case 'MEDIUM': return 'text-yellow-600 bg-yellow-50 border-yellow-200'
-      case 'LOW': return 'text-green-600 bg-green-50 border-green-200'
-      default: return 'text-gray-600 bg-gray-50 border-gray-200'
+      case 'HIGH': return 'robinhood-loss bg-loss-50 dark:bg-loss-900/20 border-loss-200 dark:border-loss-700'
+      case 'MEDIUM': return 'text-yellow-600 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700'
+      case 'LOW': return 'robinhood-gain bg-gain-50 dark:bg-gain-900/20 border-gain-200 dark:border-gain-700'
+      default: return 'robinhood-text-secondary bg-neutral-50 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700'
     }
   }
 
@@ -215,8 +213,8 @@ export const Rebalancing: React.FC = () => {
 
   if (portfolioLoading) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-black">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-robinhood-dark dark:to-robinhood-dark-secondary">
+        <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <SkeletonCard />
             <SkeletonCard />
@@ -229,12 +227,14 @@ export const Rebalancing: React.FC = () => {
 
   if (!currentPortfolio?.holdings || currentPortfolio.holdings.length === 0) {
     return (
-      <div className="min-h-screen bg-neutral-50 dark:bg-black">
-        <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-robinhood-dark dark:to-robinhood-dark-secondary">
+        <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="text-center">
-            <Target className="mx-auto h-12 w-12 text-neutral-400" />
-            <h3 className="mt-2 text-sm font-medium text-neutral-900 dark:text-white">No Portfolio Data</h3>
-            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            <div className="w-16 h-16 bg-gradient-to-br from-neutral-100 to-neutral-200 dark:from-neutral-800 dark:to-neutral-700 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Target className="h-8 w-8 text-neutral-400 dark:text-neutral-500" />
+            </div>
+            <h3 className="text-xl font-semibold robinhood-text-primary mb-3">No Portfolio Data</h3>
+            <p className="robinhood-text-secondary text-lg">
               Add holdings to your portfolio to start rebalancing analysis.
             </p>
           </div>
@@ -244,13 +244,13 @@ export const Rebalancing: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-black">
-      <div className="max-w-4xl mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-robinhood-dark dark:to-robinhood-dark-secondary">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-neutral-900 dark:text-white mb-2">Portfolio Rebalancing</h1>
-            <p className="text-neutral-600 dark:text-neutral-400">
+            <h1 className="text-4xl font-bold robinhood-text-primary mb-3">Portfolio Rebalancing</h1>
+            <p className="robinhood-text-secondary text-lg">
               Optimize your portfolio allocation using Modern Portfolio Theory
             </p>
           </div>
@@ -258,6 +258,7 @@ export const Rebalancing: React.FC = () => {
             <SecondaryButton
               onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
               leftIcon={<Settings className="h-4 w-4" />}
+              className="robinhood-btn-secondary"
             >
               Settings
             </SecondaryButton>
@@ -266,6 +267,7 @@ export const Rebalancing: React.FC = () => {
               loading={isAnalyzing}
               loadingText="Analyzing..."
               leftIcon={<Calculator className="h-4 w-4" />}
+              className="robinhood-btn-primary"
             >
               Analyze Rebalancing
             </PrimaryButton>
@@ -274,11 +276,11 @@ export const Rebalancing: React.FC = () => {
 
         {/* Advanced Settings */}
         {showAdvancedSettings && (
-          <div className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg p-6 mb-8">
-            <h3 className="text-lg font-semibold text-neutral-900 dark:text-white mb-4">Advanced Settings</h3>
+          <div className="robinhood-card p-8 mb-8">
+            <h3 className="text-xl font-semibold robinhood-text-primary mb-6">Advanced Settings</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium robinhood-text-primary mb-2">
                   Transaction Cost Rate (%)
                 </label>
                 <input
@@ -288,11 +290,11 @@ export const Rebalancing: React.FC = () => {
                   max="1"
                   value={transactionCostRate * 100}
                   onChange={(e) => setTransactionCostRate(parseFloat(e.target.value) / 100)}
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  className="w-full px-4 py-3 border border-neutral-300 dark:border-robinhood-dark-border rounded-robinhood focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-robinhood-dark-secondary robinhood-text-primary"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                <label className="block text-sm font-medium robinhood-text-primary mb-2">
                   Minimum Trade Threshold ($)
                 </label>
                 <input
@@ -300,7 +302,7 @@ export const Rebalancing: React.FC = () => {
                   min="0"
                   value={minTradeThreshold}
                   onChange={(e) => setMinTradeThreshold(parseFloat(e.target.value))}
-                  className="w-full px-3 py-2 border border-neutral-300 dark:border-neutral-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white"
+                  className="w-full px-4 py-3 border border-neutral-300 dark:border-robinhood-dark-border rounded-robinhood focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-robinhood-dark-secondary robinhood-text-primary"
                 />
               </div>
             </div>
@@ -310,26 +312,26 @@ export const Rebalancing: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Target Allocation Panel */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow">
-              <div className="px-6 py-4 border-b border-gray-200">
+            <div className="robinhood-card">
+              <div className="px-6 py-4 border-b border-neutral-200 dark:border-robinhood-dark-border">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-gray-900">Target Allocation</h3>
+                  <h3 className="text-lg font-semibold robinhood-text-primary">Target Allocation</h3>
                   <div className="flex space-x-2">
                     <button
                       onClick={() => handleQuickTargets('equal')}
-                      className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200"
+                      className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-1 rounded-robinhood hover:bg-primary-200 dark:hover:bg-primary-800/50 transition-colors"
                     >
                       Equal
                     </button>
                     <button
                       onClick={() => handleQuickTargets('market-cap')}
-                      className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200"
+                      className="text-xs bg-gain-100 dark:bg-gain-900/30 text-gain-700 dark:text-gain-300 px-2 py-1 rounded-robinhood hover:bg-gain-200 dark:hover:bg-gain-800/50 transition-colors"
                     >
                       Market Cap
                     </button>
                     <button
                       onClick={() => handleQuickTargets('current')}
-                      className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200"
+                      className="text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-robinhood hover:bg-purple-200 dark:hover:bg-purple-800/50 transition-colors"
                     >
                       Current
                     </button>
@@ -341,15 +343,14 @@ export const Rebalancing: React.FC = () => {
                   const currentPct = currentAllocation[holding.symbol] || 0
                   const targetPct = targetAllocation[holding.symbol] || 0
                   const drift = realTimeDrift[holding.symbol] || 0
-                  const driftColor = Math.abs(drift) > 5 ? 'text-red-600' : 
-                                   Math.abs(drift) > 2 ? 'text-yellow-600' : 'text-green-600'
+                  const driftColor = getDriftColor(drift)
                   
                   return (
                     <div key={holding.symbol} className="mb-4 last:mb-0">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-gray-900">{holding.symbol}</span>
+                        <span className="text-sm font-medium robinhood-text-primary">{holding.symbol}</span>
                         <div className="text-right">
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm robinhood-text-secondary">
                             {targetPct.toFixed(1)}% target
                           </div>
                           <div className={`text-xs ${driftColor}`}>
@@ -364,9 +365,9 @@ export const Rebalancing: React.FC = () => {
                         step="0.1"
                         value={targetPct}
                         onChange={(e) => handleTargetChange(holding.symbol, parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                        className="w-full h-2 bg-neutral-200 dark:bg-neutral-700 rounded-lg appearance-none cursor-pointer slider"
                       />
-                      <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <div className="flex justify-between text-xs robinhood-text-tertiary mt-1">
                         <span>Current: {currentPct.toFixed(2)}%</span>
                         <span>Target: {targetPct.toFixed(2)}%</span>
                       </div>
@@ -374,46 +375,40 @@ export const Rebalancing: React.FC = () => {
                   )
                 })}
                 
-                <div className="mt-6 pt-4 border-t border-gray-200 space-y-3">
+                <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-robinhood-dark-border space-y-3">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Total:</span>
+                    <span className="robinhood-text-secondary">Total:</span>
                     <span className={`font-medium ${
                       Math.abs(Object.values(targetAllocation).reduce((sum, val) => sum + val, 0) - 100) > 0.1 
-                        ? 'text-red-600' 
-                        : 'text-green-600'
+                        ? 'robinhood-loss' 
+                        : 'robinhood-gain'
                     }`}>
                       {Object.values(targetAllocation).reduce((sum, val) => sum + val, 0).toFixed(1)}%
                     </span>
                   </div>
                   
                   {/* Real-time drift summary */}
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <div className="text-xs text-gray-500 mb-2">Real-time Drift Analysis</div>
+                  <div className="bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-robinhood-dark-tertiary dark:to-neutral-800 rounded-robinhood p-3">
+                    <div className="text-xs robinhood-text-tertiary mb-2">Real-time Drift Analysis</div>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
-                        <span className="text-gray-600">Total Drift:</span>
+                        <span className="robinhood-text-secondary">Total Drift:</span>
                         <span className={`ml-1 font-medium ${
-                          realTimeTotalDrift > 10 ? 'text-red-600' : 
-                          realTimeTotalDrift > 5 ? 'text-yellow-600' : 'text-green-600'
+                          realTimeTotalDrift > 10 ? 'robinhood-loss' : 
+                          realTimeTotalDrift > 5 ? 'text-yellow-600 dark:text-yellow-400' : 'robinhood-gain'
                         }`}>
                           {realTimeTotalDrift.toFixed(2)}%
                         </span>
                       </div>
                       <div>
-                        <span className="text-gray-600">Score:</span>
+                        <span className="robinhood-text-secondary">Score:</span>
                         <span className={`ml-1 font-medium ${
-                          realTimeRebalancingScore > 50 ? 'text-red-600' : 
-                          realTimeRebalancingScore > 20 ? 'text-yellow-600' : 'text-green-600'
+                          realTimeRebalancingScore > 70 ? 'robinhood-loss' : 
+                          realTimeRebalancingScore > 40 ? 'text-yellow-600 dark:text-yellow-400' : 'robinhood-gain'
                         }`}>
                           {realTimeRebalancingScore.toFixed(0)}/100
                         </span>
                       </div>
-                    </div>
-                    {/* Debug info */}
-                    <div className="text-xs text-gray-400 mt-2 pt-2 border-t border-gray-200">
-                      <div>Current: {JSON.stringify(currentAllocation)}</div>
-                      <div>Target: {JSON.stringify(targetAllocation)}</div>
-                      <div>Drift: {JSON.stringify(realTimeDrift)}</div>
                     </div>
                   </div>
                 </div>
@@ -421,207 +416,191 @@ export const Rebalancing: React.FC = () => {
             </div>
           </div>
 
-          {/* Analysis Results */}
+          {/* Analysis Results Panel */}
           <div className="lg:col-span-2">
-            {!analysis ? (
-              <div className="bg-white rounded-lg shadow p-12 text-center">
-                <Target className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">Ready to Analyze</h3>
-                <p className="text-gray-500 mb-6">
-                  Set your target allocation and click "Analyze Rebalancing" to get started.
+            {analysis ? (
+              <div className="space-y-6">
+                {/* Analysis Summary */}
+                <div className="robinhood-card p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold robinhood-text-primary">Rebalancing Analysis</h3>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm robinhood-text-secondary">Score:</span>
+                      <span className={`text-lg font-bold ${
+                        analysis.rebalancing_score > 70 ? 'robinhood-loss' : 
+                        analysis.rebalancing_score > 40 ? 'text-yellow-600 dark:text-yellow-400' : 'robinhood-gain'
+                      }`}>
+                        {analysis.rebalancing_score.toFixed(0)}/100
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/20 dark:to-primary-800/20 p-4 rounded-robinhood border border-primary-200 dark:border-primary-800">
+                      <div className="text-sm font-medium text-primary-900 dark:text-primary-100 mb-1">Total Trades</div>
+                      <div className="text-2xl font-bold text-primary-700 dark:text-primary-300">
+                        {analysis.suggestions.length}
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-gain-50 to-gain-100 dark:from-gain-900/20 dark:to-gain-800/20 p-4 rounded-robinhood border border-gain-200 dark:border-gain-800">
+                      <div className="text-sm font-medium text-gain-900 dark:text-gain-100 mb-1">Estimated Cost</div>
+                      <div className="text-2xl font-bold text-gain-700 dark:text-gain-300">
+                        ${analysis.estimated_transaction_cost.toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-700 p-4 rounded-robinhood border border-neutral-200 dark:border-neutral-700">
+                      <div className="text-sm font-medium robinhood-text-primary mb-1">Rebalancing Score</div>
+                      <div className="text-2xl font-bold robinhood-text-primary">
+                        {analysis.rebalancing_score.toFixed(0)}/100
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Suggestions */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-base font-medium robinhood-text-primary">Rebalancing Suggestions</h4>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={handleSelectAllSuggestions}
+                          className="text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 px-2 py-1 rounded-robinhood hover:bg-primary-200 dark:hover:bg-primary-800/50 transition-colors"
+                        >
+                          Select All
+                        </button>
+                        <button
+                          onClick={handleClearSelection}
+                          className="text-xs bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 px-2 py-1 rounded-robinhood hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors"
+                        >
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {analysis.suggestions.map((suggestion) => (
+                      <div
+                        key={suggestion.symbol}
+                        className={`p-4 rounded-robinhood border-2 transition-all duration-200 cursor-pointer ${
+                          selectedSuggestions.has(suggestion.symbol)
+                            ? 'border-primary-300 dark:border-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                            : 'border-neutral-200 dark:border-robinhood-dark-border hover:border-neutral-300 dark:hover:border-neutral-600'
+                        }`}
+                        onClick={() => handleSuggestionToggle(suggestion.symbol)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              checked={selectedSuggestions.has(suggestion.symbol)}
+                              onChange={() => handleSuggestionToggle(suggestion.symbol)}
+                              className="h-4 w-4 text-primary-600 border-neutral-300 dark:border-neutral-600 rounded focus:ring-primary-500"
+                            />
+                            <div>
+                              <div className="font-medium robinhood-text-primary">{suggestion.symbol}</div>
+                              <div className="text-sm robinhood-text-secondary">{suggestion.action}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className={`text-sm font-medium ${
+                              suggestion.action === 'BUY' ? 'robinhood-gain' : 'robinhood-loss'
+                            }`}>
+                              {suggestion.action === 'BUY' ? '+' : ''}{suggestion.quantity} shares
+                            </div>
+                            <div className="text-xs robinhood-text-tertiary">
+                              ${suggestion.estimated_cost.toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-2 flex items-center space-x-2">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(suggestion.priority)}`}>
+                            {getPriorityIcon(suggestion.priority)}
+                            <span className="ml-1">{suggestion.priority}</span>
+                          </span>
+                          <span className="text-xs robinhood-text-tertiary">
+                            Drift: {suggestion.drift_percentage.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* What-if Analysis Button */}
+                  <div className="mt-6 pt-4 border-t border-neutral-200 dark:border-robinhood-dark-border">
+                    <PrimaryButton
+                      onClick={handleWhatIfAnalysis}
+                      loading={isWhatIfLoading}
+                      loadingText="Analyzing..."
+                      leftIcon={<Eye className="h-4 w-4" />}
+                      className="robinhood-btn-primary"
+                      disabled={selectedSuggestions.size === 0}
+                    >
+                      Run What-If Analysis
+                    </PrimaryButton>
+                  </div>
+                </div>
+
+                {/* What-If Analysis Results */}
+                {whatIfAnalysis && (
+                  <div className="robinhood-card p-6">
+                    <h3 className="text-lg font-semibold robinhood-text-primary mb-4">What-If Analysis Results</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="bg-gradient-to-br from-gain-50 to-gain-100 dark:from-gain-900/20 dark:to-gain-800/20 p-4 rounded-robinhood border border-gain-200 dark:border-gain-800">
+                        <div className="text-sm font-medium text-gain-900 dark:text-gain-100 mb-1">Current Value</div>
+                        <div className="text-2xl font-bold text-gain-700 dark:text-gain-300">
+                          ${whatIfAnalysis.current_total_value.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-loss-50 to-loss-100 dark:from-loss-900/20 dark:to-loss-800/20 p-4 rounded-robinhood border border-loss-200 dark:border-loss-800">
+                        <div className="text-sm font-medium text-loss-900 dark:text-loss-100 mb-1">After Rebalancing</div>
+                        <div className="text-2xl font-bold text-loss-700 dark:text-loss-300">
+                          ${whatIfAnalysis.simulated_total_value.toLocaleString()}
+                        </div>
+                      </div>
+                      <div className="bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-800 dark:to-neutral-700 p-4 rounded-robinhood border border-neutral-200 dark:border-neutral-700">
+                        <div className="text-sm font-medium robinhood-text-primary mb-1">Transaction Cost</div>
+                        <div className="text-2xl font-bold robinhood-text-primary">
+                          -${whatIfAnalysis.transaction_cost.toFixed(2)}
+                        </div>
+                      </div>
+                      <div className={`p-4 rounded-robinhood border ${
+                        whatIfAnalysis.net_impact >= 0 
+                          ? 'bg-gradient-to-br from-gain-50 to-gain-100 dark:from-gain-900/20 dark:to-gain-800/20 border-gain-200 dark:border-gain-800'
+                          : 'bg-gradient-to-br from-loss-50 to-loss-100 dark:from-loss-900/20 dark:to-loss-800/20 border-loss-200 dark:border-loss-800'
+                      }`}>
+                        <div className={`text-sm font-medium mb-1 ${
+                          whatIfAnalysis.net_impact >= 0 
+                            ? 'text-gain-900 dark:text-gain-100'
+                            : 'text-loss-900 dark:text-loss-100'
+                        }`}>Net Impact</div>
+                        <div className={`text-2xl font-bold ${
+                          whatIfAnalysis.net_impact >= 0 
+                            ? 'text-gain-700 dark:text-gain-300'
+                            : 'text-loss-700 dark:text-loss-300'
+                        }`}>
+                          {whatIfAnalysis.net_impact >= 0 ? '+' : ''}${whatIfAnalysis.net_impact.toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="robinhood-card p-12 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Calculator className="h-8 w-8 text-primary-600 dark:text-primary-400" />
+                </div>
+                <h3 className="text-xl font-semibold robinhood-text-primary mb-3">Ready to Analyze</h3>
+                <p className="robinhood-text-secondary text-lg mb-6">
+                  Click "Analyze Rebalancing" to get personalized recommendations for your portfolio.
                 </p>
                 <PrimaryButton
                   onClick={handleAnalyzeRebalancing}
                   loading={isAnalyzing}
                   loadingText="Analyzing..."
                   leftIcon={<Calculator className="h-4 w-4" />}
+                  className="robinhood-btn-primary"
                 >
-                  Start Analysis
+                  Analyze Rebalancing
                 </PrimaryButton>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {/* Analysis Summary */}
-                <div className="bg-white rounded-lg shadow p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Analysis Summary</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{analysis.total_drift.toFixed(2)}%</div>
-                      <div className="text-sm text-gray-500">Total Drift</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{analysis.rebalancing_score.toFixed(0)}/100</div>
-                      <div className="text-sm text-gray-500">Rebalancing Score</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">${analysis.estimated_transaction_cost.toFixed(2)}</div>
-                      <div className="text-sm text-gray-500">Est. Transaction Cost</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-2xl font-bold text-gray-900">{analysis.suggestions.length}</div>
-                      <div className="text-sm text-gray-500">Suggestions</div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Rebalancing Suggestions */}
-                <div className="bg-white rounded-lg shadow">
-                  <div className="px-6 py-4 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900">Rebalancing Suggestions</h3>
-                      <div className="flex space-x-2">
-                        <SecondaryButton
-                          onClick={handleSelectAllSuggestions}
-                          size="sm"
-                        >
-                          Select All
-                        </SecondaryButton>
-                        <SecondaryButton
-                          onClick={handleClearSelection}
-                          size="sm"
-                        >
-                          Clear
-                        </SecondaryButton>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Select
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Symbol
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Action
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Quantity
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Drift
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Priority
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Est. Cost
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {analysis.suggestions.map((suggestion) => (
-                          <tr key={suggestion.symbol} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="checkbox"
-                                checked={selectedSuggestions.has(suggestion.symbol)}
-                                onChange={() => handleSuggestionToggle(suggestion.symbol)}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="text-sm font-medium text-gray-900">{suggestion.symbol}</div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                suggestion.action === 'BUY' 
-                                  ? 'bg-green-100 text-green-800' 
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {suggestion.action === 'BUY' ? (
-                                  <TrendingUp className="h-3 w-3 mr-1" />
-                                ) : (
-                                  <TrendingDown className="h-3 w-3 mr-1" />
-                                )}
-                                {suggestion.action}
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              {suggestion.quantity.toLocaleString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`text-sm font-medium ${getDriftColor(suggestion.drift_percentage)}`}>
-                                {suggestion.drift_percentage > 0 ? '+' : ''}{suggestion.drift_percentage.toFixed(1)}%
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getPriorityColor(suggestion.priority)}`}>
-                                {getPriorityIcon(suggestion.priority)}
-                                <span className="ml-1">{suggestion.priority}</span>
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                              ${suggestion.estimated_cost.toFixed(2)}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* What-If Analysis */}
-                {selectedSuggestions.size > 0 && (
-                  <div className="bg-white rounded-lg shadow">
-                    <div className="px-6 py-4 border-b border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-lg font-semibold text-gray-900">What-If Analysis</h3>
-                        <PrimaryButton
-                          onClick={handleWhatIfAnalysis}
-                          loading={isWhatIfLoading}
-                          loadingText="Analyzing..."
-                          leftIcon={<Eye className="h-4 w-4" />}
-                          size="sm"
-                        >
-                          Run Analysis
-                        </PrimaryButton>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      {whatIfAnalysis ? (
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-gray-900">
-                              ${whatIfAnalysis.current_total_value.toLocaleString()}
-                            </div>
-                            <div className="text-sm text-gray-500">Current Value</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-gray-900">
-                              ${whatIfAnalysis.simulated_total_value.toLocaleString()}
-                            </div>
-                            <div className="text-sm text-gray-500">After Rebalancing</div>
-                          </div>
-                          <div className="text-center">
-                            <div className="text-2xl font-bold text-red-600">
-                              -${whatIfAnalysis.transaction_cost.toFixed(2)}
-                            </div>
-                            <div className="text-sm text-gray-500">Transaction Cost</div>
-                          </div>
-                          <div className="text-center">
-                            <div className={`text-2xl font-bold ${
-                              whatIfAnalysis.net_impact >= 0 ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {whatIfAnalysis.net_impact >= 0 ? '+' : ''}${whatIfAnalysis.net_impact.toFixed(2)}
-                            </div>
-                            <div className="text-sm text-gray-500">Net Impact</div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-8">
-                          <Eye className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                          <p className="text-gray-500">
-                            Select rebalancing suggestions and run what-if analysis to see the impact.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
