@@ -21,8 +21,20 @@ logging.basicConfig(
 
 app = Flask(__name__)
 
-# CORS configuration for Render
-CORS(app, origins=["*"])
+# CORS configuration for production
+allowed_origins = [
+    "http://localhost:3000",
+    "http://localhost:3001", 
+    "https://quantflow.vercel.app",
+    "https://quantflow-git-main-pratham-aggr.vercel.app",
+    "https://quantflow-pratham-aggr.vercel.app"
+]
+
+# Add environment variable for additional origins
+if os.environ.get('FRONTEND_URL'):
+    allowed_origins.append(os.environ.get('FRONTEND_URL'))
+
+CORS(app, origins=allowed_origins, supports_credentials=True)
 
 # Initialize the essential service
 advanced_risk_engine = AdvancedRiskEngine()
