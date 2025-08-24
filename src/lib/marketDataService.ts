@@ -206,8 +206,7 @@ class CacheManager {
 }
 
 class MarketDataService {
-  private apiKey: string
-  private baseUrl = 'https://finnhub.io/api/v1'
+  private serverUrl: string
   private rateLimiter = new RateLimiter()
   private cache = new CacheManager()
   private websocket: WebSocket | null = null
@@ -216,20 +215,20 @@ class MarketDataService {
   private maxReconnectAttempts = 5
 
   constructor() {
-    this.apiKey = process.env.REACT_APP_FINNHUB_API_KEY || ''
+    // Use the risk engine for market data instead of separate server
+    this.serverUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-risk-engine.onrender.com'
     
-    if (!this.apiKey) {
-      console.warn('Finnhub API key not configured. Some features will not be available.')
+    if (!this.serverUrl) {
+      console.warn('Risk engine URL not configured. Some features will not be available.')
     }
   }
 
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
-    if (!this.apiKey) {
-      throw new Error('API key not configured')
+    if (!this.serverUrl) {
+      throw new Error('Server URL not configured')
     }
 
-    const url = new URL(`${this.baseUrl}${endpoint}`)
-    url.searchParams.append('token', this.apiKey)
+    const url = new URL(`${this.serverUrl}/api/market-data${endpoint}`)
     
     Object.entries(params).forEach(([key, value]) => {
       url.searchParams.append(key, value)
@@ -239,7 +238,12 @@ class MarketDataService {
 
     return this.rateLimiter.execute(async () => {
       console.log(`Executing API request for ${endpoint}...`)
-      const response = await fetch(url.toString())
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
       console.log(`API response status: ${response.status}`)
       
       if (!response.ok) {
@@ -252,7 +256,7 @@ class MarketDataService {
 
       const data = await response.json()
       console.log(`API response data:`, data)
-      return data
+      return data.data || data // Handle both wrapped and unwrapped responses
     })
   }
 
@@ -270,19 +274,19 @@ class MarketDataService {
       const rawData = await this.makeRequest<any>(`/quote`, { symbol: symbol.toUpperCase() })
       console.log(`API response for ${symbol}:`, rawData)
       
-      // Map Finnhub API response to our StockQuote interface
-      if (rawData && rawData.c) {
+      // Map yfinance API response to our StockQuote interface
+      if (rawData && rawData.price) {
         const mappedData: StockQuote = {
           symbol: symbol.toUpperCase(),
-          price: rawData.c, // current price
-          change: rawData.d, // change
-          changePercent: rawData.dp, // change percent
-          high: rawData.h, // high
-          low: rawData.l, // low
-          open: rawData.o, // open
-          previousClose: rawData.pc, // previous close
-          volume: rawData.v || 0, // volume
-          timestamp: Date.now() // current timestamp
+          price: rawData.price,
+          change: rawData.change,
+          changePercent: rawData.changePercent,
+          high: rawData.high,
+          low: rawData.low,
+          open: rawData.open,
+          previousClose: rawData.previousClose,
+          volume: rawData.volume || 0,
+          timestamp: rawData.timestamp || Date.now()
         }
         
         console.log(`Mapped quote data for ${symbol}:`, mappedData)
@@ -405,20 +409,22 @@ class MarketDataService {
   }
 
   isConfigured(): boolean {
-    return !!this.apiKey
+    return !!this.serverUrl
   }
 
   // ========== WOW FACTOR ENHANCEMENTS ==========
 
   // Real-time WebSocket streaming
   connectWebSocket(): void {
-    if (!this.apiKey) {
-      console.warn('API key not configured, WebSocket connection skipped')
+    if (!this.serverUrl) {
+      console.warn('Server URL not configured, WebSocket connection skipped')
       return
     }
 
     try {
-      this.websocket = new WebSocket(`wss://ws.finnhub.io?token=${this.apiKey}`)
+      // Use server WebSocket endpoint instead of direct Finnhub
+      const wsUrl = this.serverUrl.replace('http', 'ws')
+      this.websocket = new WebSocket(`${wsUrl}/api/market-data/ws`)
       
       this.websocket.onopen = () => {
         console.log('📡 WebSocket connected for real-time market data')

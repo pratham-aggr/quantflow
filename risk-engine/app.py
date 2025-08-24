@@ -11,6 +11,7 @@ import os
 import requests
 import time
 import random
+import yfinance as yf
 from advanced_risk_engine import AdvancedRiskEngine
 
 # Configure logging
@@ -85,6 +86,114 @@ def health_check():
         'version': '1.0.0',
         'environment': os.environ.get('RENDER_ENVIRONMENT', 'development')
     })
+
+# ========== MARKET DATA ENDPOINTS ==========
+
+@app.route('/api/market-data/quote/<symbol>', methods=['GET'])
+def get_stock_quote(symbol):
+    """Get stock quote using yfinance"""
+    try:
+        symbol = symbol.upper()
+        ticker = yf.Ticker(symbol)
+        
+        # Get current info
+        info = ticker.info
+        
+        if not info or 'regularMarketPrice' not in info:
+            return jsonify({'error': 'Stock data not found'}), 404
+        
+        quote = {
+            'symbol': symbol,
+            'price': info.get('regularMarketPrice', 0),
+            'change': info.get('regularMarketChange', 0),
+            'changePercent': info.get('regularMarketChangePercent', 0),
+            'high': info.get('dayHigh', 0),
+            'low': info.get('dayLow', 0),
+            'open': info.get('regularMarketOpen', 0),
+            'previousClose': info.get('regularMarketPreviousClose', 0),
+            'volume': info.get('volume', 0),
+            'timestamp': int(time.time() * 1000)
+        }
+        
+        return jsonify(quote)
+    except Exception as e:
+        logging.error(f"Error fetching quote for {symbol}: {str(e)}")
+        return jsonify({'error': 'Failed to fetch stock data'}), 500
+
+@app.route('/api/market-data/quotes', methods=['GET'])
+def get_multiple_quotes():
+    """Get multiple stock quotes"""
+    try:
+        symbols = request.args.get('symbols', '')
+        if not symbols:
+            return jsonify({'error': 'Symbols parameter required'}), 400
+        
+        symbol_list = [s.strip().upper() for s in symbols.split(',')]
+        results = {}
+        
+        for symbol in symbol_list:
+            try:
+                ticker = yf.Ticker(symbol)
+                info = ticker.info
+                
+                if info and 'regularMarketPrice' in info:
+                    results[symbol] = {
+                        'symbol': symbol,
+                        'price': info.get('regularMarketPrice', 0),
+                        'change': info.get('regularMarketChange', 0),
+                        'changePercent': info.get('regularMarketChangePercent', 0),
+                        'high': info.get('dayHigh', 0),
+                        'low': info.get('dayLow', 0),
+                        'open': info.get('regularMarketOpen', 0),
+                        'previousClose': info.get('regularMarketPreviousClose', 0),
+                        'volume': info.get('volume', 0),
+                        'timestamp': int(time.time() * 1000)
+                    }
+                else:
+                    results[symbol] = {'error': 'Stock data not found'}
+            except Exception as e:
+                logging.error(f"Error fetching quote for {symbol}: {str(e)}")
+                results[symbol] = {'error': str(e)}
+        
+        return jsonify(results)
+    except Exception as e:
+        logging.error(f"Error fetching multiple quotes: {str(e)}")
+        return jsonify({'error': 'Failed to fetch stock data'}), 500
+
+@app.route('/api/market-data/search', methods=['GET'])
+def search_stocks():
+    """Search stocks using yfinance"""
+    try:
+        query = request.args.get('q', '')
+        if not query:
+            return jsonify({'error': 'Query parameter required'}), 400
+        
+        # Use yfinance to search
+        tickers = yf.Tickers(query)
+        
+        # Get basic info for each ticker
+        results = []
+        for ticker in tickers.tickers[:10]:  # Limit to 10 results
+            try:
+                info = ticker.info
+                if info and 'shortName' in info:
+                    results.append({
+                        'symbol': ticker.ticker,
+                        'name': info.get('shortName', ''),
+                        'type': 'stock',
+                        'primaryExchange': info.get('exchange', '')
+                    })
+            except:
+                continue
+        
+        return jsonify({
+            'query': query,
+            'count': len(results),
+            'results': results
+        })
+    except Exception as e:
+        logging.error(f"Error searching stocks: {str(e)}")
+        return jsonify({'error': 'Failed to search stocks'}), 500
 
 
 
