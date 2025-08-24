@@ -13,6 +13,7 @@ import time
 import random
 import yfinance as yf
 from advanced_risk_engine import AdvancedRiskEngine
+import re
 
 # Configure logging
 logging.basicConfig(
@@ -28,7 +29,7 @@ CORS(app, origins=[
     "http://localhost:3001",
     "https://quantflow.vercel.app",
     "https://quantflow-git-main-pratham-aggrs-projects.vercel.app",
-    r"https://quantflow-.*-pratham-aggrs-projects\.vercel\.app"
+    re.compile(r"https://quantflow-.*-pratham-aggrs-projects\.vercel\.app")
 ], supports_credentials=True)
 
 # Initialize the essential service

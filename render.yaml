@@ -22,3 +22,5 @@ services:
         value: 3.9.16
       - key: PORT
         value: 10000
+      - key: FRONTEND_URL
+        value: https://quantflow-git-main-pratham-aggrs-projects.vercel.app
