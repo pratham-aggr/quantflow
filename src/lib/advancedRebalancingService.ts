@@ -182,7 +182,13 @@ class AdvancedRebalancingService {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
+    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || ''
+  }
+
+  private checkBaseUrl(): void {
+    if (!this.baseUrl) {
+      throw new Error('Risk engine URL not configured. Please set REACT_APP_RISK_ENGINE_URL environment variable.')
+    }
   }
 
   // Tax-Loss Harvesting Methods
@@ -192,6 +198,7 @@ class AdvancedRebalancingService {
     taxSettings?: Partial<TaxSettings>
   ): Promise<TaxLossOpportunity[]> {
     return performanceMonitor.trackAsync('tax-loss-analysis', async () => {
+      this.checkBaseUrl()
       const response = await fetch(`${this.baseUrl}/api/tax-loss-harvesting/analyze`, {
         method: 'POST',
         headers: {

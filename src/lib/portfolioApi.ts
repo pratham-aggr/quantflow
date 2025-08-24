@@ -16,9 +16,7 @@ import {
 // Check if Supabase is configured
 const isSupabaseConfigured = Boolean(
   process.env.REACT_APP_SUPABASE_URL && 
-  process.env.REACT_APP_SUPABASE_ANON_KEY &&
-  process.env.REACT_APP_SUPABASE_URL !== 'https://placeholder.supabase.co' && 
-  process.env.REACT_APP_SUPABASE_ANON_KEY !== 'placeholder-key'
+  process.env.REACT_APP_SUPABASE_ANON_KEY
 )
 
 // API Functions

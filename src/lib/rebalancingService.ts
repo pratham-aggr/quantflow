@@ -52,10 +52,14 @@ class RebalancingService {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
+    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || ''
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    if (!this.baseUrl) {
+      throw new Error('Risk engine URL not configured. Please set REACT_APP_RISK_ENGINE_URL environment variable.')
+    }
+
     const url = `${this.baseUrl}${endpoint}`
     
     // Add timeout to prevent hanging requests
@@ -95,9 +99,21 @@ class RebalancingService {
     constraints?: Record<string, [number, number]>
   ): Promise<RebalancingAnalysis> {
     return performanceMonitor.trackAsync('Rebalancing Analysis', async () => {
-      // Use fallback analysis immediately since risk engine is not available
-      console.log('Using real portfolio data for rebalancing analysis')
-      return this.generateFallbackAnalysis(holdings, targetAllocation)
+      const data = {
+        holdings: holdings.map(holding => ({
+          symbol: holding.symbol,
+          quantity: holding.quantity,
+          avg_price: holding.avg_price,
+          current_price: holding.current_price || holding.avg_price
+        })),
+        target_allocation: targetAllocation,
+        constraints
+      }
+
+      return this.makeRequest<RebalancingAnalysis>('/api/rebalancing/analyze', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
     })
   }
 
@@ -106,9 +122,20 @@ class RebalancingService {
     suggestions: RebalancingSuggestion[]
   ): Promise<WhatIfAnalysis> {
     return performanceMonitor.trackAsync('What-If Analysis', async () => {
-      // Use fallback what-if analysis immediately since risk engine is not available
-      console.log('Using real portfolio data for what-if analysis')
-      return this.generateFallbackWhatIfAnalysis(holdings, suggestions)
+      const data = {
+        holdings: holdings.map(holding => ({
+          symbol: holding.symbol,
+          quantity: holding.quantity,
+          avg_price: holding.avg_price,
+          current_price: holding.current_price || holding.avg_price
+        })),
+        suggestions
+      }
+
+      return this.makeRequest<WhatIfAnalysis>('/api/rebalancing/what-if', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      })
     })
   }
 
@@ -237,137 +264,7 @@ class RebalancingService {
     })
   }
 
-  // Fallback methods when risk engine is not available - uses real portfolio data
-  private generateFallbackAnalysis(
-    holdings: any[],
-    targetAllocation: Record<string, number>
-  ): RebalancingAnalysis {
-    if (!holdings || holdings.length === 0) {
-      throw new Error('No portfolio holdings available for rebalancing analysis')
-    }
 
-    const currentAllocation = this.calculateCurrentAllocation(holdings)
-    const driftAnalysis = this.calculateDrift(currentAllocation, targetAllocation)
-    const totalDrift = this.calculateTotalDrift(driftAnalysis)
-    
-    const suggestions: RebalancingSuggestion[] = []
-    const totalPortfolioValue = this.getTotalPortfolioValue(holdings)
-    
-    for (const [symbol, drift] of Object.entries(driftAnalysis)) {
-      if (Math.abs(drift) > 0.5) { // Suggest trades for drift > 0.5%
-        const holding = holdings.find(h => h.symbol === symbol)
-        if (holding) {
-          const currentPrice = holding.current_price || holding.avg_price
-          if (!currentPrice || currentPrice <= 0) {
-            console.warn(`Skipping ${symbol}: Invalid current price ${currentPrice}`)
-            continue
-          }
-
-          const currentValue = holding.quantity * currentPrice
-          const targetValue = (targetAllocation[symbol] || 0) / 100 * totalPortfolioValue
-          
-          const valueDifference = targetValue - currentValue
-          const quantityChange = Math.round(valueDifference / currentPrice)
-          
-          // Only suggest trades if the change is significant (at least 1 share or $100)
-          if (Math.abs(quantityChange) >= 1 || Math.abs(valueDifference) >= 100) {
-            suggestions.push({
-              symbol,
-              action: quantityChange > 0 ? 'BUY' : 'SELL',
-              quantity: Math.abs(quantityChange),
-              current_value: currentValue,
-              target_value: targetValue,
-              drift_percentage: drift,
-              estimated_cost: Math.abs(valueDifference) * 0.005, // 0.5% transaction cost
-              priority: this.getDriftSeverity(drift) as 'HIGH' | 'MEDIUM' | 'LOW'
-            })
-          }
-        }
-      }
-    }
-
-    // Sort suggestions by priority (HIGH first, then by drift magnitude)
-    suggestions.sort((a, b) => {
-      const priorityOrder = { 'HIGH': 3, 'MEDIUM': 2, 'LOW': 1 }
-      const aPriority = priorityOrder[a.priority] || 0
-      const bPriority = priorityOrder[b.priority] || 0
-      if (aPriority !== bPriority) return bPriority - aPriority
-      return Math.abs(b.drift_percentage) - Math.abs(a.drift_percentage)
-    })
-
-    return {
-      current_allocation: currentAllocation,
-      target_allocation: targetAllocation,
-      drift_analysis: driftAnalysis,
-      suggestions,
-      total_drift: totalDrift,
-      estimated_transaction_cost: suggestions.reduce((sum, s) => sum + s.estimated_cost, 0),
-      rebalancing_score: Math.min(100, totalDrift * 2),
-      optimization_method: 'Portfolio Analysis'
-    }
-  }
-
-  private generateFallbackWhatIfAnalysis(
-    holdings: any[],
-    suggestions: RebalancingSuggestion[]
-  ): WhatIfAnalysis {
-    if (!holdings || holdings.length === 0) {
-      throw new Error('No portfolio holdings available for what-if analysis')
-    }
-
-    const currentTotalValue = this.getTotalPortfolioValue(holdings)
-    const transactionCost = suggestions.reduce((sum, s) => sum + s.estimated_cost, 0)
-    
-    // Simulate the impact of rebalancing using real portfolio data
-    let simulatedValue = currentTotalValue
-    const simulatedHoldings = holdings.map(holding => {
-      const suggestion = suggestions.find(s => s.symbol === holding.symbol)
-      let newQuantity = holding.quantity
-      
-      if (suggestion) {
-        const currentPrice = holding.current_price || holding.avg_price
-        if (!currentPrice || currentPrice <= 0) {
-          console.warn(`Skipping ${holding.symbol}: Invalid current price ${currentPrice}`)
-          return {
-            symbol: holding.symbol,
-            quantity: holding.quantity,
-            current_price: currentPrice,
-            value: holding.quantity * currentPrice
-          }
-        }
-
-        if (suggestion.action === 'BUY') {
-          newQuantity += suggestion.quantity
-          simulatedValue += suggestion.quantity * currentPrice
-        } else {
-          newQuantity -= suggestion.quantity
-          simulatedValue -= suggestion.quantity * currentPrice
-        }
-      }
-      
-      const finalQuantity = Math.max(0, newQuantity)
-      const currentPrice = holding.current_price || holding.avg_price
-      
-      return {
-        symbol: holding.symbol,
-        quantity: finalQuantity,
-        current_price: currentPrice,
-        value: finalQuantity * currentPrice
-      }
-    })
-
-    const netImpact = simulatedValue - currentTotalValue - transactionCost
-    const impactPercentage = currentTotalValue > 0 ? ((simulatedValue - currentTotalValue) / currentTotalValue) * 100 : 0
-
-    return {
-      current_total_value: currentTotalValue,
-      simulated_total_value: simulatedValue,
-      transaction_cost: transactionCost,
-      net_impact: netImpact,
-      impact_percentage: impactPercentage,
-      simulated_holdings: simulatedHoldings
-    }
-  }
 
   private calculateCurrentAllocation(holdings: any[]): Record<string, number> {
     const totalValue = this.getTotalPortfolioValue(holdings)

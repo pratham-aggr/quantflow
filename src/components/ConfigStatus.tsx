@@ -17,13 +17,8 @@ export const ConfigStatus: React.FC = () => {
         <p>Supabase Key: {supabaseKey ? '✅ Set' : '❌ Missing'}</p>
         <p>Is Production: {isConfigured ? '✅ Yes' : '❌ No'}</p>
         <p>Environment: {process.env.NODE_ENV}</p>
-        {supabaseUrl && (
-          <div className="text-xs text-gray-500">
-            <p className="break-all">URL: {supabaseUrl}</p>
-                    {(!supabaseUrl || supabaseUrl === '') && (
-          <p className="text-red-500 font-medium">⚠️ Supabase URL not configured!</p>
-        )}
-          </div>
+        {!isConfigured && (
+          <p className="text-red-500 font-medium">⚠️ Supabase not configured!</p>
         )}
       </div>
     </div>

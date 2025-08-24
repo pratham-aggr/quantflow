@@ -268,10 +268,9 @@ conda env update -f environment.yml
 
 ### Deployment
 The service can be deployed to:
-- **Railway**: Free tier with automatic deployments
-- **Render**: Free tier with Python support
-- **Heroku**: Free tier (discontinued)
+- **Render**: Free tier with Python support (recommended)
 - **Vercel**: Serverless deployment
+- **Heroku**: Free tier (discontinued)
 
 ## 🧪 Testing
 

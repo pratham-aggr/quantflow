@@ -67,10 +67,14 @@ class AdvancedRiskService {
   private baseUrl: string
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
+    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || ''
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    if (!this.baseUrl) {
+      throw new Error('Risk engine URL not configured. Please set REACT_APP_RISK_ENGINE_URL environment variable.')
+    }
+
     const startTime = performance.now()
     
     try {
