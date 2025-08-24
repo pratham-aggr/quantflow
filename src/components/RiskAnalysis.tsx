@@ -156,6 +156,8 @@ export const RiskAnalysis: React.FC = () => {
         // Check if we have a risk engine URL configured
         const riskEngineUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
         
+        console.log('🔍 Fetching from URL:', `${riskEngineUrl}/health`)
+        
         const response = await fetch(`${riskEngineUrl}/health`, {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
@@ -164,13 +166,27 @@ export const RiskAnalysis: React.FC = () => {
         
         clearTimeout(timeoutId)
         
+        console.log('🔍 Response status:', response.status)
+        console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()))
+        
         if (response.ok) {
           try {
-            const data = await response.json()
+            // First get the response as text to see what we're actually getting
+            const responseText = await response.text()
+            console.log('🔍 Raw response text:', responseText)
+            console.log('🔍 Response length:', responseText.length)
+            console.log('🔍 Response type:', typeof responseText)
+            
+            // Try to parse as JSON
+            const data = JSON.parse(responseText)
+            console.log('🔍 Parsed data:', data)
             setEngineAvailable(true)
             info('Advanced Engine Available', 'Using advanced risk analysis engine')
           } catch (parseError) {
-            console.error('JSON parse error:', parseError)
+            console.error('🔍 JSON parse error:', parseError)
+            if (parseError instanceof Error) {
+              console.error('🔍 Error message:', parseError.message)
+            }
             setEngineAvailable(false)
             setUseAdvancedEngine(false)
             showError('Engine Unavailable', 'Advanced engine response format error')
