@@ -165,9 +165,16 @@ export const RiskAnalysis: React.FC = () => {
         clearTimeout(timeoutId)
         
         if (response.ok) {
-          const data = await response.json()
-          setEngineAvailable(true)
-          info('Advanced Engine Available', 'Using advanced risk analysis engine')
+          try {
+            const data = await response.json()
+            setEngineAvailable(true)
+            info('Advanced Engine Available', 'Using advanced risk analysis engine')
+          } catch (parseError) {
+            console.error('JSON parse error:', parseError)
+            setEngineAvailable(false)
+            setUseAdvancedEngine(false)
+            showError('Engine Unavailable', 'Advanced engine response format error')
+          }
         } else {
           console.log('Risk engine not responding properly:', response.status)
           setEngineAvailable(false)

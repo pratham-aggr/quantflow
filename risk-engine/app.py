@@ -32,7 +32,9 @@ allowed_origins = [
     "http://localhost:3000",
     "http://localhost:4000", 
     "http://localhost:5001",
-    r"https://.*\.vercel\.app"  # Regex: all Vercel preview URLs
+    r"https://.*\.vercel\.app",  # Regex: all Vercel preview URLs
+    r"https://.*\.vercel\.com",  # Regex: all Vercel production URLs
+    "*"  # Allow all origins for now
 ]
 CORS(app, origins=allowed_origins)
 
