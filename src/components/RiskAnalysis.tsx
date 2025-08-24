@@ -154,27 +154,26 @@ export const RiskAnalysis: React.FC = () => {
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
         
         // Check if we have a risk engine URL configured
-        const riskEngineUrl = process.env.REACT_APP_RISK_ENGINE_URL
+        const riskEngineUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
         
-        console.log('🔍 Risk engine URL from env:', riskEngineUrl)
+        console.log('🔍 Risk engine URL from env:', process.env.REACT_APP_RISK_ENGINE_URL)
+        console.log('🔍 Final risk engine URL:', riskEngineUrl)
         console.log('🔍 All env vars:', Object.keys(process.env).filter(key => key.includes('RISK')))
+        console.log('🔍 Attempting to fetch from:', `${riskEngineUrl}/health`)
         
-        if (!riskEngineUrl) {
-          console.log('No risk engine URL configured - using local analysis')
-          setEngineAvailable(false)
-          setUseAdvancedEngine(false)
-          setIsCheckingEngine(false)
-          return
-        }
         const response = await fetch(`${riskEngineUrl}/health`, {
           method: 'GET',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
           signal: controller.signal
         })
         
         clearTimeout(timeoutId)
         
-        console.log('Risk engine response:', response.status, response.statusText)
+        console.log('🔍 Risk engine response status:', response.status, response.statusText)
+        console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()))
         
         if (response.ok) {
           try {
@@ -198,7 +197,14 @@ export const RiskAnalysis: React.FC = () => {
           showError('Engine Unavailable', 'Advanced engine unavailable, using local analysis')
         }
       } catch (err) {
-        console.error('Risk engine check error:', err)
+        console.error('🔍 Risk engine check error:', err)
+        if (err instanceof Error) {
+          console.error('🔍 Error type:', err.constructor.name)
+          console.error('🔍 Error message:', err.message)
+          if (err instanceof TypeError) {
+            console.error('🔍 This might be a CORS or network error')
+          }
+        }
         setEngineAvailable(false)
         setUseAdvancedEngine(false)
         showError('Engine Unavailable', 'Advanced engine unavailable, using local analysis')
