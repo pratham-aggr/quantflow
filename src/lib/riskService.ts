@@ -76,6 +76,8 @@ class RiskService {
   constructor() {
     // Use environment variable or default to local development
     this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
+    const service = this.baseUrl.includes('railway') ? 'Railway' : this.baseUrl.includes('onrender') ? 'Render' : 'Local'
+    console.log(`🚀 RiskService using ${service} service:`, this.baseUrl)
   }
 
   private getCacheKey(endpoint: string, data?: any): string {

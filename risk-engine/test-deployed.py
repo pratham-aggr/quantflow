@@ -43,7 +43,7 @@ def test_deployed_risk_engine():
     try:
         # Make request to deployed risk engine
         response = requests.post(
-            "https://quantflow-risk-engine.onrender.com/api/risk/advanced",
+            "https://quantflow-production.up.railway.app/api/risk/advanced",
             headers={"Content-Type": "application/json"},
             json=test_request,
             timeout=30
@@ -110,7 +110,7 @@ def test_individual_endpoints():
         ("/api/risk/ml-prediction", {"holdings": test_holdings})
     ]
     
-    base_url = "https://quantflow-risk-engine.onrender.com"
+    base_url = "https://quantflow-production.up.railway.app"
     
     for endpoint, data in endpoints:
         print(f"\n=== Testing {endpoint} ===")
