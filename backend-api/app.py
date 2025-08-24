@@ -28,7 +28,9 @@ allowed_origins = [
     "http://localhost:3001", 
     "https://quantflow.vercel.app",
     "https://quantflow-git-main-pratham-aggr.vercel.app",
-    "https://quantflow-pratham-aggr.vercel.app"
+    "https://quantflow-pratham-aggr.vercel.app",
+    "https://quantflow-glper7ahq-pratham-aggrs-projects.vercel.app",
+    "https://quantflow-one.vercel.app"
 ]
 
 # Add environment variable for additional origins
