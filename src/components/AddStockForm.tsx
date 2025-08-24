@@ -5,7 +5,7 @@ import { FormInput } from './FormInput'
 import { LoadingSpinner } from './LoadingSpinner'
 import { ErrorMessage } from './ErrorMessage'
 import { CreateHoldingSchema, CreateHoldingData } from '../types/portfolio'
-import { marketDataService } from '../lib/marketDataService'
+import { backendMarketDataService } from '../lib/backendMarketDataService'
 
 interface AddStockFormProps {
   portfolioId: string
@@ -51,11 +51,11 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
       }
 
       try {
-        // Get real-time search results from Finnhub
-        if (marketDataService.isConfigured()) {
-          const searchResult = await marketDataService.searchStocks(query)
+        // Get real-time search results from backend or frontend service
+        if (backendMarketDataService.isConfigured()) {
+          const searchResult = await backendMarketDataService.searchStocks(query)
           if (searchResult && searchResult.result) {
-            const realResults = searchResult.result.slice(0, 10).map(item => ({
+            const realResults = searchResult.result.slice(0, 10).map((item: any) => ({
               symbol: item.symbol,
               name: item.description
             }))
@@ -64,12 +64,13 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
             return
           }
         } else {
-          console.warn('Market data service not configured - search disabled')
+          console.log('Market data service not configured - search disabled')
           setSearchResults([])
           setShowSearchResults(false)
         }
       } catch (error) {
         console.error('Failed to fetch search results:', error)
+        // Don't show error to user, just clear results
         setSearchResults([])
         setShowSearchResults(false)
       }
@@ -82,20 +83,20 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
     setValue('company_name', stock.name)
     setShowSearchResults(false)
     
-    // Auto-fill average price with current market price
+    // Auto-fill average price with current market price (optional)
     setIsLoadingPrice(true)
     setPriceAutoFilled(false)
     console.log('Fetching price for:', stock.symbol)
     
     try {
       console.log('Checking if market data service is configured...')
-      const isConfigured = marketDataService.isConfigured()
+      const isConfigured = backendMarketDataService.isConfigured()
       console.log('Market data service configured:', isConfigured)
       
       if (isConfigured) {
         console.log('Market data service is configured')
         console.log('Calling getStockQuote for:', stock.symbol)
-        const quote = await marketDataService.getStockQuote(stock.symbol)
+        const quote = await backendMarketDataService.getStockQuote(stock.symbol)
         console.log('Quote received:', quote)
         console.log('Quote type:', typeof quote)
         console.log('Quote price:', quote?.price)
@@ -107,13 +108,15 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
           console.log('Price auto-fill completed successfully')
         } else {
           console.log('No valid quote received - quote:', quote)
+          // Don't show error, just continue without auto-fill
         }
       } else {
-        console.log('Market data service not configured')
+        console.log('Market data service not configured - continuing without auto-fill')
       }
     } catch (error: any) {
       console.error('Failed to fetch current price for auto-fill:', error)
       console.error('Error details:', error?.message || 'Unknown error')
+      // Don't show error to user, just continue without auto-fill
     } finally {
       setIsLoadingPrice(false)
       console.log('Loading state set to false')

@@ -1,6 +1,6 @@
 import { supabase } from './supabase'
 import { Portfolio, Holding, Transaction, CreatePortfolioData, CreateHoldingData, CreateTransactionData, PortfolioWithHoldings } from '../types/portfolio'
-import { marketDataService } from './marketDataService'
+import { backendMarketDataService } from './backendMarketDataService'
 
 const isSupabaseConfigured = process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_ANON_KEY && process.env.REACT_APP_SUPABASE_URL !== 'https://placeholder.supabase.co' && process.env.REACT_APP_SUPABASE_ANON_KEY !== 'placeholder-key'
 
@@ -158,50 +158,59 @@ export const portfolioService = {
         console.log('✅ Transaction created successfully')
       }
 
-      // Immediately fetch current market data for the new holding
-      console.log(`📈 Fetching current market data for ${data.symbol}...`)
-      console.log('🔍 Checking if marketDataService is available:', !!marketDataService)
+      // Try to fetch current market data for the new holding (optional - don't fail if this doesn't work)
+      console.log(`📈 Attempting to fetch current market data for ${data.symbol}...`)
       
       try {
-        const quote = await marketDataService.getStockQuote(data.symbol)
-        console.log('📊 Quote received:', quote)
-        
-        if (quote) {
-          console.log(`✅ Got market data for ${data.symbol}: $${quote.price} (${quote.change >= 0 ? '+' : ''}$${quote.change}, ${quote.change >= 0 ? '+' : ''}${quote.changePercent}%)`)
+        // Check if market data service is configured
+        if (backendMarketDataService && backendMarketDataService.isConfigured()) {
+          console.log('🔍 Market data service is configured, attempting to fetch quote...')
+          const quote = await backendMarketDataService.getStockQuote(data.symbol)
+          console.log('📊 Quote received:', quote)
           
-          // Update the holding with current market data
-          console.log('🔄 Updating holding with market data...')
-          const { error: updateError } = await supabase
-            .from('holdings')
-            .update({
-              current_price: quote.price,
-              change: quote.change,
-              changePercent: quote.changePercent,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', holding.id)
-          
-          if (updateError) {
-            console.error(`❌ Error updating ${data.symbol} with market data:`, updateError)
-          } else {
-            console.log(`✅ Updated ${data.symbol} with current market data`)
-            // Return the updated holding with market data
-            const updatedHolding = {
-              ...holding,
-              current_price: quote.price,
-              change: quote.change,
-              changePercent: quote.changePercent
+          if (quote && quote.price > 0) {
+            console.log(`✅ Got market data for ${data.symbol}: $${quote.price} (${quote.change >= 0 ? '+' : ''}$${quote.change}, ${quote.change >= 0 ? '+' : ''}${quote.changePercent}%)`)
+            
+            // Update the holding with current market data
+            console.log('🔄 Updating holding with market data...')
+            const { error: updateError } = await supabase
+              .from('holdings')
+              .update({
+                current_price: quote.price,
+                change: quote.change,
+                changePercent: quote.changePercent,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', holding.id)
+            
+            if (updateError) {
+              console.error(`❌ Error updating ${data.symbol} with market data:`, updateError)
+              // Don't fail the holding creation, just return the original holding
+              console.log('🏁 Returning original holding (market data update failed)')
+              return holding
+            } else {
+              console.log(`✅ Updated ${data.symbol} with current market data`)
+              // Return the updated holding with market data
+              const updatedHolding = {
+                ...holding,
+                current_price: quote.price,
+                change: quote.change,
+                changePercent: quote.changePercent
+              }
+              console.log('🎉 Returning updated holding:', updatedHolding)
+              return updatedHolding
             }
-            console.log('🎉 Returning updated holding:', updatedHolding)
-            return updatedHolding
+          } else {
+            console.warn(`⚠️ No valid market data available for ${data.symbol}`)
           }
         } else {
-          console.warn(`⚠️ No market data available for ${data.symbol}`)
+          console.log('⚠️ Market data service not configured - skipping market data fetch')
         }
       } catch (marketDataError) {
         console.error(`❌ Error fetching market data for ${data.symbol}:`, marketDataError)
         console.error('Market data error details:', marketDataError)
         // Don't fail the holding creation if market data fails
+        console.log('🏁 Continuing without market data due to error')
       }
       
       console.log('🏁 Returning original holding (no market data update)')
@@ -378,7 +387,7 @@ export const portfolioService = {
     const updatedHoldings = await Promise.all(
       holdings.map(async (holding) => {
         try {
-          const quote = await marketDataService.getStockQuote(holding.symbol)
+          const quote = await backendMarketDataService.getStockQuote(holding.symbol)
           if (quote) {
             return {
               ...holding,
@@ -445,7 +454,7 @@ export const portfolioService = {
       // Update each holding with current market data
       for (const holding of portfolio.holdings) {
         try {
-          const quote = await marketDataService.getStockQuote(holding.symbol)
+          const quote = await backendMarketDataService.getStockQuote(holding.symbol)
           if (quote) {
             // Update the holding with current market data
             await this.updateHolding(holding.id, {
