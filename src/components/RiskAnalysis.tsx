@@ -154,7 +154,7 @@ export const RiskAnalysis: React.FC = () => {
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
         
         // Get the risk engine URL
-        const riskEngineUrl = process.env.REACT_APP_RISK_ENGINE_URL || ''
+        const riskEngineUrl = process.env.REACT_APP_BACKEND_API_URL || ''
         
 
         

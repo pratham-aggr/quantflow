@@ -7,16 +7,16 @@ services:
     buildCommand: npm install && npm run build
     staticPublishPath: ./build
     envVars:
-      - key: REACT_APP_RISK_ENGINE_URL
-        value: https://quantflow-risk-engine.onrender.com
+      - key: REACT_APP_BACKEND_API_URL
+        value: https://quantflow-backend-api.onrender.com
 
-  # Backend Risk Engine
+  # Backend API (Risk Engine + Market Data)
   - type: web
-    name: quantflow-risk-engine
+    name: quantflow-backend-api
     env: python
     plan: free
-    buildCommand: cd risk-engine && pip install -r requirements.txt
-    startCommand: cd risk-engine && gunicorn app:app
+    buildCommand: cd backend-api && pip install -r requirements.txt
+    startCommand: cd backend-api && gunicorn app:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.16

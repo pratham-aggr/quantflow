@@ -75,7 +75,7 @@ class RiskService {
 
   constructor() {
     // Use environment variable or default to local development
-    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || ''
+    this.baseUrl = process.env.REACT_APP_BACKEND_API_URL || ''
   }
 
   private getCacheKey(endpoint: string, data?: any): string {
@@ -108,7 +108,7 @@ class RiskService {
 
   private async makeRequest<T>(endpoint: string, options?: RequestInit): Promise<T> {
     if (!this.baseUrl) {
-      throw new Error('Risk engine URL not configured. Please set REACT_APP_RISK_ENGINE_URL environment variable.')
+      throw new Error('Backend API URL not configured. Please set REACT_APP_BACKEND_API_URL environment variable.')
     }
 
     try {

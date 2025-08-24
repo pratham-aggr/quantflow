@@ -215,11 +215,11 @@ class MarketDataService {
   private maxReconnectAttempts = 5
 
   constructor() {
-    // Use the risk engine for market data instead of separate server
-    this.serverUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-risk-engine.onrender.com'
+    // Use the backend API for market data
+    this.serverUrl = process.env.REACT_APP_BACKEND_API_URL || ''
     
     if (!this.serverUrl) {
-      console.warn('Risk engine URL not configured. Some features will not be available.')
+      console.warn('Backend API URL not configured. Some features will not be available.')
     }
   }
 
@@ -234,7 +234,7 @@ class MarketDataService {
       url.searchParams.append(key, value)
     })
 
-    console.log(`Making API request to: ${url.toString()}`)
+    console.log(`Making API request to: ${this.serverUrl}/api/market-data${endpoint}`)
 
     return this.rateLimiter.execute(async () => {
       console.log(`Executing API request for ${endpoint}...`)
