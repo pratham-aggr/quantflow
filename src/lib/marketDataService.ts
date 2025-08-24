@@ -271,7 +271,7 @@ class MarketDataService {
 
     console.log(`Fetching quote for ${symbol} from API...`)
     try {
-      const rawData = await this.makeRequest<any>(`/quote`, { symbol: symbol.toUpperCase() })
+      const rawData = await this.makeRequest<any>(`/quote/${symbol.toUpperCase()}`)
       console.log(`API response for ${symbol}:`, rawData)
       
       // Map yfinance API response to our StockQuote interface
