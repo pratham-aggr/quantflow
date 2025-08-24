@@ -106,7 +106,7 @@ class NotificationService {
   private isConnected = false
 
   constructor() {
-    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-risk-engine.onrender.com'
+    this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
   }
 
   // WebSocket Connection Management

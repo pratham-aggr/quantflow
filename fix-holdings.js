@@ -1,5 +1,6 @@
 // Simple script to fix holdings with current market data
 const { createClient } = require('@supabase/supabase-js')
+const axios = require('axios')
 require('dotenv').config()
 
 // Create Supabase client
@@ -8,18 +9,60 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJveGxseGhveHNvZGxia2FnemtxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0ODE3MjYsImV4cCI6MjA3MTA1NzcyNn0.sAtRyX-QdPeq_1Bl1em77QFEYjzr9QEvIECTrF0fLGk'
 )
 
-// Current market data (from API)
-const marketData = {
-  'TSLA': { price: 340.01, change: 19.9, changePercent: 6.2166 },
-  'NVDA': { price: 177.99, change: 3.01, changePercent: 1.7202 },
-  'AAPL': { price: 227.76, change: 2.86, changePercent: 1.2717 },
-  'MSFT': { price: 507.23, change: -9.85, changePercent: -1.91 },
-  'AMZN': { price: 457.68, change: 13.76, changePercent: 3.10 }
+// Finnhub API configuration
+const FINNHUB_API_KEY = process.env.FINNHUB_API_KEY
+const FINNHUB_BASE_URL = 'https://finnhub.io/api/v1'
+
+// Rate limiting configuration
+const RATE_LIMIT = {
+  callsPerMinute: 60,
+  callsPerSecond: 1,
+  retryDelay: 1000,
+  maxRetries: 3
+}
+
+// Fetch real market data for a symbol
+async function getStockQuote(symbol) {
+  if (!FINNHUB_API_KEY) {
+    console.error('❌ Finnhub API key not configured. Cannot fetch real market data.')
+    return null
+  }
+
+  try {
+    const url = `${FINNHUB_BASE_URL}/quote?symbol=${symbol}&token=${FINNHUB_API_KEY}`
+    console.log(`📡 Fetching real market data for ${symbol}...`)
+    
+    const response = await axios.get(url, {
+      timeout: 10000,
+      headers: {
+        'User-Agent': 'QuantFlow/1.0'
+      }
+    })
+
+    if (response.data && response.data.c) {
+      const currentPrice = response.data.c
+      const previousClose = response.data.pc
+      const change = currentPrice - previousClose
+      const changePercent = previousClose > 0 ? (change / previousClose) * 100 : 0
+
+      return {
+        price: currentPrice,
+        change: change,
+        changePercent: changePercent
+      }
+    } else {
+      console.warn(`⚠️ No data returned for ${symbol}`)
+      return null
+    }
+  } catch (error) {
+    console.error(`❌ Error fetching data for ${symbol}:`, error.message)
+    return null
+  }
 }
 
 async function fixHoldings() {
   try {
-    console.log('🔧 Fixing holdings with current market data...')
+    console.log('🔧 Fixing holdings with real market data...')
     
     // Get all holdings
     const { data: holdings, error } = await supabase
@@ -33,13 +76,13 @@ async function fixHoldings() {
     
     console.log(`Found ${holdings.length} holdings`)
     
-    // Update each holding with current market data
+    // Update each holding with real market data
     for (const holding of holdings) {
-      const stockData = marketData[holding.symbol]
+      console.log(`📈 Updating ${holding.symbol}...`)
+      
+      const stockData = await getStockQuote(holding.symbol)
       
       if (stockData) {
-        console.log(`📈 Updating ${holding.symbol}...`)
-        
         const { error: updateError } = await supabase
           .from('holdings')
           .update({
@@ -56,11 +99,16 @@ async function fixHoldings() {
           console.log(`✅ Updated ${holding.symbol}: $${stockData.price} (${stockData.change >= 0 ? '+' : ''}$${stockData.change.toFixed(2)}, ${stockData.change >= 0 ? '+' : ''}${stockData.changePercent.toFixed(2)}%)`)
         }
       } else {
-        console.log(`⚠️ No market data for ${holding.symbol}`)
+        console.log(`⚠️ No market data available for ${holding.symbol}`)
+      }
+      
+      // Rate limiting - wait between requests
+      if (holdings.indexOf(holding) < holdings.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, RATE_LIMIT.retryDelay))
       }
     }
     
-    console.log('\n🎉 Holdings fix completed!')
+    console.log('\n🎉 Holdings fix completed with real market data!')
     console.log('Now refresh your dashboard to see the updated data.')
     
   } catch (error) {
