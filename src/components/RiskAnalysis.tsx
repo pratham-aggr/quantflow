@@ -156,40 +156,18 @@ export const RiskAnalysis: React.FC = () => {
         // Check if we have a risk engine URL configured
         const riskEngineUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
         
-        console.log('🔍 Risk engine URL from env:', process.env.REACT_APP_RISK_ENGINE_URL)
-        console.log('🔍 Final risk engine URL:', riskEngineUrl)
-        console.log('🔍 All env vars:', Object.keys(process.env).filter(key => key.includes('RISK')))
-        console.log('🔍 Attempting to fetch from:', `${riskEngineUrl}/health`)
-        
         const response = await fetch(`${riskEngineUrl}/health`, {
           method: 'GET',
-          headers: { 
-            'Content-Type': 'application/json',
-            'Accept': 'application/json'
-          },
+          headers: { 'Content-Type': 'application/json' },
           signal: controller.signal
         })
         
         clearTimeout(timeoutId)
         
-        console.log('🔍 Risk engine response status:', response.status, response.statusText)
-        console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()))
-        
         if (response.ok) {
-          try {
-            const responseText = await response.text()
-            console.log('🔍 Raw response text:', responseText)
-            const data = JSON.parse(responseText)
-            console.log('Risk engine data:', data)
-            setEngineAvailable(true)
-            info('Advanced Engine Available', 'Using advanced risk analysis engine')
-          } catch (parseError) {
-            console.error('🔍 JSON parse error:', parseError)
-            console.error('🔍 Response text that failed to parse:', await response.text())
-            setEngineAvailable(false)
-            setUseAdvancedEngine(false)
-            showError('Engine Unavailable', 'Advanced engine response format error')
-          }
+          const data = await response.json()
+          setEngineAvailable(true)
+          info('Advanced Engine Available', 'Using advanced risk analysis engine')
         } else {
           console.log('Risk engine not responding properly:', response.status)
           setEngineAvailable(false)
@@ -197,14 +175,7 @@ export const RiskAnalysis: React.FC = () => {
           showError('Engine Unavailable', 'Advanced engine unavailable, using local analysis')
         }
       } catch (err) {
-        console.error('🔍 Risk engine check error:', err)
-        if (err instanceof Error) {
-          console.error('🔍 Error type:', err.constructor.name)
-          console.error('🔍 Error message:', err.message)
-          if (err instanceof TypeError) {
-            console.error('🔍 This might be a CORS or network error')
-          }
-        }
+        console.error('Risk engine check error:', err)
         setEngineAvailable(false)
         setUseAdvancedEngine(false)
         showError('Engine Unavailable', 'Advanced engine unavailable, using local analysis')

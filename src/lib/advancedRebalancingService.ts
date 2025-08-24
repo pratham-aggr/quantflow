@@ -183,8 +183,6 @@ class AdvancedRebalancingService {
 
   constructor() {
     this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
-    const service = this.baseUrl.includes('railway') ? 'Railway' : this.baseUrl.includes('onrender') ? 'Render' : 'Local'
-    console.log(`🚀 AdvancedRebalancingService using ${service} service:`, this.baseUrl)
   }
 
   // Tax-Loss Harvesting Methods

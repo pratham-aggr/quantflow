@@ -68,8 +68,6 @@ class AdvancedRiskService {
 
   constructor() {
     this.baseUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
-    const service = this.baseUrl.includes('railway') ? 'Railway' : this.baseUrl.includes('onrender') ? 'Render' : 'Local'
-    console.log(`🚀 AdvancedRiskService using ${service} service:`, this.baseUrl)
   }
 
   private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
