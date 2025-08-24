@@ -10,7 +10,7 @@ export const MarketDataStatus: React.FC = () => {
       
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Finnhub API</span>
+          <span className="text-sm text-gray-600">Backend API</span>
           <span className={`text-sm font-medium ${
             isConfigured ? 'text-green-600' : 'text-red-600'
           }`}>
@@ -19,8 +19,8 @@ export const MarketDataStatus: React.FC = () => {
         </div>
         
         <div className="flex items-center justify-between">
-          <span className="text-sm text-gray-600">Rate Limit</span>
-          <span className="text-sm text-gray-900">60 calls/minute</span>
+          <span className="text-sm text-gray-600">Data Source</span>
+          <span className="text-sm text-gray-900">yfinance</span>
         </div>
         
         <div className="flex items-center justify-between">
@@ -37,21 +37,10 @@ export const MarketDataStatus: React.FC = () => {
       {!isConfigured && (
         <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-md">
           <p className="text-sm text-red-800">
-            <strong>Configuration Required:</strong> Add your Finnhub API key to enable real-time market data.
+            <strong>Configuration Required:</strong> Backend API URL not configured.
           </p>
           <p className="text-xs text-red-700 mt-1">
-            Get a free API key at{' '}
-            <a 
-              href="https://finnhub.io" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="underline hover:text-red-900"
-            >
-              finnhub.io
-            </a>
-          </p>
-          <p className="text-xs text-red-700 mt-1">
-            Add <code className="bg-red-100 px-1 rounded">REACT_APP_FINNHUB_API_KEY=your_api_key</code> to your <code className="bg-red-100 px-1 rounded">.env.local</code> file
+            Add <code className="bg-red-100 px-1 rounded">REACT_APP_BACKEND_API_URL=your_backend_url</code> to your environment variables
           </p>
         </div>
       )}

@@ -1,5 +1,5 @@
 // Market Data Service with Rate Limiting and Caching
-// Using Finnhub.io API (60 calls/minute free tier)
+// Market data service using backend API (yfinance)
 
 interface StockQuote {
   symbol: string
@@ -25,7 +25,7 @@ interface CompanyProfile {
   shareOutstanding: number
   weburl: string
   logo: string
-  finnhubIndustry: string
+  industry: string
 }
 
 interface SearchResult {
@@ -82,7 +82,7 @@ interface RealTimeSubscription {
   callback: (data: StockQuote) => void
 }
 
-// Rate limiting configuration for Finnhub Free Plan
+  // Rate limiting configuration for API calls
 const RATE_LIMIT = {
   callsPerMinute: 60, // Free plan: 60 calls per minute
   callsPerSecond: 1,  // Free plan: 1 call per second
@@ -422,7 +422,7 @@ class MarketDataService {
     }
 
     try {
-      // Use server WebSocket endpoint instead of direct Finnhub
+      // Use server WebSocket endpoint for real-time updates
       const wsUrl = this.serverUrl.replace('http', 'ws')
       this.websocket = new WebSocket(`${wsUrl}/api/market-data/ws`)
       

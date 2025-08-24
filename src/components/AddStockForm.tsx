@@ -51,7 +51,7 @@ export const AddStockForm: React.FC<AddStockFormProps> = ({ portfolioId, onSucce
       }
 
       try {
-        // Get real-time search results from Finnhub
+        // Get real-time search results from backend API
         if (marketDataService.isConfigured()) {
           const searchResult = await marketDataService.searchStocks(query)
           if (searchResult && searchResult.result) {
