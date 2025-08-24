@@ -153,9 +153,11 @@ export const RiskAnalysis: React.FC = () => {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
         
-        // Check if we have a risk engine URL configured
-        const riskEngineUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
+        // Always use Railway URL for now to ensure it works
+        const riskEngineUrl = 'https://quantflow-production.up.railway.app'
         
+        console.log('🔍 Environment variable REACT_APP_RISK_ENGINE_URL:', process.env.REACT_APP_RISK_ENGINE_URL)
+        console.log('🔍 Final risk engine URL:', riskEngineUrl)
         console.log('🔍 Fetching from URL:', `${riskEngineUrl}/health`)
         
         const response = await fetch(`${riskEngineUrl}/health`, {
