@@ -117,7 +117,7 @@ def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'service': 'Railway Risk Engine',
+        'service': 'Railway Risk Engine v2',
         'version': '1.0.0',
         'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'development')
     })
