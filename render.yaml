@@ -1,0 +1,24 @@
+services:
+  # Frontend React App
+  - type: web
+    name: quantflow-frontend
+    env: static
+    plan: free
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./build
+    envVars:
+      - key: REACT_APP_RISK_ENGINE_URL
+        value: https://quantflow-risk-engine.onrender.com
+
+  # Backend Risk Engine
+  - type: web
+    name: quantflow-risk-engine
+    env: python
+    plan: free
+    buildCommand: cd risk-engine && pip install -r requirements.txt
+    startCommand: cd risk-engine && gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.16
+      - key: PORT
+        value: 10000
