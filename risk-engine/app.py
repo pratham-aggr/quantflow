@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Production app with Railway-optimized yfinance handling
+Production app with Render-optimized yfinance handling
 """
 
 from flask import Flask, request, jsonify
@@ -8,8 +8,7 @@ from flask_cors import CORS
 import logging
 import math
 import os
-import ssl
-import urllib3
+import requests
 from advanced_risk_engine import AdvancedRiskEngine
 
 # Configure logging
@@ -20,27 +19,10 @@ logging.basicConfig(
 
 app = Flask(__name__)
 
-# Minimal CORS configuration
+# CORS configuration for Render
 CORS(app, origins=["*"])
 
-# Railway-specific SSL configuration
-def configure_ssl_for_railway():
-    """Configure SSL settings for Railway deployment"""
-    try:
-        # Disable SSL warnings for Railway
-        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-        
-        # Create unverified SSL context for Railway
-        ssl._create_default_https_context = ssl._create_unverified_context
-        
-        print("✅ SSL configured for Railway deployment")
-    except Exception as e:
-        print(f"⚠️ SSL configuration warning: {e}")
-
-# Configure SSL for Railway
-configure_ssl_for_railway()
-
-# Initialize ONLY the essential service
+# Initialize the essential service
 advanced_risk_engine = AdvancedRiskEngine()
 
 def convert_nan_to_null(obj):
@@ -55,21 +37,21 @@ def convert_nan_to_null(obj):
         return obj
 
 def test_yfinance_with_retry(symbol, max_retries=3):
-    """Test yfinance with retry logic and Railway optimizations"""
+    """Test yfinance with retry logic for Render"""
     for attempt in range(max_retries):
         try:
             import yfinance as yf
             
-            print(f"🔄 Railway: Testing yfinance for {symbol} (attempt {attempt + 1})")
+            print(f"🔄 Render: Testing yfinance for {symbol} (attempt {attempt + 1})")
             
-            # Configure yfinance for Railway
+            # Configure yfinance for Render
             ticker = yf.Ticker(symbol)
             
-            # Use shorter period and add timeout for Railway
-            hist = ticker.history(period="6mo", timeout=30)
+            # Use shorter period for faster testing
+            hist = ticker.history(period="6mo")
             
             if len(hist) > 0:
-                print(f"✅ Railway: {symbol} SUCCESS - {len(hist)} data points")
+                print(f"✅ Render: {symbol} SUCCESS - {len(hist)} data points")
                 return {
                     'symbol': symbol,
                     'status': 'success',
@@ -78,7 +60,7 @@ def test_yfinance_with_retry(symbol, max_retries=3):
                     'attempt': attempt + 1
                 }
             else:
-                print(f"❌ Railway: {symbol} FAILED - No data (attempt {attempt + 1})")
+                print(f"❌ Render: {symbol} FAILED - No data (attempt {attempt + 1})")
                 if attempt < max_retries - 1:
                     import time
                     time.sleep(2)  # Wait before retry
@@ -92,7 +74,7 @@ def test_yfinance_with_retry(symbol, max_retries=3):
                     }
                     
         except Exception as e:
-            print(f"❌ Railway: {symbol} ERROR - {str(e)} (attempt {attempt + 1})")
+            print(f"❌ Render: {symbol} ERROR - {str(e)} (attempt {attempt + 1})")
             if attempt < max_retries - 1:
                 import time
                 time.sleep(2)  # Wait before retry
@@ -117,21 +99,21 @@ def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'service': 'Railway Risk Engine v2',
+        'service': 'Render Risk Engine',
         'version': '1.0.0',
-        'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'development')
+        'environment': os.environ.get('RENDER_ENVIRONMENT', 'development')
     })
 
 @app.route('/test-yfinance/<symbol>', methods=['GET'])
 def test_yfinance(symbol):
-    """Test yfinance data fetching with Railway optimizations"""
+    """Test yfinance data fetching on Render"""
     result = test_yfinance_with_retry(symbol)
     return jsonify(result)
 
 @app.route('/test-external-requests', methods=['GET'])
 def test_external_requests():
-    """Test external HTTP requests on Railway"""
-    print("🔍 Testing External HTTP Requests on Railway")
+    """Test external HTTP requests on Render"""
+    print("🔍 Testing External HTTP Requests on Render")
     print("=" * 50)
     
     def test_basic_http():
@@ -248,7 +230,7 @@ def test_external_requests():
     # Analysis
     if not any(results.values()):
         print("\n🚨 ALL EXTERNAL REQUESTS FAILED")
-        print("Railway appears to be blocking all external HTTP requests")
+        print("Render appears to be blocking all external HTTP requests")
     elif results["Basic HTTP"] and not results["yfinance with Session"]:
         print("\n🎯 yfinance-specific issue")
         print("External requests work, but yfinance specifically fails")
@@ -279,12 +261,12 @@ def generate_advanced_risk_report():
         holdings = data['holdings']
         risk_tolerance = data.get('risk_tolerance', 'moderate')
         
-        print(f"Railway: Received request for {len(holdings)} holdings")
+        print(f"Render: Received request for {len(holdings)} holdings")
         
         # Generate risk report using only the essential service
         risk_report = advanced_risk_engine.generate_risk_report(holdings, risk_tolerance)
         
-        print(f"Railway: Generated risk report successfully")
+        print(f"Render: Generated risk report successfully")
         
         # Convert NaN values to null for JSON serialization
         risk_report = convert_nan_to_null(risk_report)
@@ -292,7 +274,7 @@ def generate_advanced_risk_report():
         return jsonify(risk_report)
         
     except Exception as e:
-        print(f"❌ Railway: ERROR - {str(e)}")
+        print(f"❌ Render: ERROR - {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
