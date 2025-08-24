@@ -24,7 +24,13 @@ logging.basicConfig(
 app = Flask(__name__)
 
 # CORS configuration - allow Vercel preview and production domains
-CORS(app, resources={r"/*": {"origins": "*"}})  
+CORS(app, resources={r"/api/*": {"origins": [
+    "http://localhost:3000",                    # Local development
+    "http://localhost:3001",                    # Local development  
+    "https://quantflow.vercel.app",             # Main production
+    "https://quantflow-git-main-pratham-aggrs-projects.vercel.app",  # Your main domain
+    re.compile(r"https://quantflow-.*-pratham-aggrs-projects\.vercel\.app")  # All preview domains
+]}}, supports_credentials=True)
 
 # Initialize the essential service
 advanced_risk_engine = AdvancedRiskEngine()
