@@ -27,19 +27,28 @@ logging.basicConfig(
 )
 
 app = Flask(__name__)
-# Get allowed origins from environment or use defaults
-allowed_origins = [
-    "http://localhost:3000",
-    "http://localhost:4000", 
-    "http://localhost:5001",
-    r"https://.*\.vercel\.app"  # Regex: all Vercel preview URLs
-]
-CORS(app, origins=allowed_origins)
 
-# Initialize risk calculation services
-risk_calculator = RiskCalculator()
-portfolio_analyzer = PortfolioAnalyzer()
-rebalancing_engine = RebalancingEngine()
+# Minimal CORS configuration
+CORS(app, origins=["*"])
+
+# Railway-specific SSL configuration
+def configure_ssl_for_railway():
+    """Configure SSL settings for Railway deployment"""
+    try:
+        # Disable SSL warnings for Railway
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        # Create unverified SSL context for Railway
+        ssl._create_default_https_context = ssl._create_unverified_context
+        
+        print("✅ SSL configured for Railway deployment")
+    except Exception as e:
+        print(f"⚠️ SSL configuration warning: {e}")
+
+# Configure SSL for Railway
+configure_ssl_for_railway()
+
+# Initialize ONLY the essential service
 advanced_risk_engine = AdvancedRiskEngine()
 tax_loss_engine = TaxLossHarvestingEngine()
 advanced_rebalancing_engine = AdvancedRebalancingEngine()
@@ -68,229 +77,150 @@ def health_check():
         'version': '1.0.0'
     })
 
-@app.route('/api/risk/portfolio', methods=['POST'])
-def calculate_portfolio_risk():
-    """Calculate comprehensive risk metrics for a portfolio"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        holdings = data['holdings']
-        risk_tolerance = data.get('risk_tolerance', 'moderate')
-        
-        # Calculate portfolio risk metrics
-        risk_metrics = portfolio_analyzer.calculate_portfolio_risk(holdings, risk_tolerance)
-        
-        return jsonify(risk_metrics)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@app.route('/test-yfinance/<symbol>', methods=['GET'])
+def test_yfinance(symbol):
+    """Test yfinance data fetching with Railway optimizations"""
+    result = test_yfinance_with_retry(symbol)
+    return jsonify(result)
 
-@app.route('/api/risk/holding/<symbol>', methods=['GET'])
-def calculate_holding_risk(symbol):
-    """Calculate risk metrics for a single holding"""
-    try:
-        # Get historical data and calculate risk metrics
-        risk_metrics = risk_calculator.calculate_stock_risk(symbol)
-        
-        return jsonify(risk_metrics)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@app.route('/test-external-requests', methods=['GET'])
+def test_external_requests():
+    """Test external HTTP requests on Railway"""
+    print("🔍 Testing External HTTP Requests on Railway")
+    print("=" * 50)
+    
+    def test_basic_http():
+        """Test basic HTTP requests"""
+        try:
+            print("Testing basic HTTP request to httpbin.org...")
+            response = requests.get('https://httpbin.org/get', timeout=10)
+            
+            if response.status_code == 200:
+                print("✅ Basic HTTP request SUCCESS")
+                return True
+            else:
+                print(f"❌ Basic HTTP request FAILED - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Basic HTTP request ERROR: {str(e)}")
+            return False
 
-@app.route('/api/risk/var', methods=['POST'])
-def calculate_var():
-    """Calculate Value at Risk for a portfolio"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        confidence_level = data.get('confidence_level', 0.95)
-        time_horizon = data.get('time_horizon', 1)  # days
-        
-        var_result = risk_calculator.calculate_var(
-            data['holdings'], 
-            confidence_level, 
-            time_horizon
-        )
-        
-        return jsonify(var_result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    def test_yahoo_finance_direct():
+        """Test direct request to Yahoo Finance"""
+        try:
+            print("Testing direct request to Yahoo Finance...")
+            # Try to access Yahoo Finance directly
+            response = requests.get('https://finance.yahoo.com/quote/AAPL', timeout=10)
+            
+            if response.status_code == 200:
+                print("✅ Direct Yahoo Finance request SUCCESS")
+                return True
+            else:
+                print(f"❌ Direct Yahoo Finance request FAILED - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Direct Yahoo Finance request ERROR: {str(e)}")
+            return False
 
-@app.route('/api/risk/beta', methods=['POST'])
-def calculate_beta():
-    """Calculate portfolio beta against market benchmark"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        benchmark = data.get('benchmark', '^GSPC')  # S&P 500
-        
-        beta_result = risk_calculator.calculate_portfolio_beta(
-            data['holdings'], 
-            benchmark
-        )
-        
-        return jsonify(beta_result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    def test_yfinance_with_session():
+        """Test yfinance with custom session"""
+        try:
+            print("Testing yfinance with custom session...")
+            
+            # Create a custom session with headers
+            session = requests.Session()
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            })
+            
+            # Test yfinance with custom session
+            import yfinance as yf
+            data = yf.download("AAPL", period="1d", session=session)
+            
+            if len(data) > 0:
+                print("✅ yfinance with custom session SUCCESS")
+                return True
+            else:
+                print("❌ yfinance with custom session FAILED - No data")
+                return False
+                
+        except Exception as e:
+            print(f"❌ yfinance with custom session ERROR: {str(e)}")
+            return False
 
-@app.route('/api/risk/score', methods=['POST'])
-def calculate_risk_score():
-    """Calculate overall risk score (1-10) for portfolio"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        risk_tolerance = data.get('risk_tolerance', 'moderate')
-        
-        risk_score = portfolio_analyzer.calculate_risk_score(
-            data['holdings'], 
-            risk_tolerance
-        )
-        
-        return jsonify(risk_score)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/risk/alerts', methods=['POST'])
-def check_risk_alerts():
-    """Check for risk alerts based on user's risk tolerance"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data or 'risk_tolerance' not in data:
-            return jsonify({'error': 'Portfolio holdings and risk tolerance required'}), 400
-        
-        alerts = portfolio_analyzer.check_risk_alerts(
-            data['holdings'], 
-            data['risk_tolerance']
-        )
-        
-        return jsonify(alerts)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# Rebalancing Engine Endpoints
-@app.route('/api/rebalancing/analyze', methods=['POST'])
-def analyze_rebalancing():
-    """Analyze portfolio rebalancing needs and generate suggestions"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data or 'target_allocation' not in data:
-            return jsonify({'error': 'Portfolio holdings and target allocation required'}), 400
-        
-        holdings = data['holdings']
-        target_allocation = data['target_allocation']
-        constraints = data.get('constraints', None)
-        
-        # Run rebalancing analysis
-        analysis = rebalancing_engine.analyze_rebalancing(holdings, target_allocation, constraints)
-        
-        # Convert to JSON-serializable format
-        result = {
-            'current_allocation': analysis.current_allocation,
-            'target_allocation': analysis.target_allocation,
-            'drift_analysis': analysis.drift_analysis,
-            'suggestions': [
-                {
-                    'symbol': s.symbol,
-                    'action': s.action,
-                    'quantity': s.quantity,
-                    'current_value': s.current_value,
-                    'target_value': s.target_value,
-                    'drift_percentage': s.drift_percentage,
-                    'estimated_cost': s.estimated_cost,
-                    'priority': s.priority
-                }
-                for s in analysis.suggestions
-            ],
-            'total_drift': analysis.total_drift,
-            'estimated_transaction_cost': analysis.estimated_transaction_cost,
-            'rebalancing_score': analysis.rebalancing_score,
-            'optimization_method': analysis.optimization_method
+    def test_yfinance_with_dates():
+        """Test yfinance with different approach"""
+        try:
+            print("Testing yfinance with different approach...")
+            
+            # Try using Ticker with different parameters
+            import yfinance as yf
+            ticker = yf.Ticker("AAPL")
+            
+            # Try different methods
+            print("  - Trying info()...")
+            info = ticker.info
+            if info:
+                print("    ✅ info() works")
+            
+            print("  - Trying history() with start/end dates...")
+            from datetime import datetime, timedelta
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=30)
+            hist = ticker.history(start=start_date, end=end_date)
+            
+            if len(hist) > 0:
+                print(f"    ✅ history() with dates works - {len(hist)} rows")
+                return True
+            else:
+                print("    ❌ history() with dates failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ yfinance with different approach ERROR: {str(e)}")
+            return False
+    
+    tests = [
+        ("Basic HTTP", test_basic_http),
+        ("Yahoo Finance Direct", test_yahoo_finance_direct),
+        ("yfinance with Session", test_yfinance_with_session),
+        ("yfinance with Dates", test_yfinance_with_dates)
+    ]
+    
+    results = {}
+    for test_name, test_func in tests:
+        print(f"\n{test_name}:")
+        results[test_name] = test_func()
+    
+    print("\n📊 SUMMARY:")
+    print("=" * 30)
+    for test_name, result in results.items():
+        status = "✅ SUCCESS" if result else "❌ FAILED"
+        print(f"{test_name}: {status}")
+    
+    # Analysis
+    if not any(results.values()):
+        print("\n🚨 ALL EXTERNAL REQUESTS FAILED")
+        print("Railway appears to be blocking all external HTTP requests")
+    elif results["Basic HTTP"] and not results["yfinance with Session"]:
+        print("\n🎯 yfinance-specific issue")
+        print("External requests work, but yfinance specifically fails")
+    elif results["Basic HTTP"] and results["yfinance with Session"]:
+        print("\n✅ External requests work")
+        print("The issue might be with the default yfinance configuration")
+    else:
+        print("\n🔍 Mixed results - need further investigation")
+    
+    return jsonify({
+        'results': results,
+        'summary': {
+            'all_failed': not any(results.values()),
+            'basic_http_works': results.get("Basic HTTP", False),
+            'yfinance_works': results.get("yfinance with Session", False) or results.get("yfinance with Dates", False)
         }
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/rebalancing/what-if', methods=['POST'])
-def what_if_analysis():
-    """Create what-if analysis for proposed rebalancing trades"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data or 'suggestions' not in data:
-            return jsonify({'error': 'Portfolio holdings and rebalancing suggestions required'}), 400
-        
-        holdings = data['holdings']
-        suggestions = data['suggestions']
-        
-        # Convert suggestions back to RebalancingSuggestion objects
-        from rebalancing_engine import RebalancingSuggestion
-        suggestion_objects = [
-            RebalancingSuggestion(
-                symbol=s['symbol'],
-                action=s['action'],
-                quantity=s['quantity'],
-                current_value=s['current_value'],
-                target_value=s['target_value'],
-                drift_percentage=s['drift_percentage'],
-                estimated_cost=s['estimated_cost'],
-                priority=s['priority']
-            )
-            for s in suggestions
-        ]
-        
-        # Run what-if analysis
-        what_if = rebalancing_engine.create_what_if_analysis(holdings, suggestion_objects)
-        
-        return jsonify(what_if)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/rebalancing/optimize', methods=['POST'])
-def optimize_portfolio():
-    """Optimize portfolio allocation using Modern Portfolio Theory"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data or 'target_allocation' not in data:
-            return jsonify({'error': 'Portfolio holdings and target allocation required'}), 400
-        
-        holdings = data['holdings']
-        target_allocation = data['target_allocation']
-        constraints = data.get('constraints', None)
-        
-        # Run portfolio optimization
-        optimized_allocation = rebalancing_engine.optimize_portfolio(holdings, target_allocation, constraints)
-        
-        return jsonify({
-            'optimized_allocation': optimized_allocation,
-            'original_target': target_allocation
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# ========== ADVANCED RISK ENGINE ENDPOINTS ==========
+    })
 
 @app.route('/api/risk/advanced', methods=['POST'])
 def generate_advanced_risk_report():
