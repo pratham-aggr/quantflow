@@ -156,6 +156,9 @@ export const RiskAnalysis: React.FC = () => {
         // Check if we have a risk engine URL configured
         const riskEngineUrl = process.env.REACT_APP_RISK_ENGINE_URL
         
+        console.log('🔍 Risk engine URL from env:', riskEngineUrl)
+        console.log('🔍 All env vars:', Object.keys(process.env).filter(key => key.includes('RISK')))
+        
         if (!riskEngineUrl) {
           console.log('No risk engine URL configured - using local analysis')
           setEngineAvailable(false)
@@ -174,10 +177,20 @@ export const RiskAnalysis: React.FC = () => {
         console.log('Risk engine response:', response.status, response.statusText)
         
         if (response.ok) {
-          const data = await response.json()
-          console.log('Risk engine data:', data)
-          setEngineAvailable(true)
-          info('Advanced Engine Available', 'Using advanced risk analysis engine')
+          try {
+            const responseText = await response.text()
+            console.log('🔍 Raw response text:', responseText)
+            const data = JSON.parse(responseText)
+            console.log('Risk engine data:', data)
+            setEngineAvailable(true)
+            info('Advanced Engine Available', 'Using advanced risk analysis engine')
+          } catch (parseError) {
+            console.error('🔍 JSON parse error:', parseError)
+            console.error('🔍 Response text that failed to parse:', await response.text())
+            setEngineAvailable(false)
+            setUseAdvancedEngine(false)
+            showError('Engine Unavailable', 'Advanced engine response format error')
+          }
         } else {
           console.log('Risk engine not responding properly:', response.status)
           setEngineAvailable(false)
