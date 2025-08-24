@@ -1,53 +1,47 @@
+#!/usr/bin/env python3
+"""
+Production app with Railway-optimized yfinance handling
+"""
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from dotenv import load_dotenv
-import os
-import math
 import logging
-from risk_calculator import RiskCalculator
-from portfolio_analyzer import PortfolioAnalyzer
-from rebalancing_engine import RebalancingEngine
+import math
+import os
+import ssl
+import urllib3
 from advanced_risk_engine import AdvancedRiskEngine
-from tax_loss_harvesting import TaxLossHarvestingEngine, TaxSettings
-from advanced_rebalancing import AdvancedRebalancingEngine, RebalancingSettings
-from paper_trading import PaperTradingEngine, BrokerageAPISimulator, OrderSide, OrderType
-from notification_engine import NotificationEngine, NotificationConfig, NotificationType, NotificationPriority, NotificationChannel, AlertRule
-
-# Load environment variables
-load_dotenv()
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('risk_engine.log')
-    ]
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
 app = Flask(__name__)
-# Get allowed origins from environment or use defaults
-allowed_origins = [
-    "http://localhost:3000",
-    "http://localhost:4000", 
-    "http://localhost:5001",
-    r"https://.*\.vercel\.app",  # Regex: all Vercel preview URLs
-    r"https://.*\.vercel\.com",  # Regex: all Vercel production URLs
-    "*"  # Allow all origins for now
-]
-CORS(app, origins=allowed_origins)
 
-# Initialize risk calculation services
-risk_calculator = RiskCalculator()
-portfolio_analyzer = PortfolioAnalyzer()
-rebalancing_engine = RebalancingEngine()
+# Minimal CORS configuration
+CORS(app, origins=["*"])
+
+# Railway-specific SSL configuration
+def configure_ssl_for_railway():
+    """Configure SSL settings for Railway deployment"""
+    try:
+        # Disable SSL warnings for Railway
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+        
+        # Create unverified SSL context for Railway
+        ssl._create_default_https_context = ssl._create_unverified_context
+        
+        print("✅ SSL configured for Railway deployment")
+    except Exception as e:
+        print(f"⚠️ SSL configuration warning: {e}")
+
+# Configure SSL for Railway
+configure_ssl_for_railway()
+
+# Initialize ONLY the essential service
 advanced_risk_engine = AdvancedRiskEngine()
-tax_loss_engine = TaxLossHarvestingEngine()
-advanced_rebalancing_engine = AdvancedRebalancingEngine()
-paper_trading_engine = PaperTradingEngine()
-brokerage_simulator = BrokerageAPISimulator()
-notification_engine = NotificationEngine()
 
 def convert_nan_to_null(obj):
     """Convert NaN values to null for JSON serialization"""
@@ -56,304 +50,226 @@ def convert_nan_to_null(obj):
     elif isinstance(obj, list):
         return [convert_nan_to_null(v) for v in obj]
     elif isinstance(obj, float) and (math.isnan(obj) or not math.isfinite(obj)):
-        print(f"Converting NaN to null: {obj}")
         return None
     else:
         return obj
+
+def test_yfinance_with_retry(symbol, max_retries=3):
+    """Test yfinance with retry logic and Railway optimizations"""
+    for attempt in range(max_retries):
+        try:
+            import yfinance as yf
+            
+            print(f"🔄 Railway: Testing yfinance for {symbol} (attempt {attempt + 1})")
+            
+            # Configure yfinance for Railway
+            ticker = yf.Ticker(symbol)
+            
+            # Use shorter period and add timeout for Railway
+            hist = ticker.history(period="6mo", timeout=30)
+            
+            if len(hist) > 0:
+                print(f"✅ Railway: {symbol} SUCCESS - {len(hist)} data points")
+                return {
+                    'symbol': symbol,
+                    'status': 'success',
+                    'data_points': len(hist),
+                    'latest_date': str(hist.index[-1]),
+                    'attempt': attempt + 1
+                }
+            else:
+                print(f"❌ Railway: {symbol} FAILED - No data (attempt {attempt + 1})")
+                if attempt < max_retries - 1:
+                    import time
+                    time.sleep(2)  # Wait before retry
+                    continue
+                else:
+                    return {
+                        'symbol': symbol,
+                        'status': 'error',
+                        'message': 'No data returned after all attempts',
+                        'attempt': attempt + 1
+                    }
+                    
+        except Exception as e:
+            print(f"❌ Railway: {symbol} ERROR - {str(e)} (attempt {attempt + 1})")
+            if attempt < max_retries - 1:
+                import time
+                time.sleep(2)  # Wait before retry
+                continue
+            else:
+                return {
+                    'symbol': symbol,
+                    'status': 'error',
+                    'message': str(e),
+                    'attempt': attempt + 1
+                }
+    
+    return {
+        'symbol': symbol,
+        'status': 'error',
+        'message': 'All retry attempts failed',
+        'attempt': max_retries
+    }
 
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
-        'service': 'Risk Assessment Engine',
-        'version': '1.0.0'
+        'service': 'Railway Risk Engine',
+        'version': '1.0.0',
+        'environment': os.environ.get('RAILWAY_ENVIRONMENT', 'development')
     })
 
 @app.route('/test-yfinance/<symbol>', methods=['GET'])
 def test_yfinance(symbol):
-    """Test yfinance data fetching for a specific symbol"""
-    try:
-        import yfinance as yf
-        
-        print(f"Testing yfinance for symbol: {symbol}")
-        
-        ticker = yf.Ticker(symbol)
-        print(f"Created ticker for {symbol}")
-        
-        # Get basic info
-        info = ticker.info
-        print(f"Company info retrieved: {info.get('longName', 'N/A')}")
-        
-        # Get historical data
-        hist = ticker.history(period="30d")
-        print(f"Historical data points: {len(hist)}")
-        
-        if len(hist) > 0:
-            # Calculate simple metrics
-            returns = hist['Close'].pct_change().dropna()
-            mean_return = returns.mean()
-            volatility = returns.std()
+    """Test yfinance data fetching with Railway optimizations"""
+    result = test_yfinance_with_retry(symbol)
+    return jsonify(result)
+
+@app.route('/test-external-requests', methods=['GET'])
+def test_external_requests():
+    """Test external HTTP requests on Railway"""
+    print("🔍 Testing External HTTP Requests on Railway")
+    print("=" * 50)
+    
+    def test_basic_http():
+        """Test basic HTTP requests"""
+        try:
+            print("Testing basic HTTP request to httpbin.org...")
+            response = requests.get('https://httpbin.org/get', timeout=10)
             
-            result = {
-                'symbol': symbol,
-                'company_name': info.get('longName', 'N/A'),
-                'sector': info.get('sector', 'N/A'),
-                'data_points': len(hist),
-                'date_range': {
-                    'start': hist.index[0].isoformat(),
-                    'end': hist.index[-1].isoformat()
-                },
-                'latest_price': float(hist['Close'].iloc[-1]),
-                'mean_return': float(mean_return),
-                'volatility': float(volatility),
-                'status': 'success'
-            }
-        else:
-            result = {
-                'symbol': symbol,
-                'status': 'error',
-                'message': 'No historical data available'
-            }
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        print(f"Error testing yfinance for {symbol}: {e}")
-        return jsonify({
-            'symbol': symbol,
-            'status': 'error',
-            'message': str(e),
-            'error_type': type(e).__name__
-        }), 500
+            if response.status_code == 200:
+                print("✅ Basic HTTP request SUCCESS")
+                return True
+            else:
+                print(f"❌ Basic HTTP request FAILED - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Basic HTTP request ERROR: {str(e)}")
+            return False
 
-@app.route('/api/risk/portfolio', methods=['POST'])
-def calculate_portfolio_risk():
-    """Calculate comprehensive risk metrics for a portfolio"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        holdings = data['holdings']
-        risk_tolerance = data.get('risk_tolerance', 'moderate')
-        
-        # Calculate portfolio risk metrics
-        risk_metrics = portfolio_analyzer.calculate_portfolio_risk(holdings, risk_tolerance)
-        
-        return jsonify(risk_metrics)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    def test_yahoo_finance_direct():
+        """Test direct request to Yahoo Finance"""
+        try:
+            print("Testing direct request to Yahoo Finance...")
+            # Try to access Yahoo Finance directly
+            response = requests.get('https://finance.yahoo.com/quote/AAPL', timeout=10)
+            
+            if response.status_code == 200:
+                print("✅ Direct Yahoo Finance request SUCCESS")
+                return True
+            else:
+                print(f"❌ Direct Yahoo Finance request FAILED - Status: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            print(f"❌ Direct Yahoo Finance request ERROR: {str(e)}")
+            return False
 
-@app.route('/api/risk/holding/<symbol>', methods=['GET'])
-def calculate_holding_risk(symbol):
-    """Calculate risk metrics for a single holding"""
-    try:
-        # Get historical data and calculate risk metrics
-        risk_metrics = risk_calculator.calculate_stock_risk(symbol)
-        
-        return jsonify(risk_metrics)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    def test_yfinance_with_session():
+        """Test yfinance with custom session"""
+        try:
+            print("Testing yfinance with custom session...")
+            
+            # Create a custom session with headers
+            session = requests.Session()
+            session.headers.update({
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            })
+            
+            # Test yfinance with custom session
+            import yfinance as yf
+            data = yf.download("AAPL", period="1d", session=session)
+            
+            if len(data) > 0:
+                print("✅ yfinance with custom session SUCCESS")
+                return True
+            else:
+                print("❌ yfinance with custom session FAILED - No data")
+                return False
+                
+        except Exception as e:
+            print(f"❌ yfinance with custom session ERROR: {str(e)}")
+            return False
 
-@app.route('/api/risk/var', methods=['POST'])
-def calculate_var():
-    """Calculate Value at Risk for a portfolio"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        confidence_level = data.get('confidence_level', 0.95)
-        time_horizon = data.get('time_horizon', 1)  # days
-        
-        var_result = risk_calculator.calculate_var(
-            data['holdings'], 
-            confidence_level, 
-            time_horizon
-        )
-        
-        return jsonify(var_result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/risk/beta', methods=['POST'])
-def calculate_beta():
-    """Calculate portfolio beta against market benchmark"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        benchmark = data.get('benchmark', '^GSPC')  # S&P 500
-        
-        beta_result = risk_calculator.calculate_portfolio_beta(
-            data['holdings'], 
-            benchmark
-        )
-        
-        return jsonify(beta_result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/risk/score', methods=['POST'])
-def calculate_risk_score():
-    """Calculate overall risk score (1-10) for portfolio"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        risk_tolerance = data.get('risk_tolerance', 'moderate')
-        
-        risk_score = portfolio_analyzer.calculate_risk_score(
-            data['holdings'], 
-            risk_tolerance
-        )
-        
-        return jsonify(risk_score)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/risk/alerts', methods=['POST'])
-def check_risk_alerts():
-    """Check for risk alerts based on user's risk tolerance"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data or 'risk_tolerance' not in data:
-            return jsonify({'error': 'Portfolio holdings and risk tolerance required'}), 400
-        
-        alerts = portfolio_analyzer.check_risk_alerts(
-            data['holdings'], 
-            data['risk_tolerance']
-        )
-        
-        return jsonify(alerts)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# Rebalancing Engine Endpoints
-@app.route('/api/rebalancing/analyze', methods=['POST'])
-def analyze_rebalancing():
-    """Analyze portfolio rebalancing needs and generate suggestions"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data or 'target_allocation' not in data:
-            return jsonify({'error': 'Portfolio holdings and target allocation required'}), 400
-        
-        holdings = data['holdings']
-        target_allocation = data['target_allocation']
-        constraints = data.get('constraints', None)
-        
-        # Run rebalancing analysis
-        analysis = rebalancing_engine.analyze_rebalancing(holdings, target_allocation, constraints)
-        
-        # Convert to JSON-serializable format
-        result = {
-            'current_allocation': analysis.current_allocation,
-            'target_allocation': analysis.target_allocation,
-            'drift_analysis': analysis.drift_analysis,
-            'suggestions': [
-                {
-                    'symbol': s.symbol,
-                    'action': s.action,
-                    'quantity': s.quantity,
-                    'current_value': s.current_value,
-                    'target_value': s.target_value,
-                    'drift_percentage': s.drift_percentage,
-                    'estimated_cost': s.estimated_cost,
-                    'priority': s.priority
-                }
-                for s in analysis.suggestions
-            ],
-            'total_drift': analysis.total_drift,
-            'estimated_transaction_cost': analysis.estimated_transaction_cost,
-            'rebalancing_score': analysis.rebalancing_score,
-            'optimization_method': analysis.optimization_method
+    def test_yfinance_with_dates():
+        """Test yfinance with different approach"""
+        try:
+            print("Testing yfinance with different approach...")
+            
+            # Try using Ticker with different parameters
+            import yfinance as yf
+            ticker = yf.Ticker("AAPL")
+            
+            # Try different methods
+            print("  - Trying info()...")
+            info = ticker.info
+            if info:
+                print("    ✅ info() works")
+            
+            print("  - Trying history() with start/end dates...")
+            from datetime import datetime, timedelta
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=30)
+            hist = ticker.history(start=start_date, end=end_date)
+            
+            if len(hist) > 0:
+                print(f"    ✅ history() with dates works - {len(hist)} rows")
+                return True
+            else:
+                print("    ❌ history() with dates failed")
+                return False
+                
+        except Exception as e:
+            print(f"❌ yfinance with different approach ERROR: {str(e)}")
+            return False
+    
+    tests = [
+        ("Basic HTTP", test_basic_http),
+        ("Yahoo Finance Direct", test_yahoo_finance_direct),
+        ("yfinance with Session", test_yfinance_with_session),
+        ("yfinance with Dates", test_yfinance_with_dates)
+    ]
+    
+    results = {}
+    for test_name, test_func in tests:
+        print(f"\n{test_name}:")
+        results[test_name] = test_func()
+    
+    print("\n📊 SUMMARY:")
+    print("=" * 30)
+    for test_name, result in results.items():
+        status = "✅ SUCCESS" if result else "❌ FAILED"
+        print(f"{test_name}: {status}")
+    
+    # Analysis
+    if not any(results.values()):
+        print("\n🚨 ALL EXTERNAL REQUESTS FAILED")
+        print("Railway appears to be blocking all external HTTP requests")
+    elif results["Basic HTTP"] and not results["yfinance with Session"]:
+        print("\n🎯 yfinance-specific issue")
+        print("External requests work, but yfinance specifically fails")
+    elif results["Basic HTTP"] and results["yfinance with Session"]:
+        print("\n✅ External requests work")
+        print("The issue might be with the default yfinance configuration")
+    else:
+        print("\n🔍 Mixed results - need further investigation")
+    
+    return jsonify({
+        'results': results,
+        'summary': {
+            'all_failed': not any(results.values()),
+            'basic_http_works': results.get("Basic HTTP", False),
+            'yfinance_works': results.get("yfinance with Session", False) or results.get("yfinance with Dates", False)
         }
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/rebalancing/what-if', methods=['POST'])
-def what_if_analysis():
-    """Create what-if analysis for proposed rebalancing trades"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data or 'suggestions' not in data:
-            return jsonify({'error': 'Portfolio holdings and rebalancing suggestions required'}), 400
-        
-        holdings = data['holdings']
-        suggestions = data['suggestions']
-        
-        # Convert suggestions back to RebalancingSuggestion objects
-        from rebalancing_engine import RebalancingSuggestion
-        suggestion_objects = [
-            RebalancingSuggestion(
-                symbol=s['symbol'],
-                action=s['action'],
-                quantity=s['quantity'],
-                current_value=s['current_value'],
-                target_value=s['target_value'],
-                drift_percentage=s['drift_percentage'],
-                estimated_cost=s['estimated_cost'],
-                priority=s['priority']
-            )
-            for s in suggestions
-        ]
-        
-        # Run what-if analysis
-        what_if = rebalancing_engine.create_what_if_analysis(holdings, suggestion_objects)
-        
-        return jsonify(what_if)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/rebalancing/optimize', methods=['POST'])
-def optimize_portfolio():
-    """Optimize portfolio allocation using Modern Portfolio Theory"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data or 'target_allocation' not in data:
-            return jsonify({'error': 'Portfolio holdings and target allocation required'}), 400
-        
-        holdings = data['holdings']
-        target_allocation = data['target_allocation']
-        constraints = data.get('constraints', None)
-        
-        # Run portfolio optimization
-        optimized_allocation = rebalancing_engine.optimize_portfolio(holdings, target_allocation, constraints)
-        
-        return jsonify({
-            'optimized_allocation': optimized_allocation,
-            'original_target': target_allocation
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# ========== ADVANCED RISK ENGINE ENDPOINTS ==========
+    })
 
 @app.route('/api/risk/advanced', methods=['POST'])
 def generate_advanced_risk_report():
-    """Generate comprehensive advanced risk report with Monte Carlo, correlation, sector analysis, and ML predictions"""
+    """Generate advanced risk report with minimal services"""
     try:
         data = request.get_json()
         
@@ -363,23 +279,12 @@ def generate_advanced_risk_report():
         holdings = data['holdings']
         risk_tolerance = data.get('risk_tolerance', 'moderate')
         
-        print(f"Received request for advanced risk report:")
-        print(f"Number of holdings: {len(holdings)}")
-        print(f"Risk tolerance: {risk_tolerance}")
-        print(f"Holdings data: {holdings}")
+        print(f"Railway: Received request for {len(holdings)} holdings")
         
-        # Log each holding in detail
-        for i, holding in enumerate(holdings):
-            print(f"Holding {i+1}: symbol={holding.get('symbol')}, quantity={holding.get('quantity')}, avg_price={holding.get('avg_price')}, current_price={holding.get('current_price')}")
-        
-        # Generate comprehensive risk report
-        print("Starting risk report generation...")
+        # Generate risk report using only the essential service
         risk_report = advanced_risk_engine.generate_risk_report(holdings, risk_tolerance)
         
-        print(f"Generated risk report: {risk_report}")
-        print(f"Correlation analysis before conversion: {risk_report.get('correlation_analysis', {})}")
-        print(f"Monte Carlo analysis before conversion: {risk_report.get('monte_carlo_analysis', {})}")
-        print(f"ML prediction before conversion: {risk_report.get('ml_prediction', {})}")
+        print(f"Railway: Generated risk report successfully")
         
         # Convert NaN values to null for JSON serialization
         risk_report = convert_nan_to_null(risk_report)
@@ -387,625 +292,9 @@ def generate_advanced_risk_report():
         return jsonify(risk_report)
         
     except Exception as e:
+        print(f"❌ Railway: ERROR - {str(e)}")
         return jsonify({'error': str(e)}), 500
-
-@app.route('/api/risk/monte-carlo', methods=['POST'])
-def run_monte_carlo_simulation():
-    """Run Monte Carlo simulation for portfolio returns"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        holdings = data['holdings']
-        time_horizon = data.get('time_horizon', 252)
-        
-        # Run Monte Carlo simulation
-        monte_carlo_result = advanced_risk_engine.run_monte_carlo_simulation(holdings, time_horizon)
-        
-        # Convert to JSON-serializable format
-        result = {
-            'mean_return': monte_carlo_result.mean_return,
-            'std_return': monte_carlo_result.std_return,
-            'percentiles': monte_carlo_result.percentiles,
-            'worst_case': monte_carlo_result.worst_case,
-            'best_case': monte_carlo_result.best_case,
-            'probability_positive': monte_carlo_result.probability_positive,
-            'confidence_intervals': monte_carlo_result.confidence_intervals
-        }
-        
-        # Convert NaN values to null for JSON serialization
-        result = convert_nan_to_null(result)
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/risk/correlation', methods=['POST'])
-def calculate_correlation_matrix():
-    """Calculate correlation matrix and diversification analysis"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        holdings = data['holdings']
-        
-        # Calculate correlation matrix
-        correlation_result = advanced_risk_engine.calculate_correlation_matrix(holdings)
-        
-        # Convert to JSON-serializable format
-        result = {
-            'diversification_score': correlation_result.diversification_score,
-            'high_correlation_pairs': correlation_result.high_correlation_pairs,
-            'heatmap_data': correlation_result.heatmap_data
-        }
-        
-        # Convert NaN values to null for JSON serialization
-        result = convert_nan_to_null(result)
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/risk/sector-analysis', methods=['POST'])
-def analyze_sector_allocation():
-    """Analyze sector allocation and sector-specific risks"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        holdings = data['holdings']
-        
-        # Analyze sector allocation
-        sector_result = advanced_risk_engine.analyze_sector_allocation(holdings)
-        
-        # Convert to JSON-serializable format
-        result = {
-            'sector_allocation': sector_result.sector_allocation,
-            'sector_risk': sector_result.sector_risk,
-            'concentration_risk': sector_result.concentration_risk,
-            'recommendations': sector_result.sector_recommendations
-        }
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/risk/ml-prediction', methods=['POST'])
-def predict_volatility_ml():
-    """Predict portfolio volatility using machine learning"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'holdings' not in data:
-            return jsonify({'error': 'Portfolio holdings data required'}), 400
-        
-        holdings = data['holdings']
-        historical_data = data.get('historical_data', None)
-        
-        # Predict volatility using ML
-        ml_result = advanced_risk_engine.predict_volatility_ml(holdings, historical_data)
-        
-        # Convert to JSON-serializable format
-        result = {
-            'predicted_volatility': ml_result.predicted_volatility,
-            'confidence_interval': ml_result.confidence_interval,
-            'feature_importance': ml_result.feature_importance,
-            'model_accuracy': ml_result.model_accuracy,
-            'prediction_horizon': ml_result.prediction_horizon
-        }
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/risk/train-ml', methods=['POST'])
-def train_ml_model():
-    """Train the ML model for volatility prediction"""
-    try:
-        data = request.get_json()
-        
-        if not data or 'training_data' not in data:
-            return jsonify({'error': 'Training data required'}), 400
-        
-        training_data = data['training_data']
-        
-        # Train ML model
-        success = advanced_risk_engine.train_ml_model(training_data)
-        
-        if success:
-            return jsonify({
-                'success': True,
-                'message': 'ML model trained successfully'
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'message': 'Failed to train ML model - insufficient data'
-            })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# Tax-Loss Harvesting Endpoints
-@app.route('/api/tax-loss-harvesting/analyze', methods=['POST'])
-def analyze_tax_loss_harvesting():
-    """Analyze portfolio for tax-loss harvesting opportunities"""
-    try:
-        data = request.get_json()
-        holdings = data.get('holdings', [])
-        transactions = data.get('transactions', [])
-        tax_settings_data = data.get('tax_settings', {})
-        
-        # Create tax settings
-        tax_settings = TaxSettings(**tax_settings_data) if tax_settings_data else TaxSettings()
-        
-        # Update engine with settings
-        tax_loss_engine.tax_settings = tax_settings
-        
-        opportunities = tax_loss_engine.analyze_portfolio_for_harvesting(
-            holdings, transactions
-        )
-        
-        # Convert to serializable format
-        opportunities_data = []
-        for opp in opportunities:
-            opportunities_data.append({
-                'symbol': opp.symbol,
-                'shares_to_sell': opp.shares_to_sell,
-                'current_price': opp.current_price,
-                'cost_basis': opp.cost_basis,
-                'unrealized_loss': opp.unrealized_loss,
-                'tax_savings': opp.tax_savings,
-                'replacement_symbol': opp.replacement_symbol,
-                'replacement_shares': opp.replacement_shares,
-                'wash_sale_risk': opp.wash_sale_risk,
-                'holding_period': opp.holding_period
-            })
-        
-        return jsonify({
-            'success': True,
-            'opportunities': opportunities_data
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/tax-loss-harvesting/annual-benefit', methods=['POST'])
-def estimate_annual_tax_benefit():
-    """Estimate annual tax benefits from systematic harvesting"""
-    try:
-        data = request.get_json()
-        portfolio_value = data.get('portfolio_value', 100000)
-        expected_volatility = data.get('expected_volatility', 0.15)
-        
-        benefit_estimate = tax_loss_engine.estimate_annual_tax_benefit(
-            portfolio_value, expected_volatility
-        )
-        
-        return jsonify({
-            'success': True,
-            **benefit_estimate
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-# Paper Trading Endpoints
-@app.route('/api/paper-trading/create-portfolio', methods=['POST'])
-def create_paper_portfolio():
-    """Create a new paper trading portfolio"""
-    try:
-        data = request.get_json()
-        name = data.get('name', 'Paper Portfolio')
-        initial_cash = data.get('initial_cash', 100000.0)
-        
-        portfolio = paper_trading_engine.create_portfolio(name, initial_cash)
-        
-        return jsonify({
-            'success': True,
-            'portfolio_id': portfolio.id,
-            'name': portfolio.name,
-            'initial_cash': portfolio.cash
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/paper-trading/place-order', methods=['POST'])
-def place_paper_order():
-    """Place a paper trading order"""
-    try:
-        data = request.get_json()
-        portfolio_id = data.get('portfolio_id')
-        symbol = data.get('symbol')
-        side_str = data.get('side', 'BUY')
-        quantity = data.get('quantity', 0)
-        order_type_str = data.get('order_type', 'MARKET')
-        price = data.get('price')
-        stop_price = data.get('stop_price')
-        
-        # Convert strings to enums
-        side = OrderSide.BUY if side_str.upper() == 'BUY' else OrderSide.SELL
-        order_type = OrderType[order_type_str.upper()]
-        
-        order = paper_trading_engine.place_order(
-            portfolio_id, symbol, side, quantity, order_type, price, stop_price
-        )
-        
-        return jsonify({
-            'success': True,
-            'order_id': order.id,
-            'symbol': order.symbol,
-            'side': order.side.value,
-            'quantity': order.quantity,
-            'status': order.status.value,
-            'created_at': order.created_at.isoformat()
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/paper-trading/portfolio/<portfolio_id>', methods=['GET'])
-def get_paper_portfolio_summary(portfolio_id):
-    """Get paper portfolio summary"""
-    try:
-        summary = paper_trading_engine.get_portfolio_summary(portfolio_id)
-        
-        return jsonify({
-            'success': True,
-            **summary
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-# Notification Endpoints
-@app.route('/api/notifications/register', methods=['POST'])
-def register_notification_user():
-    """Register a user for notifications"""
-    try:
-        data = request.get_json()
-        
-        # Convert data to NotificationConfig
-        config = NotificationConfig(
-            user_id=data['userId'],
-            channels=[NotificationChannel[channel.upper()] for channel in data.get('channels', [])],
-            preferences=data.get('preferences', {}),
-            email_settings=data.get('emailSettings'),
-            slack_webhook=data.get('slackWebhook'),
-            discord_webhook=data.get('discordWebhook'),
-            push_tokens=data.get('pushTokens', []),
-            phone_number=data.get('phoneNumber'),
-            custom_webhooks=data.get('customWebhooks', []),
-            alert_thresholds=data.get('alertThresholds', {}),
-            quiet_hours=data.get('quietHours'),
-            enabled=data.get('enabled', True)
-        )
-        
-        notification_engine.register_user(data['userId'], config)
-        
-        return jsonify({
-            'success': True,
-            'message': 'User registered for notifications'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/notifications/unregister/<user_id>', methods=['DELETE'])
-def unregister_notification_user(user_id):
-    """Unregister a user from notifications"""
-    try:
-        notification_engine.unregister_user(user_id)
-        
-        return jsonify({
-            'success': True,
-            'message': 'User unregistered from notifications'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/notifications/config/<user_id>', methods=['PUT'])
-def update_notification_config(user_id):
-    """Update notification configuration for a user"""
-    try:
-        data = request.get_json()
-        
-        # Get existing config
-        config = notification_engine.configs.get(user_id)
-        if not config:
-            return jsonify({
-                'success': False,
-                'error': 'User not registered'
-            }), 404
-        
-        # Update config fields
-        if 'channels' in data:
-            config.channels = [NotificationChannel[channel.upper()] for channel in data['channels']]
-        if 'preferences' in data:
-            config.preferences.update(data['preferences'])
-        if 'emailSettings' in data:
-            config.email_settings = data['emailSettings']
-        if 'slackWebhook' in data:
-            config.slack_webhook = data['slackWebhook']
-        if 'discordWebhook' in data:
-            config.discord_webhook = data['discordWebhook']
-        if 'pushTokens' in data:
-            config.push_tokens = data['pushTokens']
-        if 'phoneNumber' in data:
-            config.phone_number = data['phoneNumber']
-        if 'customWebhooks' in data:
-            config.custom_webhooks = data['customWebhooks']
-        if 'alertThresholds' in data:
-            config.alert_thresholds.update(data['alertThresholds'])
-        if 'quietHours' in data:
-            config.quiet_hours = data['quietHours']
-        if 'enabled' in data:
-            config.enabled = data['enabled']
-        
-        return jsonify({
-            'success': True,
-            'message': 'Configuration updated'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/notifications/history/<user_id>', methods=['GET'])
-def get_notification_history(user_id):
-    """Get notification history for a user"""
-    try:
-        limit = request.args.get('limit', 50, type=int)
-        notifications = notification_engine.get_notification_history(user_id, limit)
-        
-        # Convert to serializable format
-        notifications_data = []
-        for notification in notifications:
-            notifications_data.append({
-                'id': notification.id,
-                'userId': notification.user_id,
-                'type': notification.type.value,
-                'priority': notification.priority.value,
-                'title': notification.title,
-                'message': notification.message,
-                'data': notification.data,
-                'channels': [channel.value for channel in notification.channels],
-                'createdAt': notification.created_at.isoformat(),
-                'sentAt': notification.sent_at.isoformat() if notification.sent_at else None,
-                'readAt': notification.read_at.isoformat() if notification.read_at else None,
-                'expiresAt': notification.expires_at.isoformat() if notification.expires_at else None
-            })
-        
-        return jsonify({
-            'success': True,
-            'notifications': notifications_data
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/notifications/read/<notification_id>', methods=['PUT'])
-def mark_notification_read(notification_id):
-    """Mark a notification as read"""
-    try:
-        notification_engine.mark_notification_read(notification_id)
-        
-        return jsonify({
-            'success': True,
-            'message': 'Notification marked as read'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/notifications/alert-rules', methods=['POST'])
-def create_alert_rule():
-    """Create a new alert rule"""
-    try:
-        data = request.get_json()
-        
-        rule = AlertRule(
-            user_id=data['userId'],
-            name=data['name'],
-            type=NotificationType[data['type'].upper()],
-            conditions=data['conditions'],
-            actions=data['actions'],
-            enabled=data.get('enabled', True)
-        )
-        
-        notification_engine.add_alert_rule(rule)
-        
-        return jsonify({
-            'success': True,
-            'rule': {
-                'id': rule.id,
-                'userId': rule.user_id,
-                'name': rule.name,
-                'type': rule.type.value,
-                'conditions': rule.conditions,
-                'actions': rule.actions,
-                'enabled': rule.enabled,
-                'createdAt': rule.created_at.isoformat()
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/notifications/alert-rules/<user_id>', methods=['GET'])
-def get_alert_rules(user_id):
-    """Get alert rules for a user"""
-    try:
-        rules = []
-        for rule in notification_engine.alert_rules.values():
-            if rule.user_id == user_id:
-                rules.append({
-                    'id': rule.id,
-                    'userId': rule.user_id,
-                    'name': rule.name,
-                    'type': rule.type.value,
-                    'conditions': rule.conditions,
-                    'actions': rule.actions,
-                    'enabled': rule.enabled,
-                    'createdAt': rule.created_at.isoformat()
-                })
-        
-        return jsonify({
-            'success': True,
-            'rules': rules
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/notifications/alert-rules/<rule_id>', methods=['PUT'])
-def update_alert_rule(rule_id):
-    """Update an alert rule"""
-    try:
-        data = request.get_json()
-        
-        rule = notification_engine.alert_rules.get(rule_id)
-        if not rule:
-            return jsonify({
-                'success': False,
-                'error': 'Rule not found'
-            }), 404
-        
-        # Update rule fields
-        if 'name' in data:
-            rule.name = data['name']
-        if 'type' in data:
-            rule.type = NotificationType[data['type'].upper()]
-        if 'conditions' in data:
-            rule.conditions = data['conditions']
-        if 'actions' in data:
-            rule.actions = data['actions']
-        if 'enabled' in data:
-            rule.enabled = data['enabled']
-        
-        return jsonify({
-            'success': True,
-            'message': 'Rule updated'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/notifications/alert-rules/<rule_id>', methods=['DELETE'])
-def delete_alert_rule(rule_id):
-    """Delete an alert rule"""
-    try:
-        notification_engine.remove_alert_rule(rule_id)
-        
-        return jsonify({
-            'success': True,
-            'message': 'Rule deleted'
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
-
-@app.route('/api/notifications/test', methods=['POST'])
-def send_test_notification():
-    """Send a test notification"""
-    try:
-        data = request.get_json()
-        
-        from notification_engine import Notification
-        
-        notification = Notification(
-            user_id=data['user_id'],
-            type=NotificationType[data['type'].upper()],
-            priority=NotificationPriority[data.get('priority', 'MEDIUM').upper()],
-            title=data['title'],
-            message=data['message'],
-            channels=[NotificationChannel.EMAIL, NotificationChannel.PUSH]
-        )
-        
-        # Send the notification
-        result = notification_engine.send_notification(notification)
-        
-        return jsonify({
-            'success': True,
-            'result': result
-        })
-        
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
 
 if __name__ == '__main__':
-    import asyncio
-    import threading
-    
-    # Start WebSocket server in a separate thread
-    def start_websocket_server():
-        try:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            loop.run_until_complete(notification_engine.start_websocket_server())
-            loop.run_forever()
-        except Exception as e:
-            print(f"WebSocket server error: {e}")
-    
-    websocket_thread = threading.Thread(target=start_websocket_server, daemon=True)
-    websocket_thread.start()
-    
-    # Start Flask server
     port = int(os.environ.get('PORT', 5001))
     app.run(host='0.0.0.0', port=port, debug=False)
