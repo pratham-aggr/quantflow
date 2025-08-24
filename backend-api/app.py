@@ -37,7 +37,23 @@ allowed_origins = [
 if os.environ.get('FRONTEND_URL'):
     allowed_origins.append(os.environ.get('FRONTEND_URL'))
 
-CORS(app, origins=allowed_origins, supports_credentials=True)
+# CORS configuration - allow specific Vercel domains
+vercel_domains = [
+    "https://quantflow.vercel.app",
+    "https://quantflow-git-main-pratham-aggr.vercel.app", 
+    "https://quantflow-pratham-aggr.vercel.app",
+    "https://quantflow-glper7ahq-pratham-aggrs-projects.vercel.app",
+    "https://quantflow-one.vercel.app"
+]
+
+# Add any additional Vercel domains from environment
+if os.environ.get('FRONTEND_URL'):
+    vercel_domains.append(os.environ.get('FRONTEND_URL'))
+
+# Combine local and production origins
+all_allowed_origins = allowed_origins + vercel_domains
+
+CORS(app, origins=all_allowed_origins, supports_credentials=True)
 
 # Initialize the essential service
 advanced_risk_engine = AdvancedRiskEngine()
