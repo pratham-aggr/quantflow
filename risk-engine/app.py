@@ -70,11 +70,8 @@ def test_yfinance_with_retry(symbol, max_retries=3):
             
             print(f"🔄 Render: Testing yfinance for {symbol} (attempt {attempt + 1})")
             
-            # Create custom session
-            session = create_yfinance_session()
-            
-            # Configure yfinance with custom session and shorter timeout
-            ticker = yf.Ticker(symbol, session=session)
+            # Let yfinance handle sessions internally (don't pass custom session)
+            ticker = yf.Ticker(symbol)
             
             # Try different approaches
             hist = None
@@ -82,7 +79,7 @@ def test_yfinance_with_retry(symbol, max_retries=3):
             # Method 1: Try with period
             try:
                 print(f"  Trying period method for {symbol}...")
-                hist = ticker.history(period="1mo", timeout=15)
+                hist = ticker.history(period="1mo")
             except Exception as e1:
                 print(f"  Period method failed: {e1}")
                 
@@ -92,14 +89,14 @@ def test_yfinance_with_retry(symbol, max_retries=3):
                     from datetime import datetime, timedelta
                     end_date = datetime.now()
                     start_date = end_date - timedelta(days=30)
-                    hist = ticker.history(start=start_date, end=end_date, timeout=15)
+                    hist = ticker.history(start=start_date, end=end_date)
                 except Exception as e2:
                     print(f"  Date range method failed: {e2}")
                     
                     # Method 3: Try download function
                     try:
                         print(f"  Trying download method for {symbol}...")
-                        hist = yf.download(symbol, period="1mo", session=session, timeout=15)
+                        hist = yf.download(symbol, period="1mo")
                     except Exception as e3:
                         print(f"  Download method failed: {e3}")
                         raise Exception(f"All methods failed: {e1}, {e2}, {e3}")
@@ -238,8 +235,7 @@ def test_external_requests():
         """Test direct request to Yahoo Finance"""
         try:
             print("Testing direct request to Yahoo Finance...")
-            session = create_yfinance_session()
-            response = session.get('https://finance.yahoo.com/quote/AAPL', timeout=10)
+            response = requests.get('https://finance.yahoo.com/quote/AAPL', timeout=10)
             
             if response.status_code == 200:
                 print("✅ Direct Yahoo Finance request SUCCESS")
@@ -252,27 +248,24 @@ def test_external_requests():
             print(f"❌ Direct Yahoo Finance request ERROR: {str(e)}")
             return False
 
-    def test_yfinance_with_session():
-        """Test yfinance with custom session"""
+    def test_yfinance_basic():
+        """Test yfinance without custom session"""
         try:
-            print("Testing yfinance with custom session...")
+            print("Testing yfinance without custom session...")
             
-            # Create a custom session with headers
-            session = create_yfinance_session()
-            
-            # Test yfinance with custom session
+            # Test yfinance without custom session
             import yfinance as yf
-            data = yf.download("AAPL", period="1d", session=session, timeout=15)
+            data = yf.download("AAPL", period="1d")
             
             if len(data) > 0:
-                print("✅ yfinance with custom session SUCCESS")
+                print("✅ yfinance without custom session SUCCESS")
                 return True
             else:
-                print("❌ yfinance with custom session FAILED - No data")
+                print("❌ yfinance without custom session FAILED - No data")
                 return False
                 
         except Exception as e:
-            print(f"❌ yfinance with custom session ERROR: {str(e)}")
+            print(f"❌ yfinance without custom session ERROR: {str(e)}")
             return False
 
     def test_yfinance_with_dates():
@@ -282,8 +275,7 @@ def test_external_requests():
             
             # Try using Ticker with different parameters
             import yfinance as yf
-            session = create_yfinance_session()
-            ticker = yf.Ticker("AAPL", session=session)
+            ticker = yf.Ticker("AAPL")
             
             # Try different methods
             print("  - Trying info()...")
@@ -295,7 +287,7 @@ def test_external_requests():
             from datetime import datetime, timedelta
             end_date = datetime.now()
             start_date = end_date - timedelta(days=30)
-            hist = ticker.history(start=start_date, end=end_date, timeout=15)
+            hist = ticker.history(start=start_date, end=end_date)
             
             if len(hist) > 0:
                 print(f"    ✅ history() with dates works - {len(hist)} rows")
@@ -311,7 +303,7 @@ def test_external_requests():
     tests = [
         ("Basic HTTP", test_basic_http),
         ("Yahoo Finance Direct", test_yahoo_finance_direct),
-        ("yfinance with Session", test_yfinance_with_session),
+        ("yfinance Basic", test_yfinance_basic),
         ("yfinance with Dates", test_yfinance_with_dates)
     ]
     
@@ -330,10 +322,10 @@ def test_external_requests():
     if not any(results.values()):
         print("\n🚨 ALL EXTERNAL REQUESTS FAILED")
         print("Render appears to be blocking all external HTTP requests")
-    elif results["Basic HTTP"] and not results["yfinance with Session"]:
+    elif results["Basic HTTP"] and not results["yfinance Basic"]:
         print("\n🎯 yfinance-specific issue")
         print("External requests work, but yfinance specifically fails")
-    elif results["Basic HTTP"] and results["yfinance with Session"]:
+    elif results["Basic HTTP"] and results["yfinance Basic"]:
         print("\n✅ External requests work")
         print("The issue might be with the default yfinance configuration")
     else:
@@ -344,7 +336,7 @@ def test_external_requests():
         'summary': {
             'all_failed': not any(results.values()),
             'basic_http_works': results.get("Basic HTTP", False),
-            'yfinance_works': results.get("yfinance with Session", False) or results.get("yfinance with Dates", False)
+            'yfinance_works': results.get("yfinance Basic", False) or results.get("yfinance with Dates", False)
         }
     })
 
