@@ -153,12 +153,10 @@ export const RiskAnalysis: React.FC = () => {
         const controller = new AbortController()
         const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
         
-        // Always use Railway URL for now to ensure it works
-        const riskEngineUrl = 'https://quantflow-production.up.railway.app'
+        // Get the risk engine URL
+        const riskEngineUrl = process.env.REACT_APP_RISK_ENGINE_URL || 'https://quantflow-production.up.railway.app'
         
-        console.log('🔍 Environment variable REACT_APP_RISK_ENGINE_URL:', process.env.REACT_APP_RISK_ENGINE_URL)
-        console.log('🔍 Final risk engine URL:', riskEngineUrl)
-        console.log('🔍 Fetching from URL:', `${riskEngineUrl}/health`)
+
         
         const response = await fetch(`${riskEngineUrl}/health`, {
           method: 'GET',
@@ -168,27 +166,15 @@ export const RiskAnalysis: React.FC = () => {
         
         clearTimeout(timeoutId)
         
-        console.log('🔍 Response status:', response.status)
-        console.log('🔍 Response headers:', Object.fromEntries(response.headers.entries()))
+
         
         if (response.ok) {
           try {
-            // First get the response as text to see what we're actually getting
-            const responseText = await response.text()
-            console.log('🔍 Raw response text:', responseText)
-            console.log('🔍 Response length:', responseText.length)
-            console.log('🔍 Response type:', typeof responseText)
-            
-            // Try to parse as JSON
-            const data = JSON.parse(responseText)
-            console.log('🔍 Parsed data:', data)
+            const data = await response.json()
             setEngineAvailable(true)
             info('Advanced Engine Available', 'Using advanced risk analysis engine')
           } catch (parseError) {
-            console.error('🔍 JSON parse error:', parseError)
-            if (parseError instanceof Error) {
-              console.error('🔍 Error message:', parseError.message)
-            }
+            console.error('Risk engine response error:', parseError)
             setEngineAvailable(false)
             setUseAdvancedEngine(false)
             showError('Engine Unavailable', 'Advanced engine response format error')
