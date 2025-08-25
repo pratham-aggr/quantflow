@@ -1,5 +1,5 @@
 services:
-  # Frontend React App
+  # Frontend QuantFlow App
   - type: web
     name: quantflow-frontend
     env: static

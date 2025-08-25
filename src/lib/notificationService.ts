@@ -236,7 +236,7 @@ class NotificationService {
 
     const browserNotification = new Notification(notification.title, {
       body: notification.message,
-      icon: '/logo192.png',
+              icon: '/logo.svg',
       tag: notification.id,
       requireInteraction: notification.priority === NotificationPriority.CRITICAL
     })

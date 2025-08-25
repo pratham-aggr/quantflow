@@ -50,9 +50,11 @@ export const Navigation: React.FC = () => {
           {/* Logo */}
           <div className="flex items-center">
             <Link to="/dashboard" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 bg-gradient-robinhood rounded-robinhood flex items-center justify-center group-hover:scale-105 transition-transform duration-200 shadow-robinhood">
-                <span className="text-white font-bold text-lg">Q</span>
-              </div>
+              <img 
+                src="/logo.svg" 
+                alt="QuantFlow Logo" 
+                className="w-10 h-10 group-hover:scale-105 transition-transform duration-200 shadow-robinhood"
+              />
               <h1 className="text-xl font-semibold robinhood-text-primary">
                 QuantFlow
               </h1>
