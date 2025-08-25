@@ -17,9 +17,8 @@ from dotenv import load_dotenv
 # Load environment variables from .env file
 load_dotenv('../.env')
 from advanced_risk_engine import AdvancedRiskEngine
-# Alpha Vantage configuration - using direct API calls since library doesn't support news
-ALPHA_VANTAGE_API_KEY = os.environ.get('ALPHA_VANTAGE_API_KEY', 'demo')
-news_sentiment = None  # We'll use direct API calls instead
+# Finnhub configuration for news API
+FINNHUB_API_KEY = os.environ.get('REACT_APP_FINNHUB_API_KEY', 'demo')
 
 # Rebalancing imports - no fallback, real data only
 from rebalancing_engine import RebalancingEngine, RebalancingSuggestion
@@ -48,13 +47,8 @@ CORS(app, resources={r"/.*": {"origins": [
 # Initialize the essential service
 advanced_risk_engine = AdvancedRiskEngine()
 
-# Alpha Vantage configuration
-ALPHA_VANTAGE_API_KEY = os.environ.get('ALPHA_VANTAGE_API_KEY', 'demo')
-try:
-    news_sentiment = NewsSentiment(key=ALPHA_VANTAGE_API_KEY, output_format='pandas')
-except Exception as e:
-    logging.warning(f"Alpha Vantage not available: {e}")
-    news_sentiment = None
+# Finnhub configuration
+FINNHUB_API_KEY = os.environ.get('REACT_APP_FINNHUB_API_KEY', 'demo')
 
 # Initialize rebalancing engines - real data only
 rebalancing_engine = RebalancingEngine()
@@ -308,37 +302,29 @@ def get_yfinance_market_news(limit=30):
         logging.error(f"Error generating yfinance market news: {str(e)}")
         return []
 
-def get_alpha_vantage_news(tickers=None, topics=None, time_from=None, time_to=None, sort='RELEVANCE', limit=50):
-    """Get news from Alpha Vantage API using direct HTTP requests with retry logic"""
+def get_finnhub_news(category='general', q=None, limit=50):
+    """Get news from Finnhub API with retry logic"""
     try:
         # Check if API key is available
-        if not ALPHA_VANTAGE_API_KEY or ALPHA_VANTAGE_API_KEY == 'demo':
-            logging.warning("Alpha Vantage API key not configured, returning empty news list")
+        if not FINNHUB_API_KEY or FINNHUB_API_KEY == 'demo':
+            logging.warning("Finnhub API key not configured, returning empty news list")
             return []
             
         # Prepare API parameters
         params = {
-            'function': 'NEWS_SENTIMENT',
-            'apikey': ALPHA_VANTAGE_API_KEY,
-            'sort': sort,
-            'limit': limit
+            'token': FINNHUB_API_KEY,
+            'category': category
         }
         
-        if tickers:
-            params['tickers'] = ','.join(tickers) if isinstance(tickers, list) else tickers
-        if topics:
-            params['topics'] = ','.join(topics) if isinstance(topics, list) else topics
-        if time_from:
-            params['time_from'] = time_from
-        if time_to:
-            params['time_to'] = time_to
+        if q:
+            params['q'] = q
             
-        # Make direct API call with retry logic and increased timeout
-        url = 'https://www.alphavantage.co/query'
+        # Make API call with retry logic
+        url = 'https://finnhub.io/api/v1/news'
         
         # Retry logic for production reliability
         max_retries = 3
-        base_timeout = 30  # Increased timeout for production
+        base_timeout = 30
         
         for attempt in range(max_retries):
             try:
@@ -352,55 +338,55 @@ def get_alpha_vantage_news(tickers=None, topics=None, time_from=None, time_to=No
                 
                 # Progressive timeout: 30s, 45s, 60s
                 timeout = base_timeout + (attempt * 15)
-                logging.info(f"Alpha Vantage API attempt {attempt + 1}/{max_retries} with {timeout}s timeout")
+                logging.info(f"Finnhub API attempt {attempt + 1}/{max_retries} with {timeout}s timeout")
                 
                 response = session.get(url, params=params, timeout=timeout)
                 response.raise_for_status()
                 
                 data = response.json()
                 
-                if 'feed' in data and data['feed']:
-                    # Convert API response to our format
+                if data and isinstance(data, list):
+                    # Convert Finnhub response to our format
                     news_list = []
-                    for item in data['feed']:
+                    for item in data[:limit]:  # Limit the results
                         news_item = {
-                            'id': item.get('id', ''),
-                            'title': item.get('title', ''),
+                            'id': str(item.get('id', '')),
+                            'title': item.get('headline', ''),
                             'url': item.get('url', ''),
-                            'time_published': item.get('time_published', ''),
-                            'authors': item.get('authors', []),
+                            'time_published': str(item.get('datetime', '')),
+                            'authors': [item.get('author', '')] if item.get('author') else [],
                             'summary': item.get('summary', ''),
-                            'banner_image': item.get('banner_image', ''),
+                            'banner_image': item.get('image', ''),
                             'source': item.get('source', ''),
-                            'category_within_source': item.get('category_within_source', ''),
-                            'source_domain': item.get('source_domain', ''),
-                            'topics': item.get('topics', []),
-                            'overall_sentiment_score': item.get('overall_sentiment_score', 0),
-                            'overall_sentiment_label': item.get('overall_sentiment_label', ''),
-                            'ticker_sentiment': item.get('ticker_sentiment', [])
+                            'category_within_source': item.get('category', ''),
+                            'source_domain': item.get('source', ''),
+                            'topics': [{'relevance_score': '0.8', 'topic': item.get('category', 'General')}],
+                            'overall_sentiment_score': 0,  # Finnhub doesn't provide sentiment
+                            'overall_sentiment_label': 'Neutral',
+                            'ticker_sentiment': []
                         }
                         news_list.append(news_item)
                     
-                    logging.info(f"Successfully fetched {len(news_list)} news articles from Alpha Vantage")
+                    logging.info(f"Successfully fetched {len(news_list)} news articles from Finnhub")
                     return news_list
                 else:
-                    logging.warning("No news data in Alpha Vantage response")
+                    logging.warning("No news data in Finnhub response")
                     return []
                     
             except requests.exceptions.Timeout as e:
-                logging.warning(f"Alpha Vantage API timeout on attempt {attempt + 1}: {str(e)}")
+                logging.warning(f"Finnhub API timeout on attempt {attempt + 1}: {str(e)}")
                 if attempt == max_retries - 1:
                     raise
                 time.sleep(2 ** attempt)  # Exponential backoff
                 
             except requests.exceptions.RequestException as e:
-                logging.warning(f"Alpha Vantage API request error on attempt {attempt + 1}: {str(e)}")
+                logging.warning(f"Finnhub API request error on attempt {attempt + 1}: {str(e)}")
                 if attempt == max_retries - 1:
                     raise
                 time.sleep(2 ** attempt)  # Exponential backoff
                 
     except Exception as e:
-        logging.error(f"Error fetching Alpha Vantage news after {max_retries} attempts: {str(e)}")
+        logging.error(f"Error fetching Finnhub news after {max_retries} attempts: {str(e)}")
         return []
 
 def convert_nan_to_null(obj):
@@ -830,34 +816,35 @@ def get_alpha_vantage_news_endpoint():
         return jsonify({'error': 'Failed to fetch news from Alpha Vantage'}), 500
 
 @app.route('/api/news/company/<symbol>', methods=['GET'])
-def get_company_news_alpha_vantage(symbol):
-    """Get company-specific news with Alpha Vantage fallback to yfinance"""
+def get_company_news_finnhub(symbol):
+    """Get company-specific news with Finnhub fallback to yfinance"""
     try:
         symbol = symbol.upper()
         limit = int(request.args.get('limit', 20))
         
-        # Try Alpha Vantage first
+        # Try Finnhub first
         try:
-            logging.info(f"Attempting to fetch company news for {symbol} from Alpha Vantage...")
-            news_data = get_alpha_vantage_news(
-                tickers=[symbol],
+            logging.info(f"Attempting to fetch company news for {symbol} from Finnhub...")
+            news_data = get_finnhub_news(
+                category='general',
+                q=symbol,
                 limit=limit
             )
             
             if news_data and len(news_data) > 0:
-                logging.info(f"Successfully fetched {len(news_data)} articles for {symbol} from Alpha Vantage")
+                logging.info(f"Successfully fetched {len(news_data)} articles for {symbol} from Finnhub")
                 return jsonify({
                     'success': True,
                     'symbol': symbol,
                     'count': len(news_data),
                     'news': news_data,
-                    'source': 'alpha_vantage'
+                    'source': 'finnhub'
                 })
             else:
-                raise Exception("No news data returned from Alpha Vantage")
+                raise Exception("No news data returned from Finnhub")
                 
-        except Exception as alpha_error:
-            logging.warning(f"Alpha Vantage failed for {symbol}: {str(alpha_error)}, falling back to yfinance")
+        except Exception as finnhub_error:
+            logging.warning(f"Finnhub failed for {symbol}: {str(finnhub_error)}, falling back to yfinance")
             
             # Fallback to yfinance company news
             try:
@@ -874,7 +861,7 @@ def get_company_news_alpha_vantage(symbol):
                 })
                 
             except Exception as yfinance_error:
-                logging.error(f"Both Alpha Vantage and yfinance failed for {symbol}: {str(yfinance_error)}")
+                logging.error(f"Both Finnhub and yfinance failed for {symbol}: {str(yfinance_error)}")
                 raise yfinance_error
         
     except Exception as e:
@@ -882,33 +869,33 @@ def get_company_news_alpha_vantage(symbol):
         return jsonify({'error': 'Failed to fetch company news'}), 500
 
 @app.route('/api/news/market', methods=['GET'])
-def get_market_news_alpha_vantage():
-    """Get general market news with Alpha Vantage fallback to yfinance"""
+def get_market_news_finnhub():
+    """Get general market news with Finnhub fallback to yfinance"""
     try:
         limit = int(request.args.get('limit', 30))
-        topics = request.args.get('topics', 'financial_markets')
+        category = request.args.get('category', 'general')
         
-        # Try Alpha Vantage first
+        # Try Finnhub first
         try:
-            logging.info("Attempting to fetch news from Alpha Vantage...")
-            news_data = get_alpha_vantage_news(
-                topics=[topics],
+            logging.info("Attempting to fetch news from Finnhub...")
+            news_data = get_finnhub_news(
+                category=category,
                 limit=limit
             )
             
             if news_data and len(news_data) > 0:
-                logging.info(f"Successfully fetched {len(news_data)} articles from Alpha Vantage")
+                logging.info(f"Successfully fetched {len(news_data)} articles from Finnhub")
                 return jsonify({
                     'success': True,
                     'count': len(news_data),
                     'news': news_data,
-                    'source': 'alpha_vantage'
+                    'source': 'finnhub'
                 })
             else:
-                raise Exception("No news data returned from Alpha Vantage")
+                raise Exception("No news data returned from Finnhub")
                 
-        except Exception as alpha_error:
-            logging.warning(f"Alpha Vantage failed: {str(alpha_error)}, falling back to yfinance")
+        except Exception as finnhub_error:
+            logging.warning(f"Finnhub failed: {str(finnhub_error)}, falling back to yfinance")
             
             # Fallback to yfinance news
             try:
@@ -924,7 +911,7 @@ def get_market_news_alpha_vantage():
                 })
                 
             except Exception as yfinance_error:
-                logging.error(f"Both Alpha Vantage and yfinance failed: {str(yfinance_error)}")
+                logging.error(f"Both Finnhub and yfinance failed: {str(yfinance_error)}")
                 raise yfinance_error
         
     except Exception as e:
@@ -933,31 +920,38 @@ def get_market_news_alpha_vantage():
 
 @app.route('/api/news/sentiment', methods=['GET'])
 def get_news_sentiment():
-    """Get news with sentiment analysis"""
+    """Get news with sentiment analysis (Finnhub doesn't provide sentiment, so using general news)"""
     try:
         tickers = request.args.get('tickers', '')
         limit = int(request.args.get('limit', 50))
         
         ticker_list = [t.strip().upper() for t in tickers.split(',')] if tickers else None
         
-        # Get news with sentiment
-        news_data = get_alpha_vantage_news(
-            tickers=ticker_list,
-            limit=limit
-        )
+        # Get news from Finnhub (no sentiment available)
+        if ticker_list:
+            # Get company-specific news for the first ticker
+            news_data = get_finnhub_news(
+                category='general',
+                q=ticker_list[0],
+                limit=limit
+            )
+        else:
+            # Get general market news
+            news_data = get_finnhub_news(
+                category='general',
+                limit=limit
+            )
         
-        # Filter by sentiment if requested
-        sentiment_filter = request.args.get('sentiment', '')
-        if sentiment_filter:
-            news_data = [
-                item for item in news_data 
-                if item.get('overall_sentiment_label', '').lower() == sentiment_filter.lower()
-            ]
+        # Note: Finnhub doesn't provide sentiment analysis, so all news is marked as neutral
+        for item in news_data:
+            item['overall_sentiment_label'] = 'Neutral'
+            item['overall_sentiment_score'] = 0
         
         return jsonify({
             'success': True,
             'count': len(news_data),
-            'news': news_data
+            'news': news_data,
+            'source': 'finnhub'
         })
         
     except Exception as e:

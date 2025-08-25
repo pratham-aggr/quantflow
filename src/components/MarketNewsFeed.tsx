@@ -6,25 +6,17 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { marketDataService, MarketNews } from '../lib/marketDataService'
-import { alphaVantageNewsService, AlphaVantageNewsItem } from '../lib/alphaVantageNewsService'
+import { finnhubNewsService, FinnhubNewsItem } from '../lib/finnhubNewsService'
 import { useToast } from './Toast'
 
-// Helper function to format Alpha Vantage date
-const formatAlphaVantageDate = (timePublished: string): string => {
+// Helper function to format Finnhub date
+const formatFinnhubDate = (timePublished: string): string => {
   try {
-    // Alpha Vantage format: "20250825T015823"
-    // Convert to: "2025-08-25T01:58:23"
-    const year = timePublished.substring(0, 4)
-    const month = timePublished.substring(4, 6)
-    const day = timePublished.substring(6, 8)
-    const hour = timePublished.substring(9, 11)
-    const minute = timePublished.substring(11, 13)
-    const second = timePublished.substring(13, 15)
-    
-    const formattedDate = `${year}-${month}-${day}T${hour}:${minute}:${second}`
-    return new Date(formattedDate).toLocaleDateString()
+    // Finnhub format: Unix timestamp
+    const timestamp = parseInt(timePublished)
+    return new Date(timestamp * 1000).toLocaleDateString()
   } catch (error) {
-    console.error('Error formatting Alpha Vantage date:', error)
+    console.error('Error formatting Finnhub date:', error)
     return 'N/A'
   }
 }
@@ -45,11 +37,11 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
   refreshInterval = 300000
 }) => {
   const [news, setNews] = useState<MarketNews[]>([])
-  const [alphaVantageNews, setAlphaVantageNews] = useState<AlphaVantageNewsItem[]>([])
+  const [finnhubNews, setFinnhubNews] = useState<FinnhubNewsItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [useAlphaVantage, setUseAlphaVantage] = useState(true) // Default to Alpha Vantage
+  const [useFinnhub, setUseFinnhub] = useState(true) // Default to Finnhub
   const { error: showError } = useToast()
 
   // Fetch news data
@@ -59,20 +51,20 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
 
     try {
       let newsData: MarketNews[] = []
-      let alphaVantageData: AlphaVantageNewsItem[] = []
+      let finnhubData: FinnhubNewsItem[] = []
 
-      // Try Alpha Vantage first (prioritized)
+      // Try Finnhub first (prioritized)
       try {
         if (symbol) {
-          const response = await alphaVantageNewsService.getCompanyNews(symbol, maxItems)
-          alphaVantageData = response.news
+          const response = await finnhubNewsService.getCompanyNews(symbol, maxItems)
+          finnhubData = response.news
         } else {
-          const response = await alphaVantageNewsService.getMarketNews(maxItems)
-          alphaVantageData = response.news
+          const response = await finnhubNewsService.getMarketNews(maxItems)
+          finnhubData = response.news
         }
-        setUseAlphaVantage(true)
-      } catch (alphaVantageError) {
-        console.log('Alpha Vantage failed, trying yfinance...')
+        setUseFinnhub(true)
+      } catch (finnhubError) {
+        console.log('Finnhub failed, trying yfinance...')
         
         // Fallback to yfinance
         try {
@@ -84,14 +76,14 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
           } else {
             newsData = await marketDataService.getMarketNews(category, maxItems)
           }
-          setUseAlphaVantage(false)
+          setUseFinnhub(false)
         } catch (yfinanceError) {
           throw new Error('Both news sources failed')
         }
       }
 
       setNews(newsData)
-      setAlphaVantageNews(alphaVantageData)
+      setFinnhubNews(finnhubData)
     } catch (err) {
       setError('Failed to fetch news')
       showError('News Error', 'Failed to load market news')
@@ -114,8 +106,8 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
 
   // Filter news
   const filteredNews = useMemo(() => {
-    if (useAlphaVantage) {
-      let filtered = [...alphaVantageNews]
+    if (useFinnhub) {
+      let filtered = [...finnhubNews]
 
       if (searchTerm) {
         const term = searchTerm.toLowerCase()
@@ -143,7 +135,7 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
       filtered.sort((a, b) => b.datetime - a.datetime)
       return filtered.slice(0, maxItems)
     }
-  }, [news, alphaVantageNews, searchTerm, maxItems, useAlphaVantage])
+  }, [news, finnhubNews, searchTerm, maxItems, useFinnhub])
 
   const formatRelativeTime = (timestamp: number) => {
     const now = Date.now()
@@ -170,9 +162,9 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
           <h2 className="text-xl font-semibold robinhood-text-primary">
             {symbol ? `${symbol} News` : 'Market News'}
           </h2>
-          {useAlphaVantage ? (
+          {useFinnhub ? (
             <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-              Alpha Vantage
+              Finnhub
             </span>
           ) : (
             <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
@@ -238,20 +230,20 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
             </div>
           ) : (
             filteredNews.map((item, index) => {
-              if (useAlphaVantage) {
-                // Alpha Vantage news item
-                const alphaItem = item as AlphaVantageNewsItem
+              if (useFinnhub) {
+                // Finnhub news item
+                const finnhubItem = item as FinnhubNewsItem
                 return (
-                  <div key={`${alphaItem.id}-${index}`} className="p-4 border-b border-neutral-200 dark:border-robinhood-dark-border hover:bg-neutral-50 dark:hover:bg-robinhood-dark-tertiary transition-all duration-200">
+                  <div key={`${finnhubItem.id}-${index}`} className="p-4 border-b border-neutral-200 dark:border-robinhood-dark-border hover:bg-neutral-50 dark:hover:bg-robinhood-dark-tertiary transition-all duration-200">
                     <div className="space-y-3">
                       {/* News Header */}
                       <h3 className="text-base font-medium robinhood-text-primary leading-tight">
-                        {alphaItem.title}
+                        {finnhubItem.title}
                       </h3>
 
                       {/* News Summary */}
                       <p className="text-sm robinhood-text-secondary leading-relaxed line-clamp-2">
-                        {alphaItem.summary}
+                        {finnhubItem.summary}
                       </p>
 
                       {/* News Meta */}
@@ -259,22 +251,22 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
                         <div className="flex items-center space-x-3 text-xs robinhood-text-tertiary">
                           <div className="flex items-center">
                             <Clock className="w-3 h-3 mr-1" />
-                            {alphaItem.time_published ? formatAlphaVantageDate(alphaItem.time_published) : 'N/A'}
+                            {finnhubItem.time_published ? formatFinnhubDate(finnhubItem.time_published) : 'N/A'}
                           </div>
-                          <span className="font-medium robinhood-text-secondary">{alphaItem.source}</span>
-                          {alphaItem.overall_sentiment_label && (
+                          <span className="font-medium robinhood-text-secondary">{finnhubItem.source}</span>
+                          {finnhubItem.overall_sentiment_label && (
                             <span className={`px-2 py-1 rounded text-xs ${
-                              alphaItem.overall_sentiment_label.toLowerCase() === 'positive' ? 'bg-green-100 text-green-800' :
-                              alphaItem.overall_sentiment_label.toLowerCase() === 'negative' ? 'bg-red-100 text-red-800' :
+                              finnhubItem.overall_sentiment_label.toLowerCase() === 'positive' ? 'bg-green-100 text-green-800' :
+                              finnhubItem.overall_sentiment_label.toLowerCase() === 'negative' ? 'bg-red-100 text-red-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {alphaItem.overall_sentiment_label}
+                              {finnhubItem.overall_sentiment_label}
                             </span>
                           )}
                         </div>
                         
                         <a
-                          href={alphaItem.url}
+                          href={finnhubItem.url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"

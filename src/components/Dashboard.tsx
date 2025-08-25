@@ -7,7 +7,7 @@ import { PortfolioAllocation } from './dashboard/PortfolioAllocation'
 import { PerformanceChart } from './dashboard/PerformanceChart'
 import { RiskMetrics } from './dashboard/RiskMetrics'
 import { HoldingsTable } from './dashboard/HoldingsTable'
-import { AlphaVantageNewsFeed } from './AlphaVantageNewsFeed'
+import { FinnhubNewsFeed } from './FinnhubNewsFeed'
 import { SkeletonCard, SkeletonTable } from './Skeleton'
 import { useToast } from './Toast'
 import { 
@@ -354,7 +354,7 @@ export const Dashboard: React.FC = () => {
         {/* News Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
           {/* Portfolio News */}
-          <AlphaVantageNewsFeed
+          <FinnhubNewsFeed
             symbols={currentPortfolio?.holdings?.map(h => h.symbol) || []}
             category="portfolio"
             limit={10}
@@ -363,7 +363,7 @@ export const Dashboard: React.FC = () => {
           />
           
           {/* Market News */}
-          <AlphaVantageNewsFeed
+          <FinnhubNewsFeed
             category="market"
             limit={10}
             showSentiment={true}
