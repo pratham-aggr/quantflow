@@ -7,6 +7,7 @@ import { PortfolioAllocation } from './dashboard/PortfolioAllocation'
 import { PerformanceChart } from './dashboard/PerformanceChart'
 import { RiskMetrics } from './dashboard/RiskMetrics'
 import { HoldingsTable } from './dashboard/HoldingsTable'
+import { AlphaVantageNewsFeed } from './AlphaVantageNewsFeed'
 import { SkeletonCard, SkeletonTable } from './Skeleton'
 import { useToast } from './Toast'
 import { 
@@ -348,6 +349,26 @@ export const Dashboard: React.FC = () => {
             </button>
           </div>
           <HoldingsTable portfolio={currentPortfolio} />
+        </div>
+
+        {/* News Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+          {/* Portfolio News */}
+          <AlphaVantageNewsFeed
+            symbols={currentPortfolio?.holdings?.map(h => h.symbol) || []}
+            category="portfolio"
+            limit={10}
+            showSentiment={true}
+            className="h-96 overflow-y-auto"
+          />
+          
+          {/* Market News */}
+          <AlphaVantageNewsFeed
+            category="market"
+            limit={10}
+            showSentiment={true}
+            className="h-96 overflow-y-auto"
+          />
         </div>
       </div>
     </div>

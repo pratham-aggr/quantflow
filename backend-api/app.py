@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Production app with Render-optimized yfinance handling
+Production app with Render-optimized yfinance handling and Alpha Vantage news integration
 """
 
 from flask import Flask, request, jsonify
@@ -13,6 +13,7 @@ import time
 import random
 import yfinance as yf
 from advanced_risk_engine import AdvancedRiskEngine
+from alpha_vantage.news_sentiment import NewsSentiment
 import re
 
 # Configure logging
@@ -35,6 +36,61 @@ CORS(app, resources={r"/.*": {"origins": [
 
 # Initialize the essential service
 advanced_risk_engine = AdvancedRiskEngine()
+
+# Alpha Vantage configuration
+ALPHA_VANTAGE_API_KEY = os.environ.get('ALPHA_VANTAGE_API_KEY', 'demo')
+news_sentiment = NewsSentiment(key=ALPHA_VANTAGE_API_KEY, output_format='pandas')
+
+def get_alpha_vantage_news(tickers=None, topics=None, time_from=None, time_to=None, sort='RELEVANCE', limit=50):
+    """Get news from Alpha Vantage API"""
+    try:
+        # Prepare parameters
+        params = {
+            'sort': sort,
+            'limit': limit
+        }
+        
+        if tickers:
+            params['tickers'] = tickers
+        if topics:
+            params['topics'] = topics
+        if time_from:
+            params['time_from'] = time_from
+        if time_to:
+            params['time_to'] = time_to
+            
+        # Get news data
+        data, meta_data = news_sentiment.get_news_sentiment(**params)
+        
+        if data is not None and not data.empty:
+            # Convert DataFrame to list of dictionaries
+            news_list = []
+            for index, row in data.iterrows():
+                news_item = {
+                    'id': index,
+                    'title': row.get('title', ''),
+                    'url': row.get('url', ''),
+                    'time_published': row.get('time_published', ''),
+                    'authors': row.get('authors', []),
+                    'summary': row.get('summary', ''),
+                    'banner_image': row.get('banner_image', ''),
+                    'source': row.get('source', ''),
+                    'category_within_source': row.get('category_within_source', ''),
+                    'source_domain': row.get('source_domain', ''),
+                    'topics': row.get('topics', []),
+                    'overall_sentiment_score': row.get('overall_sentiment_score', 0),
+                    'overall_sentiment_label': row.get('overall_sentiment_label', ''),
+                    'ticker_sentiment': row.get('ticker_sentiment', [])
+                }
+                news_list.append(news_item)
+            
+            return news_list
+        else:
+            return []
+            
+    except Exception as e:
+        logging.error(f"Error fetching Alpha Vantage news: {str(e)}")
+        return []
 
 def convert_nan_to_null(obj):
     """Convert NaN values to null for JSON serialization"""
@@ -423,6 +479,124 @@ def get_company_news():
     except Exception as e:
         logging.error(f"Error fetching company news for {symbol}: {str(e)}")
         return jsonify({'error': 'Failed to fetch company news'}), 500
+
+# ========== ALPHA VANTAGE NEWS ENDPOINTS ==========
+
+@app.route('/api/news/alpha-vantage', methods=['GET'])
+def get_alpha_vantage_news_endpoint():
+    """Get news from Alpha Vantage API"""
+    try:
+        # Get query parameters
+        tickers = request.args.get('tickers', '')
+        topics = request.args.get('topics', '')
+        time_from = request.args.get('time_from', '')
+        time_to = request.args.get('time_to', '')
+        sort = request.args.get('sort', 'RELEVANCE')
+        limit = int(request.args.get('limit', 50))
+        
+        # Convert comma-separated strings to lists
+        ticker_list = [t.strip() for t in tickers.split(',')] if tickers else None
+        topic_list = [t.strip() for t in topics.split(',')] if topics else None
+        
+        # Get news from Alpha Vantage
+        news_data = get_alpha_vantage_news(
+            tickers=ticker_list,
+            topics=topic_list,
+            time_from=time_from,
+            time_to=time_to,
+            sort=sort,
+            limit=limit
+        )
+        
+        return jsonify({
+            'success': True,
+            'count': len(news_data),
+            'news': news_data
+        })
+        
+    except Exception as e:
+        logging.error(f"Error in Alpha Vantage news endpoint: {str(e)}")
+        return jsonify({'error': 'Failed to fetch news from Alpha Vantage'}), 500
+
+@app.route('/api/news/company/<symbol>', methods=['GET'])
+def get_company_news_alpha_vantage(symbol):
+    """Get company-specific news from Alpha Vantage"""
+    try:
+        symbol = symbol.upper()
+        limit = int(request.args.get('limit', 20))
+        
+        # Get news for the specific company
+        news_data = get_alpha_vantage_news(
+            tickers=[symbol],
+            limit=limit
+        )
+        
+        return jsonify({
+            'success': True,
+            'symbol': symbol,
+            'count': len(news_data),
+            'news': news_data
+        })
+        
+    except Exception as e:
+        logging.error(f"Error fetching company news for {symbol}: {str(e)}")
+        return jsonify({'error': 'Failed to fetch company news'}), 500
+
+@app.route('/api/news/market', methods=['GET'])
+def get_market_news_alpha_vantage():
+    """Get general market news from Alpha Vantage"""
+    try:
+        limit = int(request.args.get('limit', 30))
+        topics = request.args.get('topics', 'financial_markets')
+        
+        # Get general market news
+        news_data = get_alpha_vantage_news(
+            topics=[topics],
+            limit=limit
+        )
+        
+        return jsonify({
+            'success': True,
+            'count': len(news_data),
+            'news': news_data
+        })
+        
+    except Exception as e:
+        logging.error(f"Error fetching market news: {str(e)}")
+        return jsonify({'error': 'Failed to fetch market news'}), 500
+
+@app.route('/api/news/sentiment', methods=['GET'])
+def get_news_sentiment():
+    """Get news with sentiment analysis"""
+    try:
+        tickers = request.args.get('tickers', '')
+        limit = int(request.args.get('limit', 50))
+        
+        ticker_list = [t.strip().upper() for t in tickers.split(',')] if tickers else None
+        
+        # Get news with sentiment
+        news_data = get_alpha_vantage_news(
+            tickers=ticker_list,
+            limit=limit
+        )
+        
+        # Filter by sentiment if requested
+        sentiment_filter = request.args.get('sentiment', '')
+        if sentiment_filter:
+            news_data = [
+                item for item in news_data 
+                if item.get('overall_sentiment_label', '').lower() == sentiment_filter.lower()
+            ]
+        
+        return jsonify({
+            'success': True,
+            'count': len(news_data),
+            'news': news_data
+        })
+        
+    except Exception as e:
+        logging.error(f"Error fetching news sentiment: {str(e)}")
+        return jsonify({'error': 'Failed to fetch news sentiment'}), 500
 
 
 

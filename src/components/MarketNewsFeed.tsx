@@ -6,6 +6,7 @@ import {
   RefreshCw
 } from 'lucide-react'
 import { marketDataService, MarketNews } from '../lib/marketDataService'
+import { alphaVantageNewsService, AlphaVantageNewsItem } from '../lib/alphaVantageNewsService'
 import { useToast } from './Toast'
 
 interface MarketNewsFeedProps {
@@ -24,9 +25,11 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
   refreshInterval = 300000
 }) => {
   const [news, setNews] = useState<MarketNews[]>([])
+  const [alphaVantageNews, setAlphaVantageNews] = useState<AlphaVantageNewsItem[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
+  const [useAlphaVantage, setUseAlphaVantage] = useState(false)
   const { error: showError } = useToast()
 
   // Fetch news data
@@ -36,17 +39,39 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
 
     try {
       let newsData: MarketNews[] = []
+      let alphaVantageData: AlphaVantageNewsItem[] = []
 
-      if (symbol) {
-        const to = new Date()
-        const from = new Date()
-        from.setDate(from.getDate() - 30)
-        newsData = await marketDataService.getCompanyNews(symbol, from, to)
-      } else {
-        newsData = await marketDataService.getMarketNews(category, maxItems)
+      // Try primary news source first
+      try {
+        if (symbol) {
+          const to = new Date()
+          const from = new Date()
+          from.setDate(from.getDate() - 30)
+          newsData = await marketDataService.getCompanyNews(symbol, from, to)
+        } else {
+          newsData = await marketDataService.getMarketNews(category, maxItems)
+        }
+        setUseAlphaVantage(false)
+      } catch (primaryError) {
+        console.log('Primary news source failed, trying Alpha Vantage...')
+        
+        // Fallback to Alpha Vantage
+        try {
+          if (symbol) {
+            const response = await alphaVantageNewsService.getCompanyNews(symbol, maxItems)
+            alphaVantageData = response.news
+          } else {
+            const response = await alphaVantageNewsService.getMarketNews(maxItems)
+            alphaVantageData = response.news
+          }
+          setUseAlphaVantage(true)
+        } catch (alphaVantageError) {
+          throw new Error('Both news sources failed')
+        }
       }
 
       setNews(newsData)
+      setAlphaVantageNews(alphaVantageData)
     } catch (err) {
       setError('Failed to fetch news')
       showError('News Error', 'Failed to load market news')
@@ -69,21 +94,36 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
 
   // Filter news
   const filteredNews = useMemo(() => {
-    let filtered = [...news]
+    if (useAlphaVantage) {
+      let filtered = [...alphaVantageNews]
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase()
-      filtered = filtered.filter(item =>
-        item.headline.toLowerCase().includes(term) ||
-        item.summary.toLowerCase().includes(term) ||
-        item.source.toLowerCase().includes(term)
-      )
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase()
+        filtered = filtered.filter(item =>
+          item.title.toLowerCase().includes(term) ||
+          item.summary.toLowerCase().includes(term) ||
+          item.source.toLowerCase().includes(term)
+        )
+      }
+
+      return filtered.slice(0, maxItems)
+    } else {
+      let filtered = [...news]
+
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase()
+        filtered = filtered.filter(item =>
+          item.headline.toLowerCase().includes(term) ||
+          item.summary.toLowerCase().includes(term) ||
+          item.source.toLowerCase().includes(term)
+        )
+      }
+
+      // Sort by newest first and limit to maxItems
+      filtered.sort((a, b) => b.datetime - a.datetime)
+      return filtered.slice(0, maxItems)
     }
-
-    // Sort by newest first and limit to maxItems
-    filtered.sort((a, b) => b.datetime - a.datetime)
-    return filtered.slice(0, maxItems)
-  }, [news, searchTerm, maxItems])
+  }, [news, alphaVantageNews, searchTerm, maxItems, useAlphaVantage])
 
   const formatRelativeTime = (timestamp: number) => {
     const now = Date.now()
@@ -106,9 +146,16 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
     <div className="space-y-4">
       {/* Simplified Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold robinhood-text-primary">
-          {symbol ? `${symbol} News` : 'Market News'}
-        </h2>
+        <div className="flex items-center space-x-2">
+          <h2 className="text-xl font-semibold robinhood-text-primary">
+            {symbol ? `${symbol} News` : 'Market News'}
+          </h2>
+          {useAlphaVantage && (
+            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+              Alpha Vantage
+            </span>
+          )}
+        </div>
         
         <button
           onClick={fetchNews}
@@ -166,42 +213,96 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
               </div>
             </div>
           ) : (
-            filteredNews.map((item) => (
-              <div key={item.id} className="p-4 border-b border-neutral-200 dark:border-robinhood-dark-border hover:bg-neutral-50 dark:hover:bg-robinhood-dark-tertiary transition-all duration-200">
-                <div className="space-y-3">
-                  {/* Simplified News Header */}
-                  <h3 className="text-base font-medium robinhood-text-primary leading-tight">
-                    {item.headline}
-                  </h3>
+            filteredNews.map((item, index) => {
+              if (useAlphaVantage) {
+                // Alpha Vantage news item
+                const alphaItem = item as AlphaVantageNewsItem
+                return (
+                  <div key={`${alphaItem.id}-${index}`} className="p-4 border-b border-neutral-200 dark:border-robinhood-dark-border hover:bg-neutral-50 dark:hover:bg-robinhood-dark-tertiary transition-all duration-200">
+                    <div className="space-y-3">
+                      {/* News Header */}
+                      <h3 className="text-base font-medium robinhood-text-primary leading-tight">
+                        {alphaItem.title}
+                      </h3>
 
-                  {/* Simplified News Summary */}
-                  <p className="text-sm robinhood-text-secondary leading-relaxed line-clamp-2">
-                    {item.summary}
-                  </p>
+                      {/* News Summary */}
+                      <p className="text-sm robinhood-text-secondary leading-relaxed line-clamp-2">
+                        {alphaItem.summary}
+                      </p>
 
-                  {/* Simplified News Meta */}
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center space-x-3 text-xs robinhood-text-tertiary">
-                      <div className="flex items-center">
-                        <Clock className="w-3 h-3 mr-1" />
-                        {formatRelativeTime(item.datetime)}
+                      {/* News Meta */}
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center space-x-3 text-xs robinhood-text-tertiary">
+                          <div className="flex items-center">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {alphaItem.time_published ? new Date(alphaItem.time_published).toLocaleDateString() : 'N/A'}
+                          </div>
+                          <span className="font-medium robinhood-text-secondary">{alphaItem.source}</span>
+                          {alphaItem.overall_sentiment_label && (
+                            <span className={`px-2 py-1 rounded text-xs ${
+                              alphaItem.overall_sentiment_label.toLowerCase() === 'positive' ? 'bg-green-100 text-green-800' :
+                              alphaItem.overall_sentiment_label.toLowerCase() === 'negative' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {alphaItem.overall_sentiment_label}
+                            </span>
+                          )}
+                        </div>
+                        
+                        <a
+                          href={alphaItem.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+                        >
+                          Read
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                        </a>
                       </div>
-                      <span className="font-medium robinhood-text-secondary">{item.source}</span>
                     </div>
-                    
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
-                    >
-                      Read
-                      <ExternalLink className="w-3 h-3 ml-1" />
-                    </a>
                   </div>
-                </div>
-              </div>
-            ))
+                )
+              } else {
+                // Original news item
+                const originalItem = item as MarketNews
+                return (
+                  <div key={originalItem.id} className="p-4 border-b border-neutral-200 dark:border-robinhood-dark-border hover:bg-neutral-50 dark:hover:bg-robinhood-dark-tertiary transition-all duration-200">
+                    <div className="space-y-3">
+                      {/* News Header */}
+                      <h3 className="text-base font-medium robinhood-text-primary leading-tight">
+                        {originalItem.headline}
+                      </h3>
+
+                      {/* News Summary */}
+                      <p className="text-sm robinhood-text-secondary leading-relaxed line-clamp-2">
+                        {originalItem.summary}
+                      </p>
+
+                      {/* News Meta */}
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center space-x-3 text-xs robinhood-text-tertiary">
+                          <div className="flex items-center">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {formatRelativeTime(originalItem.datetime)}
+                          </div>
+                          <span className="font-medium robinhood-text-secondary">{originalItem.source}</span>
+                        </div>
+                        
+                        <a
+                          href={originalItem.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center text-xs text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
+                        >
+                          Read
+                          <ExternalLink className="w-3 h-3 ml-1" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                )
+              }
+            })
           )}
         </div>
       )}
