@@ -10,7 +10,7 @@
 
 > **QuantFlow** is a comprehensive portfolio management platform that combines real-time market data, advanced risk analysis, automated rebalancing, and intelligent portfolio optimization. Built with modern technologies for professional-grade financial analysis.
 
-## 🚀 Live Demo
+## 🚀 Live Application
 
 - **Frontend:** [https://quantflow-git-main-pratham-aggrs-projects.vercel.app](https://quantflow-git-main-pratham-aggrs-projects.vercel.app)
 - **Backend API:** [https://quantflow-backend-api.onrender.com](https://quantflow-backend-api.onrender.com)

@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 
 const API_BASE_URL = process.env.REACT_APP_BACKEND_API_URL || 'https://quantflow-backend-api.onrender.com';
 
-export interface AlphaVantageNewsItem {
+export interface NewsItem {
   id: string;
   title: string;
   url: string;
@@ -13,7 +13,7 @@ export interface AlphaVantageNewsItem {
   source: string;
   category_within_source: string;
   source_domain: string;
-  topics: string[];
+  topics: any[];
   overall_sentiment_score: number;
   overall_sentiment_label: string;
   ticker_sentiment: any[];
@@ -22,14 +22,15 @@ export interface AlphaVantageNewsItem {
 export interface NewsResponse {
   success: boolean;
   count: number;
-  news: AlphaVantageNewsItem[];
+  news: NewsItem[];
+  source?: string;
 }
 
 export interface CompanyNewsResponse extends NewsResponse {
   symbol: string;
 }
 
-class AlphaVantageNewsService {
+class NewsService {
   private async makeRequest(endpoint: string, params: Record<string, any> = {}): Promise<any> {
     try {
       const queryString = new URLSearchParams(params).toString();
@@ -48,81 +49,52 @@ class AlphaVantageNewsService {
 
       return await response.json();
     } catch (error) {
-      console.error('Alpha Vantage News API Error:', error);
+      console.error('News API Error:', error);
       throw error;
     }
   }
 
   async getGeneralNews(params: {
-    tickers?: string[];
-    topics?: string[];
-    time_from?: string;
-    time_to?: string;
-    sort?: 'RELEVANCE' | 'LATEST' | 'EARLIEST';
     limit?: number;
+    category?: string;
   } = {}): Promise<NewsResponse> {
     const queryParams: Record<string, any> = {};
     
-    if (params.tickers) queryParams.tickers = params.tickers.join(',');
-    if (params.topics) queryParams.topics = params.topics.join(',');
-    if (params.time_from) queryParams.time_from = params.time_from;
-    if (params.time_to) queryParams.time_to = params.time_to;
-    if (params.sort) queryParams.sort = params.sort;
     if (params.limit) queryParams.limit = params.limit;
+    if (params.category) queryParams.category = params.category;
 
-    return this.makeRequest('/api/news/alpha-vantage', queryParams);
+    return this.makeRequest('/api/news/market', queryParams);
   }
 
   async getCompanyNews(symbol: string, limit: number = 20): Promise<CompanyNewsResponse> {
     return this.makeRequest(`/api/news/company/${symbol}`, { limit });
   }
 
-  async getMarketNews(limit: number = 30, topics: string = 'financial_markets'): Promise<NewsResponse> {
-    return this.makeRequest('/api/news/market', { limit, topics });
+  async getMarketNews(limit: number = 30, category: string = 'general'): Promise<NewsResponse> {
+    return this.makeRequest('/api/news/market', { limit, category });
   }
 
-  async getNewsWithSentiment(params: {
-    tickers?: string[];
-    limit?: number;
-    sentiment?: 'positive' | 'negative' | 'neutral';
-  } = {}): Promise<NewsResponse> {
-    const queryParams: Record<string, any> = {};
+  async getPortfolioNews(symbols: string[], limit: number = 50): Promise<NewsResponse[]> {
+    // Get news for each symbol in the portfolio
+    const newsPromises = symbols.map(symbol => 
+      this.getCompanyNews(symbol, Math.ceil(limit / symbols.length))
+    );
     
-    if (params.tickers) queryParams.tickers = params.tickers.join(',');
-    if (params.limit) queryParams.limit = params.limit;
-    if (params.sentiment) queryParams.sentiment = params.sentiment;
-
-    return this.makeRequest('/api/news/sentiment', queryParams);
-  }
-
-  async getPortfolioNews(symbols: string[], limit: number = 50): Promise<NewsResponse> {
-    return this.getGeneralNews({
-      tickers: symbols,
-      limit,
-      sort: 'LATEST'
-    });
+    return Promise.all(newsPromises);
   }
 
   async getTopStories(limit: number = 20): Promise<NewsResponse> {
-    return this.getMarketNews(limit, 'financial_markets');
+    return this.getMarketNews(limit, 'general');
   }
 
-  async getEarningsNews(limit: number = 30): Promise<NewsResponse> {
-    return this.getGeneralNews({
-      topics: ['earnings'],
-      limit,
-      sort: 'LATEST'
-    });
+  async getFinancialNews(limit: number = 30): Promise<NewsResponse> {
+    return this.getMarketNews(limit, 'general');
   }
 
   async getEconomicNews(limit: number = 30): Promise<NewsResponse> {
-    return this.getGeneralNews({
-      topics: ['economy', 'federal_reserve', 'inflation'],
-      limit,
-      sort: 'LATEST'
-    });
+    return this.getMarketNews(limit, 'general');
   }
 }
 
-export const alphaVantageNewsService = new AlphaVantageNewsService();
-export default alphaVantageNewsService;
+export const newsService = new NewsService();
+export default newsService;

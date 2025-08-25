@@ -306,7 +306,7 @@ class PaperTradingEngine:
                     'error': str(e)
                 })
         
-        # Schedule end-of-day trades (for demo, execute as limit orders)
+        # Schedule end-of-day trades (execute as limit orders)
         end_of_day_trades = phases.get('end_of_day', {}).get('recommendations', [])
         for rec in end_of_day_trades:
             try:

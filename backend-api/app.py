@@ -19,7 +19,7 @@ import numpy as np
 load_dotenv('../.env')
 from advanced_risk_engine import AdvancedRiskEngine
 # Finnhub configuration for news API
-FINNHUB_API_KEY = os.environ.get('REACT_APP_FINNHUB_API_KEY', 'demo')
+FINNHUB_API_KEY = os.environ.get('REACT_APP_FINNHUB_API_KEY')
 
 # Rebalancing imports - no fallback, real data only
 from rebalancing_engine import RebalancingEngine, RebalancingSuggestion
@@ -49,7 +49,7 @@ CORS(app, resources={r"/.*": {"origins": [
 advanced_risk_engine = AdvancedRiskEngine()
 
 # Finnhub configuration
-FINNHUB_API_KEY = os.environ.get('REACT_APP_FINNHUB_API_KEY', 'demo')
+FINNHUB_API_KEY = os.environ.get('REACT_APP_FINNHUB_API_KEY')
 
 # Initialize rebalancing engines - real data only
 rebalancing_engine = RebalancingEngine()
@@ -307,7 +307,7 @@ def get_finnhub_news(category='general', q=None, limit=50):
     """Get news from Finnhub API with retry logic"""
     try:
         # Check if API key is available
-        if not FINNHUB_API_KEY or FINNHUB_API_KEY == 'demo':
+        if not FINNHUB_API_KEY:
             logging.warning("Finnhub API key not configured, returning empty news list")
             return []
             
@@ -814,43 +814,7 @@ def get_company_news():
         logging.error(f"Error fetching company news for {symbol}: {str(e)}")
         return jsonify({'error': 'Failed to fetch company news'}), 500
 
-# ========== ALPHA VANTAGE NEWS ENDPOINTS ==========
 
-@app.route('/api/news/alpha-vantage', methods=['GET'])
-def get_alpha_vantage_news_endpoint():
-    """Get news from Alpha Vantage API"""
-    try:
-        # Get query parameters
-        tickers = request.args.get('tickers', '')
-        topics = request.args.get('topics', '')
-        time_from = request.args.get('time_from', '')
-        time_to = request.args.get('time_to', '')
-        sort = request.args.get('sort', 'RELEVANCE')
-        limit = int(request.args.get('limit', 50))
-        
-        # Convert comma-separated strings to lists
-        ticker_list = [t.strip() for t in tickers.split(',')] if tickers else None
-        topic_list = [t.strip() for t in topics.split(',')] if topics else None
-        
-        # Get news from Alpha Vantage
-        news_data = get_alpha_vantage_news(
-            tickers=ticker_list,
-            topics=topic_list,
-            time_from=time_from,
-            time_to=time_to,
-            sort=sort,
-            limit=limit
-        )
-        
-        return jsonify({
-            'success': True,
-            'count': len(news_data),
-            'news': news_data
-        })
-        
-    except Exception as e:
-        logging.error(f"Error in Alpha Vantage news endpoint: {str(e)}")
-        return jsonify({'error': 'Failed to fetch news from Alpha Vantage'}), 500
 
 @app.route('/api/news/company/<symbol>', methods=['GET'])
 def get_company_news_finnhub(symbol):
