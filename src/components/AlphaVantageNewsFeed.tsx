@@ -94,15 +94,36 @@ export const AlphaVantageNewsFeed: React.FC<AlphaVantageNewsFeedProps> = ({
 
   const formatTime = (timeString: string) => {
     try {
-      const date = new Date(timeString);
-      return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
+      // Alpha Vantage format: "20250825T015823"
+      // Convert to: "2025-08-25T01:58:23"
+      if (timeString && timeString.length === 15 && timeString.includes('T')) {
+        const year = timeString.substring(0, 4)
+        const month = timeString.substring(4, 6)
+        const day = timeString.substring(6, 8)
+        const hour = timeString.substring(9, 11)
+        const minute = timeString.substring(11, 13)
+        const second = timeString.substring(13, 15)
+        
+        const formattedDate = `${year}-${month}-${day}T${hour}:${minute}:${second}`
+        const date = new Date(formattedDate)
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      } else {
+        // Fallback for other date formats
+        const date = new Date(timeString);
+        return date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        });
+      }
     } catch {
-      return timeString;
+      return 'N/A';
     }
   };
 

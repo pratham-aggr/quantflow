@@ -9,6 +9,26 @@ import { marketDataService, MarketNews } from '../lib/marketDataService'
 import { alphaVantageNewsService, AlphaVantageNewsItem } from '../lib/alphaVantageNewsService'
 import { useToast } from './Toast'
 
+// Helper function to format Alpha Vantage date
+const formatAlphaVantageDate = (timePublished: string): string => {
+  try {
+    // Alpha Vantage format: "20250825T015823"
+    // Convert to: "2025-08-25T01:58:23"
+    const year = timePublished.substring(0, 4)
+    const month = timePublished.substring(4, 6)
+    const day = timePublished.substring(6, 8)
+    const hour = timePublished.substring(9, 11)
+    const minute = timePublished.substring(11, 13)
+    const second = timePublished.substring(13, 15)
+    
+    const formattedDate = `${year}-${month}-${day}T${hour}:${minute}:${second}`
+    return new Date(formattedDate).toLocaleDateString()
+  } catch (error) {
+    console.error('Error formatting Alpha Vantage date:', error)
+    return 'N/A'
+  }
+}
+
 interface MarketNewsFeedProps {
   symbol?: string
   category?: 'general' | 'forex' | 'crypto' | 'merger'
@@ -239,7 +259,7 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
                         <div className="flex items-center space-x-3 text-xs robinhood-text-tertiary">
                           <div className="flex items-center">
                             <Clock className="w-3 h-3 mr-1" />
-                            {alphaItem.time_published ? new Date(alphaItem.time_published).toLocaleDateString() : 'N/A'}
+                            {alphaItem.time_published ? formatAlphaVantageDate(alphaItem.time_published) : 'N/A'}
                           </div>
                           <span className="font-medium robinhood-text-secondary">{alphaItem.source}</span>
                           {alphaItem.overall_sentiment_label && (
