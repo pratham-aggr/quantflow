@@ -769,6 +769,33 @@ def simulate_rebalancing():
         logging.error(f"Error in rebalancing simulation: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/rebalancing/what-if', methods=['POST'])
+def what_if_analysis():
+    """Perform what-if analysis for rebalancing"""
+    try:
+        if rebalancing_engine is None:
+            return jsonify({'error': 'Rebalancing engine not available'}), 503
+            
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data or 'target_allocation' not in data:
+            return jsonify({'error': 'Holdings and target allocation data required'}), 400
+        
+        holdings = data['holdings']
+        target_allocation = data['target_allocation']
+        
+        # Perform what-if analysis
+        what_if_result = rebalancing_engine.simulate_rebalancing(
+            holdings=holdings,
+            target_allocation=target_allocation
+        )
+        
+        return jsonify(what_if_result)
+        
+    except Exception as e:
+        logging.error(f"Error in what-if analysis: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/advanced-rebalancing/analyze-need', methods=['POST'])
 def analyze_advanced_rebalancing_need():
     """Analyze if advanced rebalancing is needed"""
