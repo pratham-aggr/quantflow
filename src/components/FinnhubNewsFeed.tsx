@@ -92,11 +92,31 @@ export const FinnhubNewsFeed: React.FC<FinnhubNewsFeedProps> = ({
     }
   };
 
-  const formatTime = (timeString: string) => {
+  const formatTime = (timeString: string | number) => {
     try {
-      // Finnhub format: Unix timestamp
-      const timestamp = parseInt(timeString);
-      return new Date(timestamp * 1000).toLocaleDateString();
+      // Finnhub format: Unix timestamp (can be string or number)
+      const timestamp = typeof timeString === 'string' ? parseInt(timeString) : timeString;
+      if (isNaN(timestamp)) {
+        return 'N/A';
+      }
+      
+      const date = new Date(timestamp * 1000);
+      const now = new Date();
+      const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+      
+      if (diffInHours < 1) {
+        return 'Just now';
+      } else if (diffInHours < 24) {
+        return `${diffInHours}h ago`;
+      } else if (diffInHours < 48) {
+        return 'Yesterday';
+      } else {
+        return date.toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric',
+          year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+        });
+      }
     } catch (error) {
       console.error('Error formatting Finnhub date:', error);
       return 'N/A';

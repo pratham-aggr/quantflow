@@ -10,11 +10,31 @@ import { finnhubNewsService, FinnhubNewsItem } from '../lib/finnhubNewsService'
 import { useToast } from './Toast'
 
 // Helper function to format Finnhub date
-const formatFinnhubDate = (timePublished: string): string => {
+const formatFinnhubDate = (timePublished: string | number): string => {
   try {
-    // Finnhub format: Unix timestamp
-    const timestamp = parseInt(timePublished)
-    return new Date(timestamp * 1000).toLocaleDateString()
+    // Finnhub format: Unix timestamp (can be string or number)
+    const timestamp = typeof timePublished === 'string' ? parseInt(timePublished) : timePublished
+    if (isNaN(timestamp)) {
+      return 'N/A'
+    }
+    
+    const date = new Date(timestamp * 1000)
+    const now = new Date()
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
+    
+    if (diffInHours < 1) {
+      return 'Just now'
+    } else if (diffInHours < 24) {
+      return `${diffInHours}h ago`
+    } else if (diffInHours < 48) {
+      return 'Yesterday'
+    } else {
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
+        year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
+      })
+    }
   } catch (error) {
     console.error('Error formatting Finnhub date:', error)
     return 'N/A'
