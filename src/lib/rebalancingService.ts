@@ -22,7 +22,7 @@ export interface RebalancingAnalysis {
   current_allocation: Record<string, number>
   target_allocation: Record<string, number>
   drift_analysis: Record<string, number>
-  suggestions: RebalancingSuggestion[]
+  targetAllocation: Record<string, number>
   total_drift: number
   estimated_transaction_cost: number
   rebalancing_score: number
@@ -119,7 +119,7 @@ class RebalancingService {
 
   async createWhatIfAnalysis(
     holdings: any[],
-    suggestions: RebalancingSuggestion[]
+    targetAllocation: Record<string, number>
   ): Promise<WhatIfAnalysis> {
     return performanceMonitor.trackAsync('What-If Analysis', async () => {
       const data = {
@@ -129,7 +129,7 @@ class RebalancingService {
           avg_price: holding.avg_price,
           current_price: holding.current_price || holding.avg_price
         })),
-        suggestions
+        target_allocation
       }
 
       return this.makeRequest<WhatIfAnalysis>('/api/rebalancing/what-if', {
@@ -256,8 +256,8 @@ class RebalancingService {
     return 'HIGH'
   }
 
-  formatRebalancingInstructions(suggestions: RebalancingSuggestion[]): string[] {
-    return suggestions.map(suggestion => {
+  formatRebalancingInstructions(targetAllocation: Record<string, number>): string[] {
+    return target_allocation.map(suggestion => {
       const action = suggestion.action === 'BUY' ? 'Buy' : 'Sell'
       const cost = suggestion.estimated_cost > 0 ? ` (Est. cost: $${suggestion.estimated_cost.toFixed(2)})` : ''
       return `${action} ${suggestion.quantity} shares of ${suggestion.symbol}${cost}`

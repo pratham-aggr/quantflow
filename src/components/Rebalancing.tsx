@@ -207,18 +207,18 @@ export default function Rebalancing() {
     
     try {
       // Transform suggestions back to service format
-      const serviceSuggestions = selectedSuggestionsList.map(suggestion => ({
+      const targetAllocation = selectedSuggestionsList.map(suggestion => ({
         ...suggestion,
         action: suggestion.action.toUpperCase() as 'BUY' | 'SELL',
         priority: suggestion.priority.toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW',
         estimated_cost: suggestion.estimated_cost || 0
       }))
       
-      console.log('Service suggestions:', serviceSuggestions)
+      console.log('Target allocation:', targetAllocation)
       
       const result = await rebalancingService.createWhatIfAnalysis(
         currentPortfolio.holdings,
-        serviceSuggestions
+        targetAllocation
       )
       
       console.log('What-if analysis result:', result)
