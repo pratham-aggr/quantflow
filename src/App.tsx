@@ -18,6 +18,7 @@ import { MarketData } from './components/MarketData';
 import { Navigation } from './components/Navigation';
 import { AuthDebug } from './components/AuthDebug';
 import { ToastContainer, useToast } from './components/Toast';
+import CacheManager from './components/CacheManager';
 import './App.css';
 
 // Create a client with better error handling and retry logic
@@ -116,6 +117,7 @@ function App() {
                   <div className="App">
                     <Navigation />
                     <AuthDebug />
+                    <CacheManager />
                     <Routes>
                       {/* Public routes - redirect to dashboard if authenticated */}
                       <Route 

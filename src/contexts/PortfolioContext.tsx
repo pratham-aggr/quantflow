@@ -330,17 +330,33 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     if (!state.currentPortfolio) return
 
     try {
-      // First refresh holdings with current market data
-      await portfolioService.refreshHoldingsWithMarketData(state.currentPortfolio.id)
+      console.log('🔄 Starting portfolio refresh...')
       
-      // Then get the updated portfolio with market prices
+      // Get fresh market data directly without database update
       const updatedPortfolio = await portfolioService.getPortfolioWithMarketPrices(state.currentPortfolio.id)
       if (updatedPortfolio) {
-        setState(prev => ({
-          ...prev,
-          currentPortfolio: updatedPortfolio
-        }))
+        console.log('🔄 Updating state with fresh portfolio data...')
+        console.log('📊 Updated portfolio holdings:', updatedPortfolio.holdings)
+        
+        setState(prev => {
+          console.log('🔄 Previous state currentPortfolio:', prev.currentPortfolio)
+          const newState = {
+            ...prev,
+            currentPortfolio: updatedPortfolio
+          }
+          console.log('🔄 New state currentPortfolio:', newState.currentPortfolio)
+          return newState
+        })
+        
         console.log('✅ Current portfolio holdings refreshed with real market prices and changes')
+        
+        // Log the updated holdings for debugging
+        updatedPortfolio.holdings.forEach(holding => {
+          const currentPrice = holding.current_price || holding.avg_price
+          const pnl = (currentPrice - holding.avg_price) * holding.quantity
+          const pnlPercent = ((currentPrice - holding.avg_price) / holding.avg_price) * 100
+          console.log(`📈 ${holding.symbol}: $${currentPrice} (avg: $${holding.avg_price}) P&L: $${pnl.toFixed(2)} (${pnlPercent.toFixed(2)}%)`)
+        })
       }
     } catch (error) {
       console.error('Error refreshing current portfolio:', error)
