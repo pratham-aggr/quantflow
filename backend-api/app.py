@@ -13,7 +13,50 @@ import time
 import random
 import yfinance as yf
 from advanced_risk_engine import AdvancedRiskEngine
-from alpha_vantage.news_sentiment import NewsSentiment
+# Alpha Vantage import with fallback
+try:
+    from alpha_vantage.news_sentiment import NewsSentiment
+except ImportError:
+    try:
+        from alpha_vantage import NewsSentiment
+    except ImportError:
+        # Fallback: create a mock class if Alpha Vantage is not available
+        class NewsSentiment:
+            def __init__(self, key=None, output_format=None):
+                pass
+            def get_news_sentiment(self, **kwargs):
+                return None, None
+
+# Rebalancing imports with fallback
+try:
+    from rebalancing_engine import RebalancingEngine
+    from advanced_rebalancing import AdvancedRebalancingEngine
+except ImportError as e:
+    logging.warning(f"Rebalancing modules not available: {e}")
+    # Create mock classes if modules are not available
+    class RebalancingEngine:
+        def analyze_rebalancing(self, holdings, target_allocation, constraints=None):
+            return type('obj', (object,), {
+                'current_allocation': {},
+                'target_allocation': {},
+                'drift_analysis': {},
+                'suggestions': [],
+                'total_drift': 0,
+                'estimated_transaction_cost': 0,
+                'rebalancing_score': 0,
+                'optimization_method': 'mock'
+            })()
+        def simulate_rebalancing(self, holdings, target_allocation):
+            return {}
+    
+    class AdvancedRebalancingEngine:
+        def analyze_rebalancing_need(self, holdings, target_allocation, last_rebalance_date=None):
+            return {'rebalancing_needed': False}
+        def generate_smart_rebalancing_plan(self, holdings, target_allocation, last_rebalance_date=None):
+            return {'rebalancing_needed': False}
+        def simulate_rebalancing_scenarios(self, holdings, target_allocation):
+            return []
+
 import re
 
 # Configure logging
@@ -39,11 +82,29 @@ advanced_risk_engine = AdvancedRiskEngine()
 
 # Alpha Vantage configuration
 ALPHA_VANTAGE_API_KEY = os.environ.get('ALPHA_VANTAGE_API_KEY', 'demo')
-news_sentiment = NewsSentiment(key=ALPHA_VANTAGE_API_KEY, output_format='pandas')
+try:
+    news_sentiment = NewsSentiment(key=ALPHA_VANTAGE_API_KEY, output_format='pandas')
+except Exception as e:
+    logging.warning(f"Alpha Vantage not available: {e}")
+    news_sentiment = None
+
+# Initialize rebalancing engines
+try:
+    rebalancing_engine = RebalancingEngine()
+    advanced_rebalancing_engine = AdvancedRebalancingEngine()
+except Exception as e:
+    logging.warning(f"Could not initialize rebalancing engines: {e}")
+    rebalancing_engine = None
+    advanced_rebalancing_engine = None
 
 def get_alpha_vantage_news(tickers=None, topics=None, time_from=None, time_to=None, sort='RELEVANCE', limit=50):
     """Get news from Alpha Vantage API"""
     try:
+        # Check if Alpha Vantage is available
+        if news_sentiment is None:
+            logging.warning("Alpha Vantage not available, returning empty news list")
+            return []
+            
         # Prepare parameters
         params = {
             'sort': sort,
@@ -625,6 +686,166 @@ def generate_advanced_risk_report():
         
     except Exception as e:
         print(f"❌ Render: ERROR - {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+# ========== REBALANCING ENDPOINTS ==========
+
+@app.route('/api/rebalancing/analyze', methods=['POST'])
+def analyze_rebalancing():
+    """Analyze portfolio rebalancing needs"""
+    try:
+        if rebalancing_engine is None:
+            return jsonify({'error': 'Rebalancing engine not available'}), 503
+            
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data or 'target_allocation' not in data:
+            return jsonify({'error': 'Holdings and target allocation data required'}), 400
+        
+        holdings = data['holdings']
+        target_allocation = data['target_allocation']
+        constraints = data.get('constraints', {})
+        
+        # Analyze rebalancing
+        analysis = rebalancing_engine.analyze_rebalancing(
+            holdings=holdings,
+            target_allocation=target_allocation,
+            constraints=constraints
+        )
+        
+        # Convert to JSON-serializable format
+        result = {
+            'current_allocation': analysis.current_allocation,
+            'target_allocation': analysis.target_allocation,
+            'drift_analysis': analysis.drift_analysis,
+            'suggestions': [
+                {
+                    'symbol': s.symbol,
+                    'action': s.action,
+                    'quantity': s.quantity,
+                    'current_value': s.current_value,
+                    'target_value': s.target_value,
+                    'drift_percentage': s.drift_percentage,
+                    'estimated_cost': s.estimated_cost,
+                    'priority': s.priority
+                } for s in analysis.suggestions
+            ],
+            'total_drift': analysis.total_drift,
+            'estimated_transaction_cost': analysis.estimated_transaction_cost,
+            'rebalancing_score': analysis.rebalancing_score,
+            'optimization_method': analysis.optimization_method
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        logging.error(f"Error in rebalancing analysis: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/rebalancing/simulate', methods=['POST'])
+def simulate_rebalancing():
+    """Simulate rebalancing scenarios"""
+    try:
+        if rebalancing_engine is None:
+            return jsonify({'error': 'Rebalancing engine not available'}), 503
+            
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data or 'target_allocation' not in data:
+            return jsonify({'error': 'Holdings and target allocation data required'}), 400
+        
+        holdings = data['holdings']
+        target_allocation = data['target_allocation']
+        
+        # Simulate rebalancing
+        simulation = rebalancing_engine.simulate_rebalancing(
+            holdings=holdings,
+            target_allocation=target_allocation
+        )
+        
+        return jsonify(simulation)
+        
+    except Exception as e:
+        logging.error(f"Error in rebalancing simulation: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/advanced-rebalancing/analyze-need', methods=['POST'])
+def analyze_advanced_rebalancing_need():
+    """Analyze if advanced rebalancing is needed"""
+    try:
+        if advanced_rebalancing_engine is None:
+            return jsonify({'error': 'Advanced rebalancing engine not available'}), 503
+            
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data or 'target_allocation' not in data:
+            return jsonify({'error': 'Holdings and target allocation data required'}), 400
+        
+        holdings = data['holdings']
+        target_allocation = data['target_allocation']
+        last_rebalance_date = data.get('last_rebalance_date')
+        
+        # Analyze rebalancing need
+        analysis = advanced_rebalancing_engine.analyze_rebalancing_need(
+            holdings=holdings,
+            target_allocation=target_allocation,
+            last_rebalance_date=last_rebalance_date
+        )
+        
+        return jsonify(analysis)
+        
+    except Exception as e:
+        logging.error(f"Error in advanced rebalancing analysis: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/advanced-rebalancing/smart-plan', methods=['POST'])
+def generate_smart_rebalancing_plan():
+    """Generate smart rebalancing plan"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data or 'target_allocation' not in data:
+            return jsonify({'error': 'Holdings and target allocation data required'}), 400
+        
+        holdings = data['holdings']
+        target_allocation = data['target_allocation']
+        last_rebalance_date = data.get('last_rebalance_date')
+        
+        # Generate smart plan
+        plan = advanced_rebalancing_engine.generate_smart_rebalancing_plan(
+            holdings=holdings,
+            target_allocation=target_allocation,
+            last_rebalance_date=last_rebalance_date
+        )
+        
+        return jsonify(plan)
+        
+    except Exception as e:
+        logging.error(f"Error generating smart rebalancing plan: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/advanced-rebalancing/simulate-scenarios', methods=['POST'])
+def simulate_rebalancing_scenarios():
+    """Simulate different rebalancing scenarios"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data or 'target_allocation' not in data:
+            return jsonify({'error': 'Holdings and target allocation data required'}), 400
+        
+        holdings = data['holdings']
+        target_allocation = data['target_allocation']
+        
+        # Simulate scenarios
+        scenarios = advanced_rebalancing_engine.simulate_rebalancing_scenarios(
+            holdings=holdings,
+            target_allocation=target_allocation
+        )
+        
+        return jsonify(scenarios)
+        
+    except Exception as e:
+        logging.error(f"Error simulating rebalancing scenarios: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
