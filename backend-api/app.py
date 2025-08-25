@@ -1034,14 +1034,32 @@ def generate_advanced_risk_report():
         
         print(f"Render: Received request for {len(holdings)} holdings")
         
-        # Generate risk report with real data
-        risk_report = advanced_risk_engine.generate_risk_report(holdings, risk_tolerance)
-        print(f"Render: Generated risk report successfully")
+        # Add timeout protection for risk analysis
+        import signal
         
-        # Convert NaN values to null for JSON serialization
-        risk_report = convert_nan_to_null(risk_report)
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Risk analysis timed out")
         
-        return jsonify(risk_report)
+        # Set timeout to 25 seconds (leaving 5 seconds buffer for response)
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(25)
+        
+        try:
+            # Generate risk report with real data
+            risk_report = advanced_risk_engine.generate_risk_report(holdings, risk_tolerance)
+            print(f"Render: Generated risk report successfully")
+            
+            # Cancel the alarm
+            signal.alarm(0)
+            
+            # Convert NaN values to null for JSON serialization
+            risk_report = convert_nan_to_null(risk_report)
+            
+            return jsonify(risk_report)
+            
+        except TimeoutError:
+            print("❌ Render: Risk analysis timed out")
+            return jsonify({'error': 'Risk analysis timed out. Please try again with fewer holdings or try later.'}), 408
         
     except Exception as e:
         print(f"❌ Render: ERROR - {str(e)}")

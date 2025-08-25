@@ -7,7 +7,7 @@ import { CumulativeReturnsChart } from './dashboard/CumulativeReturnsChart'
 import { PortfolioDrawdownChart } from './dashboard/PortfolioDrawdownChart'
 
 export const SimpleDashboard: React.FC = () => {
-  const { currentPortfolio, refreshCurrentPortfolio } = usePortfolio()
+  const { currentPortfolio, refreshCurrentPortfolio, loading } = usePortfolio()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -125,6 +125,25 @@ export const SimpleDashboard: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Loading Message */}
+        {loading && (
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-center space-x-3">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 dark:border-blue-400"></div>
+              <div>
+                <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                  Getting your portfolio data...
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300">
+                  Fetching latest stock quotes and market data
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+
+        
         {/* Portfolio Overview Cards */}
         {portfolioMetrics && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

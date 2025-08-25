@@ -77,9 +77,15 @@ class AdvancedRiskService {
 
     const startTime = performance.now()
     
+    // Increase timeout for risk analysis endpoints
+    const isRiskEndpoint = endpoint.includes('/api/risk/')
+    const timeout = isRiskEndpoint ? 30000 : 10000 // 30 seconds for risk analysis, 10 seconds for others
+    
     try {
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), timeout)
+      
+      console.log(`Making request to ${endpoint} with ${timeout/1000}s timeout`)
       
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         headers: {
@@ -97,9 +103,25 @@ class AdvancedRiskService {
       }
 
       const data = await response.json()
+      const duration = performance.now() - startTime
+      console.log(`Request to ${endpoint} completed in ${duration.toFixed(2)}ms`)
+      
       performanceMonitor.trackAsync(`advanced_risk_${endpoint}`, async () => Promise.resolve(data))
       return data
     } catch (error) {
+      const duration = performance.now() - startTime
+      console.error(`Request to ${endpoint} failed after ${duration.toFixed(2)}ms:`, error)
+      
+      // Provide more specific error messages
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          throw new Error(`Request timed out after ${timeout/1000} seconds. The risk analysis is taking longer than expected.`)
+        }
+        if (error.message.includes('Failed to fetch')) {
+          throw new Error('Network error: Unable to connect to the risk analysis service. Please check your connection.')
+        }
+      }
+      
       performanceMonitor.trackAsync(`advanced_risk_${endpoint}_error`, async () => Promise.reject(error))
       throw error
     }

@@ -70,8 +70,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
       .then(portfolios => {
         setState(prev => ({
           ...prev,
-          portfolios,
-          loading: false
+          portfolios
         }))
 
         // Select the first portfolio if available and no current portfolio
@@ -84,7 +83,13 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
         if (portfolioWithHoldings) {
           setState(prev => ({
             ...prev,
-            currentPortfolio: portfolioWithHoldings
+            currentPortfolio: portfolioWithHoldings,
+            loading: false
+          }))
+        } else {
+          setState(prev => ({
+            ...prev,
+            loading: false
           }))
         }
       })
@@ -340,6 +345,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 
     try {
       console.log('🔄 Starting portfolio refresh...')
+      setState(prev => ({ ...prev, loading: true }))
       
       // Get fresh market data directly without database update
       const updatedPortfolio = await portfolioService.getPortfolioWithMarketPrices(state.currentPortfolio.id)
@@ -351,7 +357,8 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
           console.log('🔄 Previous state currentPortfolio:', prev.currentPortfolio)
           const newState = {
             ...prev,
-            currentPortfolio: updatedPortfolio
+            currentPortfolio: updatedPortfolio,
+            loading: false
           }
           console.log('🔄 New state currentPortfolio:', newState.currentPortfolio)
           return newState
@@ -366,9 +373,12 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
           const pnlPercent = ((currentPrice - holding.avg_price) / holding.avg_price) * 100
           console.log(`📈 ${holding.symbol}: $${currentPrice} (avg: $${holding.avg_price}) P&L: $${pnl.toFixed(2)} (${pnlPercent.toFixed(2)}%)`)
         })
+      } else {
+        setState(prev => ({ ...prev, loading: false }))
       }
     } catch (error) {
       console.error('Error refreshing current portfolio:', error)
+      setState(prev => ({ ...prev, loading: false }))
     }
   }
 

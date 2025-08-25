@@ -53,6 +53,72 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
   const [showAdvancedMetrics, setShowAdvancedMetrics] = useState(false)
   const { success, error: showError } = useToast()
 
+  // Fallback risk analysis function
+  const generateFallbackRiskReport = (holdings: any[], riskTolerance: string): AdvancedRiskReport => {
+    console.log('Generating fallback risk report...')
+    
+    // Calculate basic metrics
+    const totalValue = holdings.reduce((sum, h) => sum + (h.quantity * (h.current_price || h.avg_price)), 0)
+    const totalCost = holdings.reduce((sum, h) => sum + (h.quantity * h.avg_price), 0)
+    const totalPnL = totalValue - totalCost
+    const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0
+    
+    // Simple risk score based on P&L and number of holdings
+    const riskScore = Math.min(10, Math.max(1, 
+      5 + (totalPnLPercent / 10) + (holdings.length > 5 ? -1 : 1)
+    ))
+    
+    return {
+      summary: {
+        risk_score: riskScore,
+        risk_level: riskScore <= 3 ? 'Low' : riskScore <= 7 ? 'Moderate' : 'High',
+        portfolio_volatility: Math.abs(totalPnLPercent) / 100,
+        sharpe_ratio: totalPnLPercent > 0 ? totalPnLPercent / 10 : totalPnLPercent / 20,
+        var_95: Math.abs(totalPnLPercent) * 0.05
+      },
+      monte_carlo_analysis: {
+        mean_return: totalPnLPercent / 100,
+        std_return: Math.abs(totalPnLPercent) / 200,
+        percentiles: { '5': totalPnLPercent * 0.5, '95': totalPnLPercent * 1.5 },
+        worst_case: totalPnLPercent * 0.5,
+        best_case: totalPnLPercent * 1.5,
+        probability_positive: totalPnLPercent > 0 ? 0.6 : 0.4,
+        confidence_intervals: { '5': [totalPnLPercent * 0.5, totalPnLPercent * 0.6], '95': [totalPnLPercent * 1.4, totalPnLPercent * 1.5] }
+      },
+      correlation_analysis: {
+        diversification_score: Math.min(1, holdings.length / 10),
+        high_correlation_pairs: [],
+        heatmap_data: { 
+          correlation_matrix: [], 
+          symbols: holdings.map(h => h.symbol),
+          high_correlation_pairs: [],
+          diversification_score: Math.min(1, holdings.length / 10)
+        }
+      },
+      sector_analysis: {
+        sector_allocation: {},
+        sector_risk: {},
+        concentration_risk: holdings.length > 0 ? 100 / holdings.length : 100,
+        recommendations: ['Consider diversifying across more sectors']
+      },
+      ml_prediction: {
+        predicted_volatility: Math.abs(totalPnLPercent) / 100,
+        confidence_interval: [totalPnLPercent * 0.8, totalPnLPercent * 1.2],
+        feature_importance: {},
+        model_accuracy: 0.5,
+        prediction_horizon: 30
+      },
+      recommendations: [
+        'Basic analysis mode - advanced features unavailable',
+        totalPnLPercent > 0 ? 'Portfolio showing positive returns' : 'Portfolio showing negative returns',
+        holdings.length < 5 ? 'Consider adding more holdings for better diversification' : 'Good number of holdings',
+        'Try refreshing for advanced analysis when service is available'
+      ],
+      risk_tolerance: riskTolerance,
+      timestamp: new Date().toISOString()
+    }
+  }
+
   // Generate risk report
   const generateRiskReport = async () => {
     if (!holdings || holdings.length === 0) {
@@ -76,6 +142,7 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
     setError(null)
 
     try {
+      console.log('Starting advanced risk analysis...')
       const report = await advancedRiskService.generateAdvancedRiskReport({
         holdings,
         risk_tolerance: riskTolerance,
@@ -88,13 +155,35 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
       setRiskReport(report)
       setRetryCount(0) // Reset retry count on success
       success('Risk Analysis Complete', 'Advanced risk report generated successfully')
-    } catch (err) {
+    } catch (err: any) {
       console.error('Advanced risk analysis error:', err)
       setRetryCount(prev => prev + 1)
       
+      // Provide more specific error messages
+      let errorMessage = 'Advanced engine unavailable after multiple attempts. Please try again later.'
+      let toastMessage = 'Advanced engine unavailable. Consider using local analysis mode.'
+      
+      if (err.message) {
+        if (err.message.includes('timed out')) {
+          errorMessage = 'Risk analysis is taking longer than expected. This may be due to high server load.'
+          toastMessage = 'Analysis timed out. Please try again in a few minutes.'
+        } else if (err.message.includes('Network error')) {
+          errorMessage = 'Unable to connect to the risk analysis service. Please check your connection.'
+          toastMessage = 'Network connection issue. Please try again.'
+        } else if (err.message.includes('HTTP error')) {
+          errorMessage = 'Risk analysis service is temporarily unavailable.'
+          toastMessage = 'Service temporarily unavailable. Please try again later.'
+        }
+      }
+      
       if (retryCount + 1 >= maxRetries) {
-        setError('Advanced engine unavailable after multiple attempts. Please try again later.')
-        showError('Analysis Failed', 'Advanced engine unavailable. Consider using local analysis mode.')
+        setError(errorMessage)
+        showError('Analysis Failed', toastMessage)
+        
+        // Provide fallback basic analysis
+        console.log('Providing fallback basic risk analysis...')
+        const fallbackReport = generateFallbackRiskReport(holdings, riskTolerance)
+        setRiskReport(fallbackReport)
       } else {
         setError(`Attempt ${retryCount + 1} of ${maxRetries} failed. Retrying...`)
       }
