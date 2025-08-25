@@ -38,6 +38,11 @@ export const Navigation: React.FC = () => {
     }
   }
 
+  // Don't render navigation if user is not authenticated
+  if (!user) {
+    return null
+  }
+
   return (
     <nav className="bg-white/80 dark:bg-robinhood-dark/80 backdrop-blur-robinhood border-b border-neutral-200 dark:border-robinhood-dark-border sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
