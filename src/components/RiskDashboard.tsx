@@ -7,14 +7,7 @@ import { performanceMonitor } from '../lib/performance'
 import { 
   ExclamationTriangleIcon, 
   InformationCircleIcon,
-  ShieldCheckIcon,
-  ChartBarIcon,
-  ClockIcon,
-  CurrencyDollarIcon,
-  SparklesIcon,
-  ArrowTrendingUpIcon,
-  ArrowTrendingDownIcon,
-  MinusIcon
+  ShieldCheckIcon
 } from '@heroicons/react/24/outline'
 
 export const RiskDashboard: React.FC = () => {
@@ -24,7 +17,7 @@ export const RiskDashboard: React.FC = () => {
   const [alerts, setAlerts] = useState<RiskAlert[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [showAdvancedAnalysis, setShowAdvancedAnalysis] = useState(false)
+
 
   useEffect(() => {
     const loadRiskData = async () => {
@@ -82,22 +75,7 @@ export const RiskDashboard: React.FC = () => {
     loadRiskData()
   }, [currentPortfolio, user])
 
-  // Helper function to get risk level color
-  const getRiskLevelColor = (score: number) => {
-    if (score >= 70) return { bg: 'bg-gradient-to-br from-loss-500 to-loss-600', text: 'text-loss-500', border: 'border-loss-200' }
-    if (score >= 40) return { bg: 'bg-gradient-to-br from-yellow-500 to-orange-500', text: 'text-yellow-600', border: 'border-yellow-200' }
-    return { bg: 'bg-gradient-to-br from-gain-500 to-gain-600', text: 'text-gain-500', border: 'border-gain-200' }
-  }
 
-  // Helper function to get risk level description
-  const getRiskLevelDescription = (level: string) => {
-    switch (level.toLowerCase()) {
-      case 'low': return 'Conservative portfolio with minimal risk exposure'
-      case 'moderate': return 'Balanced portfolio with moderate risk-return profile'
-      case 'high': return 'Aggressive portfolio with higher risk potential'
-      default: return 'Portfolio risk assessment'
-    }
-  }
 
   if (loading) {
     return (
@@ -160,7 +138,7 @@ export const RiskDashboard: React.FC = () => {
     )
   }
 
-  const riskColors = getRiskLevelColor(riskAnalysis.risk_score.score)
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-robinhood-dark dark:to-robinhood-dark-secondary p-6">
@@ -175,93 +153,24 @@ export const RiskDashboard: React.FC = () => {
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold robinhood-text-primary">Portfolio Risk Analysis</h1>
-                  <p className="robinhood-text-secondary mt-1">{getRiskLevelDescription(riskAnalysis.risk_score.level)}</p>
+                  <p className="robinhood-text-secondary mt-1">Portfolio risk assessment</p>
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => setShowAdvancedAnalysis(!showAdvancedAnalysis)}
-              className="robinhood-btn-primary"
-            >
-              <SparklesIcon className="w-5 h-5 mr-2" />
-              {showAdvancedAnalysis ? 'Show Basic' : 'Show Advanced'} Analysis
-            </button>
+
           </div>
         </div>
 
-        {/* Advanced Risk Analysis */}
-        {showAdvancedAnalysis && currentPortfolio?.holdings && (
-          <div className="robinhood-card p-8">
-            <AdvancedRiskDashboard
-              holdings={currentPortfolio.holdings}
-              riskTolerance={user?.risk_tolerance || 'moderate'}
-              autoRefresh={false}
-            />
-          </div>
-        )}
-
-        {/* Basic Risk Overview */}
-        {!showAdvancedAnalysis && (
+        {/* Risk Analysis Content */}
+        {currentPortfolio?.holdings && (
           <>
-            {/* Key Metrics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Overall Risk Score */}
-              <div className="robinhood-card p-8">
-                <div className="text-center">
-                  <div className="relative inline-flex items-center justify-center w-24 h-24 mb-6">
-                    <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
-                      <path
-                        className="text-neutral-200 dark:text-neutral-700"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        className={riskColors.text}
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeDasharray={`${riskAnalysis.risk_score.score}, 100`}
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-2xl font-bold robinhood-text-primary">
-                        {riskAnalysis.risk_score.score}
-                      </span>
-                    </div>
-                  </div>
-                  <h3 className="text-lg font-semibold robinhood-text-primary mb-2">Risk Score</h3>
-                  <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${riskColors.border} ${riskColors.text} bg-opacity-10`}>
-                    {riskAnalysis.risk_score.level}
-                  </div>
-                </div>
-              </div>
-
-              {/* Volatility */}
-              <div className="robinhood-card p-8">
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <ChartBarIcon className="h-10 w-10 text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold robinhood-text-primary mb-2">Volatility</h3>
-                  <p className="text-3xl font-bold text-blue-600 dark:text-blue-400 mb-2">{riskAnalysis.portfolio_metrics.volatility.toFixed(2)}%</p>
-                  <p className="text-sm robinhood-text-tertiary">Annualized volatility</p>
-                </div>
-              </div>
-
-              {/* Beta */}
-              <div className="robinhood-card p-8">
-                <div className="text-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-gain-100 to-gain-200 dark:from-gain-900/30 dark:to-gain-800/30 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CurrencyDollarIcon className="h-10 w-10 text-gain-600 dark:text-gain-400" />
-                  </div>
-                  <h3 className="text-lg font-semibold robinhood-text-primary mb-2">Beta</h3>
-                  <p className="text-3xl font-bold text-gain-600 dark:text-gain-400 mb-2">{riskAnalysis.portfolio_metrics.beta.toFixed(2)}</p>
-                  <p className="text-sm robinhood-text-tertiary">Market correlation</p>
-                </div>
-              </div>
+            {/* Advanced Risk Dashboard */}
+            <div className="robinhood-card p-8">
+              <AdvancedRiskDashboard
+                holdings={currentPortfolio.holdings}
+                riskTolerance={user?.risk_tolerance || 'moderate'}
+                autoRefresh={false}
+              />
             </div>
 
             {/* Risk Alerts */}
@@ -321,99 +230,7 @@ export const RiskDashboard: React.FC = () => {
               </div>
             )}
 
-            {/* Risk Metrics Details */}
-            <div className="robinhood-card p-8">
-              <div className="flex items-center space-x-3 mb-8">
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/30 dark:to-purple-800/30 rounded-robinhood flex items-center justify-center">
-                  <ChartBarIcon className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
-                </div>
-                <h3 className="text-xl font-semibold robinhood-text-primary">Detailed Risk Metrics</h3>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="space-y-6">
-                  <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Portfolio Metrics</h4>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-robinhood-dark-tertiary dark:to-neutral-800 rounded-robinhood">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-800/50 rounded-lg flex items-center justify-center">
-                          <ArrowTrendingUpIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <span className="text-sm font-medium robinhood-text-secondary">Sharpe Ratio</span>
-                      </div>
-                      <span className="text-lg font-bold robinhood-text-primary">{riskAnalysis.portfolio_metrics.sharpe_ratio.toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-robinhood-dark-tertiary dark:to-neutral-800 rounded-robinhood">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-loss-100 dark:bg-loss-800/50 rounded-lg flex items-center justify-center">
-                          <ArrowTrendingDownIcon className="h-4 w-4 text-loss-600 dark:text-loss-400" />
-                        </div>
-                        <span className="text-sm font-medium robinhood-text-secondary">Max Drawdown</span>
-                      </div>
-                      <span className="text-lg font-bold robinhood-text-primary">{riskAnalysis.portfolio_metrics.max_drawdown.toFixed(2)}%</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-robinhood-dark-tertiary dark:to-neutral-800 rounded-robinhood">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-orange-100 dark:bg-orange-800/50 rounded-lg flex items-center justify-center">
-                          <ExclamationTriangleIcon className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                        </div>
-                        <span className="text-sm font-medium robinhood-text-secondary">Value at Risk (95%)</span>
-                      </div>
-                      <span className="text-lg font-bold robinhood-text-primary">{riskAnalysis.portfolio_metrics.var_95.toFixed(2)}%</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-robinhood-dark-tertiary dark:to-neutral-800 rounded-robinhood">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-gain-100 dark:bg-gain-800/50 rounded-lg flex items-center justify-center">
-                          <ShieldCheckIcon className="h-4 w-4 text-gain-600 dark:text-gain-400" />
-                        </div>
-                        <span className="text-sm font-medium robinhood-text-secondary">Diversification Score</span>
-                      </div>
-                      <span className="text-lg font-bold robinhood-text-primary">{(riskAnalysis.portfolio_metrics.diversification_score * 100).toFixed(0)}%</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <h4 className="text-lg font-semibold robinhood-text-primary mb-4">Risk Score Components</h4>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-robinhood-dark-tertiary dark:to-neutral-800 rounded-robinhood">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-purple-100 dark:bg-purple-800/50 rounded-lg flex items-center justify-center">
-                          <ChartBarIcon className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                        </div>
-                        <span className="text-sm font-medium robinhood-text-secondary">Volatility Score</span>
-                      </div>
-                      <span className="text-lg font-bold robinhood-text-primary">{riskAnalysis.risk_score.components.volatility_score.toFixed(1)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-robinhood-dark-tertiary dark:to-neutral-800 rounded-robinhood">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-800/50 rounded-lg flex items-center justify-center">
-                          <CurrencyDollarIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                        </div>
-                        <span className="text-sm font-medium robinhood-text-secondary">Beta Score</span>
-                      </div>
-                      <span className="text-lg font-bold robinhood-text-primary">{riskAnalysis.risk_score.components.beta_score.toFixed(1)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-robinhood-dark-tertiary dark:to-neutral-800 rounded-robinhood">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-blue-100 dark:bg-blue-800/50 rounded-lg flex items-center justify-center">
-                          <ArrowTrendingUpIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <span className="text-sm font-medium robinhood-text-secondary">Sharpe Score</span>
-                      </div>
-                      <span className="text-lg font-bold robinhood-text-primary">{riskAnalysis.risk_score.components.sharpe_score.toFixed(1)}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-neutral-50 to-neutral-100 dark:from-robinhood-dark-tertiary dark:to-neutral-800 rounded-robinhood">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-teal-100 dark:bg-teal-800/50 rounded-lg flex items-center justify-center">
-                          <MinusIcon className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                        </div>
-                        <span className="text-sm font-medium robinhood-text-secondary">Concentration Score</span>
-                      </div>
-                      <span className="text-lg font-bold robinhood-text-primary">{riskAnalysis.risk_score.components.concentration_score.toFixed(1)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+
           </>
         )}
       </div>

@@ -82,7 +82,15 @@ interface RealTimeSubscription {
   callback: (data: StockQuote) => void
 }
 
-  // Rate limiting configuration for API calls
+interface CacheEntry<T> {
+  data: T
+  timestamp: number
+  lastAccessed: number
+  accessCount: number
+  isStale: boolean
+}
+
+// Rate limiting configuration for API calls
 const RATE_LIMIT = {
   callsPerMinute: 60, // Free plan: 60 calls per minute
   callsPerSecond: 1,  // Free plan: 1 call per second
@@ -90,8 +98,28 @@ const RATE_LIMIT = {
   maxRetries: 3
 }
 
-// Cache configuration
-const CACHE_DURATION = 15 * 60 * 1000 // 15 minutes in milliseconds
+// Enhanced cache configuration
+const CACHE_CONFIG = {
+  // Different cache durations for different data types
+  durations: {
+    quotes: 2 * 60 * 1000,        // 2 minutes for stock quotes (frequently changing)
+    profiles: 60 * 60 * 1000,     // 1 hour for company profiles (rarely change)
+    search: 30 * 60 * 1000,       // 30 minutes for search results
+    historical: 15 * 60 * 1000,   // 15 minutes for historical data
+    news: 5 * 60 * 1000,          // 5 minutes for news (time-sensitive)
+    forex: 10 * 60 * 1000,        // 10 minutes for forex rates
+  },
+  // Auto-refresh thresholds
+  autoRefresh: {
+    quotes: 30 * 1000,            // Auto-refresh quotes after 30 seconds if accessed
+    maxAge: 5 * 60 * 1000,        // Maximum age before forcing refresh
+  },
+  // Cache size limits
+  maxSize: {
+    memory: 100,                  // Max 100 items in memory cache
+    localStorage: 50,             // Max 50 items in localStorage
+  }
+}
 
 class RateLimiter {
   private callCount = 0
@@ -148,50 +176,209 @@ class RateLimiter {
   }
 }
 
-class CacheManager {
-  private cache = new Map<string, { data: any; timestamp: number }>()
+class EnhancedCacheManager {
+  private memoryCache = new Map<string, CacheEntry<any>>()
+  private backgroundRefreshQueue = new Set<string>()
+  private refreshTimeouts = new Map<string, NodeJS.Timeout>()
 
-  set(key: string, data: any): void {
-    this.cache.set(key, { data, timestamp: Date.now() })
+  set<T>(key: string, data: T, type: keyof typeof CACHE_CONFIG.durations = 'quotes'): void {
+    const now = Date.now()
+    const entry: CacheEntry<T> = {
+      data,
+      timestamp: now,
+      lastAccessed: now,
+      accessCount: 1,
+      isStale: false
+    }
+
+    // Update memory cache
+    this.memoryCache.set(key, entry)
     
-    // Also store in localStorage for persistence
-    try {
-      localStorage.setItem(`market_data_${key}`, JSON.stringify({
-        data,
-        timestamp: Date.now()
-      }))
-    } catch (error) {
-      console.warn('Failed to store in localStorage:', error)
+    // Manage cache size
+    this.enforceMemoryCacheLimit()
+    
+    // Store in localStorage for persistence (except for frequently changing data)
+    if (type !== 'quotes') {
+      try {
+        const localStorageKey = `market_data_${key}`
+        const existingKeys = Object.keys(localStorage).filter(k => k.startsWith('market_data_'))
+        
+        // Enforce localStorage limit
+        if (existingKeys.length >= CACHE_CONFIG.maxSize.localStorage) {
+          const oldestKey = this.findOldestLocalStorageKey(existingKeys)
+          if (oldestKey) {
+            localStorage.removeItem(oldestKey)
+          }
+        }
+        
+        localStorage.setItem(localStorageKey, JSON.stringify({
+          ...entry,
+          type
+        }))
+      } catch (error) {
+        console.warn('Failed to store in localStorage:', error)
+      }
+    }
+
+    // Schedule background refresh for quotes
+    if (type === 'quotes') {
+      this.scheduleBackgroundRefresh(key)
     }
   }
 
-  get(key: string): any | null {
+  get<T>(key: string, type: keyof typeof CACHE_CONFIG.durations = 'quotes'): T | null {
+    const now = Date.now()
+    
     // Check memory cache first
-    const memoryItem = this.cache.get(key)
-    if (memoryItem && Date.now() - memoryItem.timestamp < CACHE_DURATION) {
-      return memoryItem.data
+    const memoryEntry = this.memoryCache.get(key) as CacheEntry<T> | undefined
+    if (memoryEntry) {
+      const age = now - memoryEntry.timestamp
+      const duration = CACHE_CONFIG.durations[type]
+      
+      // Update access stats
+      memoryEntry.lastAccessed = now
+      memoryEntry.accessCount++
+      
+      // Check if data is still valid
+      if (age < duration) {
+        // Check if we should auto-refresh (for quotes)
+        if (type === 'quotes' && age > CACHE_CONFIG.autoRefresh.quotes) {
+          this.queueBackgroundRefresh(key)
+        }
+        
+        return memoryEntry.data
+      } else {
+        // Mark as stale but return it while refreshing in background
+        memoryEntry.isStale = true
+        this.queueBackgroundRefresh(key)
+        return memoryEntry.data
+      }
     }
 
-    // Check localStorage
-    try {
-      const stored = localStorage.getItem(`market_data_${key}`)
-      if (stored) {
-        const item = JSON.parse(stored)
-        if (Date.now() - item.timestamp < CACHE_DURATION) {
-          // Update memory cache
-          this.cache.set(key, item)
-          return item.data
+    // Check localStorage for non-quote data
+    if (type !== 'quotes') {
+      try {
+        const stored = localStorage.getItem(`market_data_${key}`)
+        if (stored) {
+          const item = JSON.parse(stored)
+          const age = now - item.timestamp
+          const duration = CACHE_CONFIG.durations[type]
+          
+          if (age < duration) {
+            // Update memory cache
+            const entry: CacheEntry<T> = {
+              data: item.data,
+              timestamp: item.timestamp,
+              lastAccessed: now,
+              accessCount: 1,
+              isStale: false
+            }
+            this.memoryCache.set(key, entry)
+            return item.data
+          }
         }
+      } catch (error) {
+        console.warn('Failed to read from localStorage:', error)
       }
-    } catch (error) {
-      console.warn('Failed to read from localStorage:', error)
     }
 
     return null
   }
 
+  isStale(key: string): boolean {
+    const entry = this.memoryCache.get(key)
+    return entry?.isStale || false
+  }
+
+  private queueBackgroundRefresh(key: string): void {
+    if (!this.backgroundRefreshQueue.has(key)) {
+      this.backgroundRefreshQueue.add(key)
+      // Process background refresh queue
+      setTimeout(() => this.processBackgroundRefreshQueue(), 100)
+    }
+  }
+
+  private async processBackgroundRefreshQueue(): Promise<void> {
+    const keys = Array.from(this.backgroundRefreshQueue)
+    this.backgroundRefreshQueue.clear()
+    
+    for (const key of keys) {
+      // Extract symbol from key (e.g., "quote_AAPL" -> "AAPL")
+      const symbol = key.replace('quote_', '')
+      if (symbol) {
+        try {
+          // Trigger a background refresh (this will be handled by the service)
+          console.log(`🔄 Background refresh queued for ${symbol}`)
+        } catch (error) {
+          console.warn(`Background refresh failed for ${symbol}:`, error)
+        }
+      }
+    }
+  }
+
+  private scheduleBackgroundRefresh(key: string): void {
+    // Clear existing timeout
+    const existingTimeout = this.refreshTimeouts.get(key)
+    if (existingTimeout) {
+      clearTimeout(existingTimeout)
+    }
+    
+    // Schedule new refresh
+    const timeout = setTimeout(() => {
+      this.queueBackgroundRefresh(key)
+      this.refreshTimeouts.delete(key)
+    }, CACHE_CONFIG.autoRefresh.quotes)
+    
+    this.refreshTimeouts.set(key, timeout)
+  }
+
+  private enforceMemoryCacheLimit(): void {
+    if (this.memoryCache.size > CACHE_CONFIG.maxSize.memory) {
+      // Remove least recently used items
+      const entries = Array.from(this.memoryCache.entries())
+      entries.sort((a, b) => {
+        const aScore = a[1].accessCount * (Date.now() - a[1].lastAccessed)
+        const bScore = b[1].accessCount * (Date.now() - b[1].lastAccessed)
+        return aScore - bScore
+      })
+      
+      const toRemove = entries.slice(0, this.memoryCache.size - CACHE_CONFIG.maxSize.memory)
+      toRemove.forEach(([key]) => {
+        this.memoryCache.delete(key)
+      })
+    }
+  }
+
+  private findOldestLocalStorageKey(keys: string[]): string | null {
+    let oldestKey: string | null = null
+    let oldestTime = Date.now()
+    
+    for (const key of keys) {
+      try {
+        const stored = localStorage.getItem(key)
+        if (stored) {
+          const item = JSON.parse(stored)
+          if (item.timestamp < oldestTime) {
+            oldestTime = item.timestamp
+            oldestKey = key
+          }
+        }
+      } catch (error) {
+        // Skip invalid entries
+      }
+    }
+    
+    return oldestKey
+  }
+
   clear(): void {
-    this.cache.clear()
+    this.memoryCache.clear()
+    this.backgroundRefreshQueue.clear()
+    
+    // Clear timeouts
+    this.refreshTimeouts.forEach(timeout => clearTimeout(timeout))
+    this.refreshTimeouts.clear()
+    
     // Clear localStorage items
     try {
       Object.keys(localStorage).forEach(key => {
@@ -203,16 +390,24 @@ class CacheManager {
       console.warn('Failed to clear localStorage:', error)
     }
   }
+
+  getStats(): { memorySize: number; backgroundQueueSize: number } {
+    return {
+      memorySize: this.memoryCache.size,
+      backgroundQueueSize: this.backgroundRefreshQueue.size
+    }
+  }
 }
 
 class MarketDataService {
   private serverUrl: string
   private rateLimiter = new RateLimiter()
-  private cache = new CacheManager()
+  private cache = new EnhancedCacheManager()
   private websocket: WebSocket | null = null
   private subscriptions = new Map<string, RealTimeSubscription[]>()
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
+  private backgroundRefreshEnabled = true
 
   constructor() {
     // Use the backend API for market data
@@ -221,6 +416,9 @@ class MarketDataService {
     if (!this.serverUrl) {
       console.warn('Backend API URL not configured. Some features will not be available.')
     }
+
+    // Start background refresh process
+    this.startBackgroundRefresh()
   }
 
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
@@ -260,13 +458,23 @@ class MarketDataService {
     })
   }
 
-  async getStockQuote(symbol: string): Promise<StockQuote | null> {
+  async getStockQuote(symbol: string, forceRefresh: boolean = false): Promise<StockQuote | null> {
     const cacheKey = `quote_${symbol.toUpperCase()}`
-    const cached = this.cache.get(cacheKey)
     
-    if (cached) {
-      console.log(`Returning cached quote for ${symbol}:`, cached)
-      return cached
+    // Check cache first (unless force refresh)
+    if (!forceRefresh) {
+      const cached = this.cache.get<StockQuote>(cacheKey, 'quotes')
+      if (cached) {
+        console.log(`Returning cached quote for ${symbol}:`, cached)
+        
+        // If data is stale, trigger background refresh
+        if (this.cache.isStale(cacheKey)) {
+          console.log(`📊 Quote for ${symbol} is stale, refreshing in background...`)
+          this.queueBackgroundRefresh(symbol)
+        }
+        
+        return cached
+      }
     }
 
     console.log(`Fetching quote for ${symbol} from API...`)
@@ -290,7 +498,7 @@ class MarketDataService {
         }
         
         console.log(`Mapped quote data for ${symbol}:`, mappedData)
-        this.cache.set(cacheKey, mappedData)
+        this.cache.set(cacheKey, mappedData, 'quotes')
         return mappedData
       } else {
         console.log(`Invalid quote data for ${symbol}:`, rawData)
@@ -307,9 +515,36 @@ class MarketDataService {
     }
   }
 
+  private queueBackgroundRefresh(symbol: string): void {
+    if (!this.backgroundRefreshEnabled) return
+    
+    // Queue background refresh
+    setTimeout(async () => {
+      try {
+        console.log(`🔄 Background refresh for ${symbol}...`)
+        await this.getStockQuote(symbol, true)
+        console.log(`✅ Background refresh completed for ${symbol}`)
+      } catch (error) {
+        console.warn(`❌ Background refresh failed for ${symbol}:`, error)
+      }
+    }, 1000) // Small delay to avoid overwhelming the API
+  }
+
+  private startBackgroundRefresh(): void {
+    // Periodically refresh frequently accessed quotes
+    setInterval(() => {
+      if (!this.backgroundRefreshEnabled) return
+      
+      const stats = this.cache.getStats()
+      console.log(`📊 Cache stats: ${stats.memorySize} items in memory, ${stats.backgroundQueueSize} in queue`)
+      
+      // This could be enhanced to refresh the most frequently accessed quotes
+    }, 60000) // Check every minute
+  }
+
   async getCompanyProfile(symbol: string): Promise<CompanyProfile | null> {
     const cacheKey = `profile_${symbol.toUpperCase()}`
-    const cached = this.cache.get(cacheKey)
+    const cached = this.cache.get<CompanyProfile>(cacheKey, 'profiles')
     
     if (cached) {
       return cached
@@ -319,7 +554,7 @@ class MarketDataService {
       const data = await this.makeRequest<CompanyProfile>(`/stock/profile2`, { symbol: symbol.toUpperCase() })
       
       if (data && data.name) {
-        this.cache.set(cacheKey, data)
+        this.cache.set(cacheKey, data, 'profiles')
         return data
       }
       
@@ -334,7 +569,7 @@ class MarketDataService {
     if (query.length < 2) return null
 
     const cacheKey = `search_${query.toLowerCase()}`
-    const cached = this.cache.get(cacheKey)
+    const cached = this.cache.get<SearchResult>(cacheKey, 'search')
     
     if (cached) {
       return cached
@@ -344,7 +579,7 @@ class MarketDataService {
       const data = await this.makeRequest<SearchResult>(`/search`, { q: query })
       
       if (data && data.result) {
-        this.cache.set(cacheKey, data)
+        this.cache.set(cacheKey, data, 'search')
         return data
       }
       
@@ -362,7 +597,7 @@ class MarketDataService {
 
     // Check cache first
     symbols.forEach(symbol => {
-      const cached = this.cache.get(`quote_${symbol.toUpperCase()}`)
+      const cached = this.cache.get<StockQuote>(`quote_${symbol.toUpperCase()}`, 'quotes')
       if (cached) {
         console.log(`Using cached quote for ${symbol}:`, cached)
         results[symbol.toUpperCase()] = cached
@@ -406,6 +641,15 @@ class MarketDataService {
 
   clearCache(): void {
     this.cache.clear()
+  }
+
+  getCacheStats(): { memorySize: number; backgroundQueueSize: number } {
+    return this.cache.getStats()
+  }
+
+  enableBackgroundRefresh(enabled: boolean): void {
+    this.backgroundRefreshEnabled = enabled
+    console.log(`Background refresh ${enabled ? 'enabled' : 'disabled'}`)
   }
 
   isConfigured(): boolean {
@@ -496,7 +740,7 @@ class MarketDataService {
         })
 
         // Update cache with real-time data
-        this.cache.set(`quote_${trade.s}`, quote)
+        this.cache.set(`quote_${trade.s}`, quote, 'quotes')
       }
     })
   }
@@ -538,7 +782,7 @@ class MarketDataService {
   // Historical price data with technical indicators
   async getHistoricalData(symbol: string, from: Date, to: Date, resolution: 'D' | 'W' | 'M' = 'D'): Promise<HistoricalData | null> {
     const cacheKey = `historical_${symbol}_${from.getTime()}_${to.getTime()}_${resolution}`
-    const cached = this.cache.get(cacheKey)
+    const cached = this.cache.get<HistoricalData>(cacheKey, 'historical')
     
     if (cached) {
       return cached
@@ -566,7 +810,7 @@ class MarketDataService {
           volumes: data.v || []
         }
         
-        this.cache.set(cacheKey, historicalData)
+        this.cache.set(cacheKey, historicalData, 'historical')
         return historicalData
       }
       
@@ -580,7 +824,7 @@ class MarketDataService {
   // Market news integration
   async getMarketNews(category: 'general' | 'forex' | 'crypto' | 'merger' = 'general', limit: number = 20): Promise<MarketNews[]> {
     const cacheKey = `news_${category}_${limit}`
-    const cached = this.cache.get(cacheKey)
+    const cached = this.cache.get<MarketNews[]>(cacheKey, 'news')
     
     if (cached) {
       return cached
@@ -594,7 +838,7 @@ class MarketDataService {
 
       if (data && Array.isArray(data)) {
         const news = data.slice(0, limit)
-        this.cache.set(cacheKey, news)
+        this.cache.set(cacheKey, news, 'news')
         return news
       }
       
@@ -608,7 +852,7 @@ class MarketDataService {
   // Company-specific news
   async getCompanyNews(symbol: string, from: Date, to: Date): Promise<MarketNews[]> {
     const cacheKey = `company_news_${symbol}_${from.getTime()}_${to.getTime()}`
-    const cached = this.cache.get(cacheKey)
+    const cached = this.cache.get<MarketNews[]>(cacheKey, 'news')
     
     if (cached) {
       return cached
@@ -625,7 +869,7 @@ class MarketDataService {
       })
 
       if (data && Array.isArray(data)) {
-        this.cache.set(cacheKey, data)
+        this.cache.set(cacheKey, data, 'news')
         return data
       }
       
@@ -639,7 +883,7 @@ class MarketDataService {
   // Currency conversion for international stocks
   async getCurrencyExchange(base: string, target: string): Promise<CurrencyExchange | null> {
     const cacheKey = `forex_${base}_${target}`
-    const cached = this.cache.get(cacheKey)
+    const cached = this.cache.get<CurrencyExchange>(cacheKey, 'forex')
     
     if (cached) {
       return cached
@@ -665,7 +909,7 @@ class MarketDataService {
             timestamp: Date.now()
           }
           
-          this.cache.set(cacheKey, exchange)
+          this.cache.set(cacheKey, exchange, 'forex')
           return exchange
         }
       } catch (ratesError) {
@@ -687,7 +931,7 @@ class MarketDataService {
             timestamp: Date.now()
           }
           
-          this.cache.set(cacheKey, exchange)
+          this.cache.set(cacheKey, exchange, 'forex')
           return exchange
         }
       } catch (reverseError) {
@@ -715,7 +959,7 @@ class MarketDataService {
             timestamp: Date.now()
           }
           
-          this.cache.set(cacheKey, exchange)
+          this.cache.set(cacheKey, exchange, 'forex')
           return exchange
         }
       } catch (candleError) {

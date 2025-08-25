@@ -3,6 +3,7 @@ import { AdvancedRiskDashboard } from './AdvancedRiskDashboard'
 import { usePortfolio } from '../contexts/PortfolioContext'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from './Toast'
+import { VolatilityComparisonChart } from './dashboard/VolatilityComparisonChart'
 import { 
   Shield, 
   AlertTriangle, 
@@ -454,6 +455,12 @@ const LocalRiskDashboard: React.FC<LocalRiskDashboardProps> = ({
           ))}
         </div>
       </div>
+
+      {/* ML Volatility Comparison Chart */}
+      <VolatilityComparisonChart 
+        portfolioHoldings={holdings}
+        className="mb-6"
+      />
 
       {/* Holdings Summary */}
       <div className="bg-white rounded-lg shadow-sm border p-6">

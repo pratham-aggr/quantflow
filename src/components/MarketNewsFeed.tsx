@@ -47,6 +47,7 @@ interface MarketNewsFeedProps {
   maxItems?: number
   autoRefresh?: boolean
   refreshInterval?: number
+  portfolioHoldings?: any[]
 }
 
 export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
@@ -54,7 +55,8 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
   category = 'general',
   maxItems = 6, // Reduced from 10 to 6 for cleaner look
   autoRefresh = false,
-  refreshInterval = 300000
+  refreshInterval = 300000,
+  portfolioHoldings = []
 }) => {
   const [news, setNews] = useState<MarketNews[]>([])
   const [finnhubNews, setFinnhubNews] = useState<FinnhubNewsItem[]>([])
@@ -351,6 +353,8 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
           </div>
         </div>
       )}
+
+
     </div>
   )
 }

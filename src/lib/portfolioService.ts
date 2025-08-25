@@ -378,7 +378,8 @@ export const portfolioService = {
     const updatedHoldings = await Promise.all(
       holdings.map(async (holding) => {
         try {
-          const quote = await marketDataService.getStockQuote(holding.symbol)
+          // Use intelligent caching - don't force refresh unless data is stale
+          const quote = await marketDataService.getStockQuote(holding.symbol, false)
           if (quote) {
             return {
               ...holding,
@@ -445,7 +446,8 @@ export const portfolioService = {
       // Update each holding with current market data
       for (const holding of portfolio.holdings) {
         try {
-          const quote = await marketDataService.getStockQuote(holding.symbol)
+          // Use intelligent caching - force refresh for database updates
+          const quote = await marketDataService.getStockQuote(holding.symbol, true)
           if (quote) {
             // Update the holding with current market data
             await this.updateHolding(holding.id, {
@@ -453,7 +455,7 @@ export const portfolioService = {
               change: quote.change,
               changePercent: quote.changePercent
             })
-            console.log(`✅ Updated ${holding.symbol} with current market data`)
+            console.log(`✅ Updated ${holding.symbol} with current market data: $${quote.price} (${quote.change >= 0 ? '+' : ''}$${quote.change}, ${quote.change >= 0 ? '+' : ''}${quote.changePercent}%)`)
           }
         } catch (error) {
           console.warn(`Failed to update ${holding.symbol}:`, error)
