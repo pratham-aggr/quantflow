@@ -410,6 +410,16 @@ const SectorAnalysisView = ({ analysis }: { analysis: SectorAnalysis }) => {
 const MLPredictionView = ({ prediction }: { prediction: MLPrediction }) => {
   return (
     <div className="space-y-4">
+      {/* Model Improvement Note */}
+      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div className="flex items-start gap-2">
+          <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-2 flex-shrink-0" />
+          <p className="text-sm text-blue-800 dark:text-blue-200">
+            <span className="font-medium">Note:</span> The ML prediction model is still under improvement and refinement. Results should be used as supplementary information alongside other analysis tools.
+          </p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <div className="text-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
           <p className="text-xs text-gray-600 dark:text-gray-400">Predicted Volatility</p>
