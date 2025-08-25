@@ -29,6 +29,41 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setState({ user: null, loading: false, error: null })
   }
 
+  // Enter demo mode function
+  const enterDemoMode = async () => {
+    console.log('🎭 Entering demo mode')
+    setState(prev => ({ ...prev, loading: true, error: null }))
+    
+    try {
+      // Create a demo user
+      const demoUser = {
+        id: 'demo-user',
+        email: 'demo@quantflow.com',
+        full_name: 'Demo User',
+        risk_tolerance: 'moderate' as const,
+        investment_goals: ['Growth', 'Diversification'],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        isDemo: true
+      }
+      
+      setState({
+        user: demoUser,
+        loading: false,
+        error: null
+      })
+      
+      console.log('✅ Demo mode activated')
+    } catch (error) {
+      console.error('Demo mode error:', error)
+      setState(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: 'Failed to enter demo mode. Please try again.' 
+      }))
+    }
+  }
+
   // Initialize auth state on mount (optimized)
   useEffect(() => {
     // Reduced timeout for faster loading
@@ -316,7 +351,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     updateProfile,
-    forceResetAuth // Add this to the context
+    forceResetAuth,
+    enterDemoMode
   }
 
   return (

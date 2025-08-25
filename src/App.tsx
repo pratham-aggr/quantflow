@@ -19,6 +19,7 @@ import { Navigation } from './components/Navigation';
 import { AuthDebug } from './components/AuthDebug';
 import { ToastContainer, useToast } from './components/Toast';
 import CacheManager from './components/CacheManager';
+import { DemoTest } from './components/DemoTest';
 import './App.css';
 
 // Create a client with better error handling and retry logic
@@ -143,6 +144,12 @@ function App() {
                             <ResetPasswordForm />
                           </PublicRoute>
                         } 
+                      />
+                      
+                      {/* Demo test route */}
+                      <Route 
+                        path="/demo-test" 
+                        element={<DemoTest />} 
                       />
                       
                       {/* Protected routes - redirect to login if not authenticated */}

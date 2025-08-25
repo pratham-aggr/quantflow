@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { portfolioService } from '../lib/portfolioService'
+import { demoPortfolioService } from '../lib/demoPortfolioService'
 import { 
   Portfolio, 
   Holding, 
@@ -59,6 +60,29 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
 
     setState(prev => ({ ...prev, loading: true, error: null }))
 
+    // Handle demo mode
+    if (user.isDemo) {
+      demoPortfolioService.createDemoPortfolio()
+        .then(demoPortfolio => {
+          setState(prev => ({
+            ...prev,
+            portfolios: [demoPortfolio],
+            currentPortfolio: demoPortfolio,
+            loading: false
+          }))
+        })
+        .catch(error => {
+          console.error('Error creating demo portfolio:', error)
+          setState(prev => ({
+            ...prev,
+            loading: false,
+            error: 'Failed to load demo portfolio'
+          }))
+        })
+      return
+    }
+
+    // Handle regular user portfolios
     portfolioService.getPortfolios(user.id)
       .then(portfolios => {
         setState(prev => ({
@@ -108,6 +132,15 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   const createPortfolio = async (data: CreatePortfolioData): Promise<Portfolio | null> => {
     if (!user) return null
 
+    // Demo users can't create portfolios
+    if (user.isDemo) {
+      setState(prev => ({ 
+        ...prev, 
+        error: 'Demo mode: Cannot create portfolios. Please sign up for a full account.' 
+      }))
+      return null
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
@@ -139,6 +172,15 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   }
 
   const updatePortfolio = async (portfolioId: string, updates: Partial<Portfolio>): Promise<Portfolio | null> => {
+    // Demo users can't update portfolios
+    if (user?.isDemo) {
+      setState(prev => ({ 
+        ...prev, 
+        error: 'Demo mode: Cannot update portfolios. Please sign up for a full account.' 
+      }))
+      return null
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
@@ -166,6 +208,15 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   }
 
   const deletePortfolio = async (portfolioId: string): Promise<boolean> => {
+    // Demo users can't delete portfolios
+    if (user?.isDemo) {
+      setState(prev => ({ 
+        ...prev, 
+        error: 'Demo mode: Cannot delete portfolios. Please sign up for a full account.' 
+      }))
+      return false
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
@@ -194,6 +245,17 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
+      // Handle demo portfolio selection
+      if (user?.isDemo && portfolioId === 'demo-portfolio') {
+        const demoPortfolio = await demoPortfolioService.createDemoPortfolio()
+        setState(prev => ({
+          ...prev,
+          currentPortfolio: demoPortfolio,
+          loading: false
+        }))
+        return
+      }
+
       const portfolioWithHoldings = await portfolioService.getPortfolioWithMarketPrices(portfolioId)
       setState(prev => ({
         ...prev,
@@ -211,6 +273,15 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   }
 
   const createHolding = async (data: CreateHoldingData): Promise<Holding | null> => {
+    // Demo users can't create holdings
+    if (user?.isDemo) {
+      setState(prev => ({ 
+        ...prev, 
+        error: 'Demo mode: Cannot add holdings. Please sign up for a full account.' 
+      }))
+      return null
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
@@ -238,6 +309,15 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   }
 
   const updateHolding = async (holdingId: string, updates: Partial<Holding>): Promise<Holding | null> => {
+    // Demo users can't update holdings
+    if (user?.isDemo) {
+      setState(prev => ({ 
+        ...prev, 
+        error: 'Demo mode: Cannot update holdings. Please sign up for a full account.' 
+      }))
+      return null
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
@@ -265,6 +345,15 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   }
 
   const deleteHolding = async (holdingId: string): Promise<boolean> => {
+    // Demo users can't delete holdings
+    if (user?.isDemo) {
+      setState(prev => ({ 
+        ...prev, 
+        error: 'Demo mode: Cannot delete holdings. Please sign up for a full account.' 
+      }))
+      return false
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
@@ -292,6 +381,15 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   }
 
   const createTransaction = async (data: CreateTransactionData): Promise<Transaction | null> => {
+    // Demo users can't create transactions
+    if (user?.isDemo) {
+      setState(prev => ({ 
+        ...prev, 
+        error: 'Demo mode: Cannot create transactions. Please sign up for a full account.' 
+      }))
+      return null
+    }
+
     setState(prev => ({ ...prev, loading: true, error: null }))
 
     try {
@@ -329,8 +427,25 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
   const refreshCurrentPortfolio = async (): Promise<void> => {
     if (!state.currentPortfolio) return
 
+    // Prevent rapid successive calls
+    if (state.loading) {
+      console.log('🔄 Portfolio refresh already in progress, skipping...')
+      return
+    }
+
     try {
       console.log('🔄 Starting portfolio refresh...')
+      
+      // Handle demo portfolio refresh
+      if (user?.isDemo) {
+        const updatedPortfolio = await demoPortfolioService.refreshDemoPortfolio(state.currentPortfolio)
+        setState(prev => ({
+          ...prev,
+          currentPortfolio: updatedPortfolio
+        }))
+        console.log('✅ Demo portfolio refreshed with real market prices')
+        return
+      }
       
       // Get fresh market data directly without database update
       const updatedPortfolio = await portfolioService.getPortfolioWithMarketPrices(state.currentPortfolio.id)

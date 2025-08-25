@@ -6,6 +6,7 @@ export interface User {
   investment_goals?: string[]
   created_at?: string
   updated_at?: string
+  isDemo?: boolean // Add demo mode flag
 }
 
 export interface AuthState {
@@ -36,5 +37,6 @@ export interface AuthContextType extends AuthState {
   register: (credentials: RegisterCredentials) => Promise<void>
   logout: () => Promise<void>
   updateProfile: (updates: Partial<UserProfile>) => Promise<void>
-  forceResetAuth: () => void // Add this
+  forceResetAuth: () => void
+  enterDemoMode: () => Promise<void> // Add demo mode function
 }

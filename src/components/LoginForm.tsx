@@ -17,9 +17,10 @@ interface LoginFormProps {
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForgotPassword }) => {
-  const { login } = useAuth()
+  const { login, enterDemoMode } = useAuth()
   const { success, error: showError } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDemoLoading, setIsDemoLoading] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [loginStep, setLoginStep] = useState<'idle' | 'validating' | 'authenticating' | 'loading-profile'>('idle')
 
@@ -54,6 +55,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
     } finally {
       setIsSubmitting(false)
       setLoginStep('idle')
+    }
+  }
+
+  const handleDemoMode = async () => {
+    setIsDemoLoading(true)
+    setSubmitError(null)
+
+    try {
+      await enterDemoMode()
+      success('Demo Mode Activated', 'Welcome to QuantFlow! You can now explore all features with a sample portfolio.')
+    } catch (error) {
+      console.error('Demo mode error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Failed to enter demo mode. Please try again.'
+      setSubmitError(errorMessage)
+      showError('Demo Mode Failed', errorMessage)
+    } finally {
+      setIsDemoLoading(false)
     }
   }
 
@@ -92,7 +110,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
           placeholder="Enter your email"
           required
           error={errors.email?.message}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isDemoLoading}
           {...register('email', {
             required: 'Email is required',
             pattern: {
@@ -108,7 +126,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
           placeholder="Enter your password"
           required
           error={errors.password?.message}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isDemoLoading}
           {...register('password', {
             required: 'Password is required',
             minLength: {
@@ -122,7 +140,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
           <button
             type="button"
             onClick={onForgotPassword}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isDemoLoading}
             className="text-sm text-blue-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Forgot your password?
@@ -134,10 +152,41 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
           loading={isSubmitting}
           loadingText={getLoadingText()}
           className="w-full"
+          disabled={isDemoLoading}
         >
           Sign In
         </PrimaryButton>
       </form>
+
+      {/* Demo Portfolio Button */}
+      <div className="mt-6">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-neutral-300 dark:border-neutral-700" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white dark:bg-neutral-900 text-neutral-500 dark:text-neutral-400">
+              Or
+            </span>
+          </div>
+        </div>
+        
+        <div className="mt-6">
+          <PrimaryButton
+            type="button"
+            onClick={handleDemoMode}
+            loading={isDemoLoading}
+            loadingText="Loading Demo..."
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 border-0 text-white"
+            disabled={isSubmitting}
+          >
+            🎭 View Demo Portfolio
+          </PrimaryButton>
+          <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center mt-2">
+            Explore all features with a sample portfolio
+          </p>
+        </div>
+      </div>
 
       <div className="mt-6 text-center">
         <p className="text-gray-600">
@@ -145,7 +194,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
           <button
             type="button"
             onClick={onSwitchToRegister}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isDemoLoading}
             className="text-blue-600 hover:text-blue-500 font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Sign up here

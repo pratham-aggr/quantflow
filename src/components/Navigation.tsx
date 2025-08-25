@@ -12,7 +12,8 @@ import {
   TrendingUp, 
   Shield, 
   Globe,
-  Settings
+  Settings,
+  Sparkles
 } from 'lucide-react'
 
 import { Menu as HeadlessMenu, Transition } from '@headlessui/react'
@@ -51,6 +52,12 @@ export const Navigation: React.FC = () => {
               <h1 className="text-xl font-semibold robinhood-text-primary">
                 QuantFlow
               </h1>
+              {user?.isDemo && (
+                <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs font-medium rounded-full">
+                  <Sparkles className="w-3 h-3" />
+                  <span>DEMO</span>
+                </div>
+              )}
             </Link>
           </div>
 
@@ -105,6 +112,21 @@ export const Navigation: React.FC = () => {
                 >
                   <HeadlessMenu.Items className="absolute right-0 mt-2 w-56 origin-top-right robinhood-card shadow-robinhood-lg focus:outline-none z-50">
                     <div className="py-2">
+                      {/* Demo Mode Notice */}
+                      {user?.isDemo && (
+                        <div className="px-4 py-2 mb-2 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                          <div className="flex items-center space-x-2">
+                            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                            <span className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                              Demo Mode Active
+                            </span>
+                          </div>
+                          <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                            Sample portfolio • Read-only
+                          </p>
+                        </div>
+                      )}
+                      
                       <HeadlessMenu.Item>
                         {({ active }) => (
                           <Link
@@ -141,7 +163,7 @@ export const Navigation: React.FC = () => {
                             } flex items-center w-full px-4 py-3 text-sm robinhood-text-secondary transition-colors duration-200`}
                           >
                             <LogOut className="mr-3 h-4 w-4" />
-                            Sign out
+                            {user?.isDemo ? 'Exit Demo' : 'Sign out'}
                           </button>
                         )}
                       </HeadlessMenu.Item>
@@ -202,6 +224,21 @@ export const Navigation: React.FC = () => {
             
             {/* Mobile user menu */}
             <div className="pt-4 mt-4 border-t border-neutral-200 dark:border-robinhood-dark-border">
+              {/* Demo Mode Notice for Mobile */}
+              {user?.isDemo && (
+                <div className="px-4 py-3 mb-3 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 border border-purple-200 dark:border-purple-800 rounded-lg">
+                  <div className="flex items-center space-x-2">
+                    <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                    <span className="text-sm font-medium text-purple-700 dark:text-purple-300">
+                      Demo Mode Active
+                    </span>
+                  </div>
+                  <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                    Sample portfolio • Read-only
+                  </p>
+                </div>
+              )}
+              
               <div className="flex items-center space-x-3 px-4 py-3">
                 <div className="w-10 h-10 bg-gradient-robinhood rounded-full flex items-center justify-center shadow-robinhood">
                   <span className="text-white font-medium text-sm">
@@ -242,7 +279,7 @@ export const Navigation: React.FC = () => {
                 className="w-full flex items-center space-x-3 px-4 py-3 text-sm robinhood-text-secondary hover:robinhood-text-primary hover:bg-neutral-50 dark:hover:bg-robinhood-dark-tertiary rounded-robinhood transition-colors duration-200"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Sign out</span>
+                <span>{user?.isDemo ? 'Exit Demo' : 'Sign out'}</span>
               </button>
             </div>
           </div>

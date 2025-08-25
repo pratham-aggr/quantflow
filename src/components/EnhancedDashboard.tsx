@@ -431,6 +431,11 @@ export const EnhancedDashboard: React.FC = () => {
 
   // Auto-refresh portfolio data
   useEffect(() => {
+    // Don't auto-refresh for demo users to prevent infinite loops
+    if (user?.isDemo) {
+      return
+    }
+
     const interval = setInterval(() => {
       if (!isRefreshing) {
         refreshCurrentPortfolio()
@@ -438,7 +443,7 @@ export const EnhancedDashboard: React.FC = () => {
     }, 30000) // Refresh every 30 seconds
 
     return () => clearInterval(interval)
-  }, [refreshCurrentPortfolio, isRefreshing])
+  }, [refreshCurrentPortfolio, isRefreshing, user?.isDemo])
 
   // Generate chart data for performance widget
   const performanceData = useMemo((): ChartDataPoint[] => {
