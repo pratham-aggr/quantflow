@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://quantflow-backend.onrender.com';
+const API_BASE_URL = process.env.REACT_APP_BACKEND_API_URL || 'https://quantflow-backend-api.onrender.com';
 
 export interface AlphaVantageNewsItem {
   id: string;

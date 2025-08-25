@@ -130,7 +130,7 @@ class RebalancingService {
           avg_price: holding.avg_price,
           current_price: holding.current_price || holding.avg_price
         })),
-        targetAllocation
+        target_allocation: targetAllocation
       }
 
       return this.makeRequest<WhatIfAnalysis>('/api/rebalancing/what-if', {

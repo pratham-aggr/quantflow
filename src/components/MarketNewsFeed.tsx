@@ -29,7 +29,7 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
-  const [useAlphaVantage, setUseAlphaVantage] = useState(false)
+  const [useAlphaVantage, setUseAlphaVantage] = useState(true) // Default to Alpha Vantage
   const { error: showError } = useToast()
 
   // Fetch news data
@@ -41,31 +41,31 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
       let newsData: MarketNews[] = []
       let alphaVantageData: AlphaVantageNewsItem[] = []
 
-      // Try primary news source first
+      // Try Alpha Vantage first (prioritized)
       try {
         if (symbol) {
-          const to = new Date()
-          const from = new Date()
-          from.setDate(from.getDate() - 30)
-          newsData = await marketDataService.getCompanyNews(symbol, from, to)
+          const response = await alphaVantageNewsService.getCompanyNews(symbol, maxItems)
+          alphaVantageData = response.news
         } else {
-          newsData = await marketDataService.getMarketNews(category, maxItems)
+          const response = await alphaVantageNewsService.getMarketNews(maxItems)
+          alphaVantageData = response.news
         }
-        setUseAlphaVantage(false)
-      } catch (primaryError) {
-        console.log('Primary news source failed, trying Alpha Vantage...')
+        setUseAlphaVantage(true)
+      } catch (alphaVantageError) {
+        console.log('Alpha Vantage failed, trying yfinance...')
         
-        // Fallback to Alpha Vantage
+        // Fallback to yfinance
         try {
           if (symbol) {
-            const response = await alphaVantageNewsService.getCompanyNews(symbol, maxItems)
-            alphaVantageData = response.news
+            const to = new Date()
+            const from = new Date()
+            from.setDate(from.getDate() - 30)
+            newsData = await marketDataService.getCompanyNews(symbol, from, to)
           } else {
-            const response = await alphaVantageNewsService.getMarketNews(maxItems)
-            alphaVantageData = response.news
+            newsData = await marketDataService.getMarketNews(category, maxItems)
           }
-          setUseAlphaVantage(true)
-        } catch (alphaVantageError) {
+          setUseAlphaVantage(false)
+        } catch (yfinanceError) {
           throw new Error('Both news sources failed')
         }
       }
@@ -150,9 +150,13 @@ export const MarketNewsFeed: React.FC<MarketNewsFeedProps> = ({
           <h2 className="text-xl font-semibold robinhood-text-primary">
             {symbol ? `${symbol} News` : 'Market News'}
           </h2>
-          {useAlphaVantage && (
+          {useAlphaVantage ? (
             <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
               Alpha Vantage
+            </span>
+          ) : (
+            <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">
+              yfinance
             </span>
           )}
         </div>

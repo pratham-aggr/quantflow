@@ -12,50 +12,18 @@ import requests
 import time
 import random
 import yfinance as yf
-from advanced_risk_engine import AdvancedRiskEngine
-# Alpha Vantage import with fallback
-try:
-    from alpha_vantage.news_sentiment import NewsSentiment
-except ImportError:
-    try:
-        from alpha_vantage import NewsSentiment
-    except ImportError:
-        # Fallback: create a mock class if Alpha Vantage is not available
-        class NewsSentiment:
-            def __init__(self, key=None, output_format=None):
-                pass
-            def get_news_sentiment(self, **kwargs):
-                return None, None
+from dotenv import load_dotenv
 
-# Rebalancing imports with fallback
-try:
-    from rebalancing_engine import RebalancingEngine
-    from advanced_rebalancing import AdvancedRebalancingEngine
-except ImportError as e:
-    logging.warning(f"Rebalancing modules not available: {e}")
-    # Create mock classes if modules are not available
-    class RebalancingEngine:
-        def analyze_rebalancing(self, holdings, target_allocation, constraints=None):
-            return type('obj', (object,), {
-                'current_allocation': {},
-                'target_allocation': {},
-                'drift_analysis': {},
-                'suggestions': [],
-                'total_drift': 0,
-                'estimated_transaction_cost': 0,
-                'rebalancing_score': 0,
-                'optimization_method': 'mock'
-            })()
-        def simulate_rebalancing(self, holdings, target_allocation):
-            return {}
-    
-    class AdvancedRebalancingEngine:
-        def analyze_rebalancing_need(self, holdings, target_allocation, last_rebalance_date=None):
-            return {'rebalancing_needed': False}
-        def generate_smart_rebalancing_plan(self, holdings, target_allocation, last_rebalance_date=None):
-            return {'rebalancing_needed': False}
-        def simulate_rebalancing_scenarios(self, holdings, target_allocation):
-            return []
+# Load environment variables from .env file
+load_dotenv('../.env')
+from advanced_risk_engine import AdvancedRiskEngine
+# Alpha Vantage configuration - using direct API calls since library doesn't support news
+ALPHA_VANTAGE_API_KEY = os.environ.get('ALPHA_VANTAGE_API_KEY', 'demo')
+news_sentiment = None  # We'll use direct API calls instead
+
+# Rebalancing imports - no fallback, real data only
+from rebalancing_engine import RebalancingEngine, RebalancingSuggestion
+from advanced_rebalancing import AdvancedRebalancingEngine
 
 import re
 
@@ -88,65 +56,67 @@ except Exception as e:
     logging.warning(f"Alpha Vantage not available: {e}")
     news_sentiment = None
 
-# Initialize rebalancing engines
-try:
-    rebalancing_engine = RebalancingEngine()
-    advanced_rebalancing_engine = AdvancedRebalancingEngine()
-except Exception as e:
-    logging.warning(f"Could not initialize rebalancing engines: {e}")
-    rebalancing_engine = None
-    advanced_rebalancing_engine = None
+# Initialize rebalancing engines - real data only
+rebalancing_engine = RebalancingEngine()
+advanced_rebalancing_engine = AdvancedRebalancingEngine()
 
 def get_alpha_vantage_news(tickers=None, topics=None, time_from=None, time_to=None, sort='RELEVANCE', limit=50):
-    """Get news from Alpha Vantage API"""
+    """Get news from Alpha Vantage API using direct HTTP requests"""
     try:
-        # Check if Alpha Vantage is available
-        if news_sentiment is None:
-            logging.warning("Alpha Vantage not available, returning empty news list")
+        # Check if API key is available
+        if not ALPHA_VANTAGE_API_KEY or ALPHA_VANTAGE_API_KEY == 'demo':
+            logging.warning("Alpha Vantage API key not configured, returning empty news list")
             return []
             
-        # Prepare parameters
+        # Prepare API parameters
         params = {
+            'function': 'NEWS_SENTIMENT',
+            'apikey': ALPHA_VANTAGE_API_KEY,
             'sort': sort,
             'limit': limit
         }
         
         if tickers:
-            params['tickers'] = tickers
+            params['tickers'] = ','.join(tickers) if isinstance(tickers, list) else tickers
         if topics:
-            params['topics'] = topics
+            params['topics'] = ','.join(topics) if isinstance(topics, list) else topics
         if time_from:
             params['time_from'] = time_from
         if time_to:
             params['time_to'] = time_to
             
-        # Get news data
-        data, meta_data = news_sentiment.get_news_sentiment(**params)
+        # Make direct API call
+        url = 'https://www.alphavantage.co/query'
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
         
-        if data is not None and not data.empty:
-            # Convert DataFrame to list of dictionaries
+        data = response.json()
+        
+        if 'feed' in data and data['feed']:
+            # Convert API response to our format
             news_list = []
-            for index, row in data.iterrows():
+            for item in data['feed']:
                 news_item = {
-                    'id': index,
-                    'title': row.get('title', ''),
-                    'url': row.get('url', ''),
-                    'time_published': row.get('time_published', ''),
-                    'authors': row.get('authors', []),
-                    'summary': row.get('summary', ''),
-                    'banner_image': row.get('banner_image', ''),
-                    'source': row.get('source', ''),
-                    'category_within_source': row.get('category_within_source', ''),
-                    'source_domain': row.get('source_domain', ''),
-                    'topics': row.get('topics', []),
-                    'overall_sentiment_score': row.get('overall_sentiment_score', 0),
-                    'overall_sentiment_label': row.get('overall_sentiment_label', ''),
-                    'ticker_sentiment': row.get('ticker_sentiment', [])
+                    'id': item.get('id', ''),
+                    'title': item.get('title', ''),
+                    'url': item.get('url', ''),
+                    'time_published': item.get('time_published', ''),
+                    'authors': item.get('authors', []),
+                    'summary': item.get('summary', ''),
+                    'banner_image': item.get('banner_image', ''),
+                    'source': item.get('source', ''),
+                    'category_within_source': item.get('category_within_source', ''),
+                    'source_domain': item.get('source_domain', ''),
+                    'topics': item.get('topics', []),
+                    'overall_sentiment_score': item.get('overall_sentiment_score', 0),
+                    'overall_sentiment_label': item.get('overall_sentiment_label', ''),
+                    'ticker_sentiment': item.get('ticker_sentiment', [])
                 }
                 news_list.append(news_item)
             
             return news_list
         else:
+            logging.warning("No news data in Alpha Vantage response")
             return []
             
     except Exception as e:
@@ -757,8 +727,8 @@ def simulate_rebalancing():
         holdings = data['holdings']
         target_allocation = data['target_allocation']
         
-        # Simulate rebalancing
-        simulation = rebalancing_engine.simulate_rebalancing(
+        # Simulate rebalancing using analyze_rebalancing method
+        simulation = rebalancing_engine.analyze_rebalancing(
             holdings=holdings,
             target_allocation=target_allocation
         )
@@ -785,9 +755,45 @@ def what_if_analysis():
         target_allocation = data['target_allocation']
         
         # Perform what-if analysis
-        what_if_result = rebalancing_engine.simulate_rebalancing(
+        # First, we need to create suggestions from the target allocation
+        current_allocation = rebalancing_engine.calculate_current_allocation(holdings)
+        drift_analysis = rebalancing_engine.calculate_drift(current_allocation, target_allocation)
+        
+        # Create suggestions based on the drift
+        suggestions = []
+        for symbol, drift in drift_analysis.items():
+            if abs(drift) > 1.0:  # Only suggest trades for significant drift
+                # Find the holding for this symbol
+                holding = next((h for h in holdings if h['symbol'] == symbol), None)
+                if holding:
+                    current_price = holding.get('current_price', holding['avg_price'])
+                    current_value = holding['quantity'] * current_price
+                    
+                    if drift > 0:
+                        # Need to sell
+                        action = 'SELL'
+                        quantity = int((drift / 100) * holding['quantity'])
+                        estimated_cost = quantity * current_price * rebalancing_engine.transaction_cost_rate
+                    else:
+                        # Need to buy
+                        action = 'BUY'
+                        quantity = int((abs(drift) / 100) * holding['quantity'])
+                        estimated_cost = quantity * current_price * rebalancing_engine.transaction_cost_rate
+                    
+                    suggestions.append(RebalancingSuggestion(
+                        symbol=symbol,
+                        action=action,
+                        quantity=quantity,
+                        current_value=current_value,
+                        target_value=current_value * (1 + drift/100),
+                        drift_percentage=drift,
+                        estimated_cost=estimated_cost,
+                        priority='HIGH' if abs(drift) > 5 else 'MEDIUM'
+                    ))
+        
+        what_if_result = rebalancing_engine.create_what_if_analysis(
             holdings=holdings,
-            target_allocation=target_allocation
+            suggestions=suggestions
         )
         
         return jsonify(what_if_result)
