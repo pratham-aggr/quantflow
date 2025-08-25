@@ -24,8 +24,7 @@ logging.basicConfig(
 app = Flask(__name__)
 
 # CORS configuration - allow Vercel preview and production domains
-
-CORS(app, resources={r"/api/*": {"origins": [
+CORS(app, resources={r"/.*": {"origins": [
     "http://localhost:3000",
     "http://localhost:3001",
     "https://quantflow.vercel.app",
