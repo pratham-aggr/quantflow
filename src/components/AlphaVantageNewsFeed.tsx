@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { alphaVantageNewsService, AlphaVantageNewsItem, NewsResponse } from '../lib/alphaVantageNewsService';
+import { newsService, NewsItem, NewsResponse } from '../lib/alphaVantageNewsService';
 import { LoadingSpinner } from './LoadingSpinner';
 import { ErrorMessage } from './ErrorMessage';
 
@@ -18,7 +18,7 @@ export const AlphaVantageNewsFeed: React.FC<AlphaVantageNewsFeedProps> = ({
   showSentiment = true,
   className = ''
 }) => {
-  const [news, setNews] = useState<AlphaVantageNewsItem[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
@@ -36,20 +36,20 @@ export const AlphaVantageNewsFeed: React.FC<AlphaVantageNewsFeedProps> = ({
       
       switch (category) {
         case 'market':
-          response = await alphaVantageNewsService.getMarketNews(limit);
+          response = await newsService.getMarketNews(limit);
           break;
         case 'earnings':
-          response = await alphaVantageNewsService.getEarningsNews(limit);
+          response = await newsService.getGeneralNews({ limit });
           break;
         case 'economic':
-          response = await alphaVantageNewsService.getEconomicNews(limit);
+          response = await newsService.getEconomicNews(limit);
           break;
         case 'portfolio':
-          response = await alphaVantageNewsService.getPortfolioNews(symbols, limit);
+          const portfolioResponses = await newsService.getPortfolioNews(symbols, limit);
+          response = portfolioResponses[0] || { success: false, count: 0, news: [] };
           break;
         default:
-          response = await alphaVantageNewsService.getGeneralNews({
-            tickers: symbols.length > 0 ? symbols : undefined,
+          response = await newsService.getGeneralNews({
             limit
           });
       }
@@ -243,7 +243,7 @@ export const AlphaVantageNewsFeed: React.FC<AlphaVantageNewsFeedProps> = ({
                   
                   {item.topics && item.topics.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {item.topics.slice(0, 3).map((topic, topicIndex) => (
+                      {item.topics.slice(0, 3).map((topic: any, topicIndex: number) => (
                         <span
                           key={topicIndex}
                           className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800"

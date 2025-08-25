@@ -1,6 +1,21 @@
 import { useState, useCallback, useMemo } from 'react'
-import { marketDataService, StockQuote } from '../lib/marketDataService'
+import { marketDataService } from '../lib/marketDataService'
 import { useAutoRefresh } from './useAutoRefresh'
+import { useAuth } from '../contexts/AuthContext'
+
+// Import the StockQuote interface from marketDataService
+interface StockQuote {
+  symbol: string
+  price: number
+  change: number
+  changePercent: number
+  high: number
+  low: number
+  open: number
+  previousClose: number
+  volume: number
+  timestamp: number
+}
 
 interface UseSafeStockPricesOptions {
   symbols: string[]
@@ -27,11 +42,18 @@ export const useSafeStockPrices = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
+  const { user } = useAuth()
 
   // Memoize symbols string to prevent unnecessary re-renders
   const symbolsKey = useMemo(() => symbols.join(','), [symbols])
 
   const fetchPrices = useCallback(async () => {
+    // Don't fetch if user is not authenticated
+    if (!user) {
+      console.log('Skipping fetch - user not authenticated')
+      return
+    }
+    
     if (!enabled || symbols.length === 0) {
       console.log('Skipping fetch - enabled:', enabled, 'symbols length:', symbols.length)
       return
@@ -59,11 +81,11 @@ export const useSafeStockPrices = ({
       console.log('Fetch completed, loading set to false')
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [symbolsKey, enabled])
+  }, [symbolsKey, enabled, user])
 
   // Use the safe auto-refresh hook
   useAutoRefresh({
-    enabled: autoRefresh && enabled,
+    enabled: autoRefresh && enabled && !!user,
     interval: refreshInterval,
     onRefresh: fetchPrices
   })

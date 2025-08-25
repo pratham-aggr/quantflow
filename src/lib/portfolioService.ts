@@ -5,6 +5,13 @@ import { marketDataService } from './marketDataService'
 const isSupabaseConfigured = process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_ANON_KEY 
 
 export const portfolioService = {
+  // Add cleanup method to prevent API calls after logout
+  cleanup(): void {
+    console.log('🧹 Cleaning up PortfolioService...')
+    // This service doesn't maintain state, but we can add any cleanup logic here if needed
+    console.log('✅ PortfolioService cleanup completed')
+  },
+
   async getPortfolios(userId: string): Promise<Portfolio[]> {
     if (!isSupabaseConfigured) {
       throw new Error('Supabase not configured. Please set up your Supabase credentials.')

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { useAuth } from './AuthContext'
 import { portfolioService } from '../lib/portfolioService'
+import { cleanupService } from '../lib/cleanupService'
 import { 
   Portfolio, 
   Holding, 
@@ -54,6 +55,12 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     error: null
   })
 
+  // Use the centralized cleanup service
+  const cleanupBackgroundProcesses = useCallback(() => {
+    console.log('🧹 Cleaning up background processes...')
+    cleanupService.cleanup()
+  }, [])
+
   const refreshPortfolios = useCallback(() => {
     if (!user) return
 
@@ -96,6 +103,8 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     if (user) {
       refreshPortfolios()
     } else {
+      // Clean up background processes when user logs out
+      cleanupBackgroundProcesses()
       setState({
         portfolios: [],
         currentPortfolio: null,
@@ -103,7 +112,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
         error: null
       })
     }
-  }, [user, refreshPortfolios])
+  }, [user, refreshPortfolios, cleanupBackgroundProcesses])
 
   const createPortfolio = async (data: CreatePortfolioData): Promise<Portfolio | null> => {
     if (!user) return null

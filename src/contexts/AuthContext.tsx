@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, ReactNode } from
 import { auth } from '../lib/supabase'
 import { userProfileService } from '../lib/userProfile'
 import { loginService } from '../lib/loginService'
+import { cleanupService } from '../lib/cleanupService'
 import { 
   AuthContextType, 
   AuthState, 
@@ -234,6 +235,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }, 2000) // Reduced to 2 seconds
     
     try {
+      // Clear any cached data and stop background processes first
+      if (typeof window !== 'undefined') {
+        // Clear all storage
+        localStorage.clear()
+        sessionStorage.clear()
+        
+        // Force garbage collection if available
+        if (window.gc) {
+          window.gc()
+        }
+      }
+      
+      // Use the centralized cleanup service
+      cleanupService.cleanup()
+      
       // Use the optimized logout service
       const result = await loginService.logoutUser()
       
@@ -243,23 +259,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Clear the state immediately
         console.log('Logout successful, clearing state')
         setState({ user: null, loading: false, error: null })
-        
-        // Clear any cached data
-        if (typeof window !== 'undefined') {
-          localStorage.clear()
-          sessionStorage.clear()
-        }
       } else {
-        setState(prev => ({ 
-          ...prev, 
-          loading: false, 
-          error: result.error || 'Logout failed. Please try again.' 
-        }))
+        // Even if logout fails, clear the user state to prevent 403 errors
+        console.log('Logout service failed, but clearing user state to prevent 403 errors')
+        setState({ user: null, loading: false, error: null })
       }
     } catch (error) {
       console.error('Logout error:', error)
       clearTimeout(timeoutId) // Clear timeout if there's an error
-      // Even if there's an error, clear the user state
+      // Even if there's an error, clear the user state to prevent 403 errors
       setState({ user: null, loading: false, error: null })
     }
   }

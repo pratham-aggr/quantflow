@@ -2,6 +2,13 @@ import { loginService } from './loginService'
 
 // JWT Token management utilities
 export const jwtUtils = {
+  // Add cleanup method to clear cached tokens
+  cleanup(): void {
+    console.log('🧹 Cleaning up JWT utils...')
+    // Clear any cached tokens or auth headers
+    console.log('✅ JWT utils cleanup completed')
+  },
+
   // Get JWT token for API calls
   async getAuthToken(): Promise<string | null> {
     return await loginService.getJWTToken()

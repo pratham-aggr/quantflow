@@ -371,31 +371,40 @@ class EnhancedCacheManager {
     return oldestKey
   }
 
-  clear(): void {
-    this.memoryCache.clear()
-    this.backgroundRefreshQueue.clear()
-    
-    // Clear timeouts
-    this.refreshTimeouts.forEach(timeout => clearTimeout(timeout))
-    this.refreshTimeouts.clear()
-    
-    // Clear localStorage items
-    try {
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('market_data_')) {
-          localStorage.removeItem(key)
-        }
-      })
-    } catch (error) {
-      console.warn('Failed to clear localStorage:', error)
-    }
-  }
+
 
   getStats(): { memorySize: number; backgroundQueueSize: number } {
     return {
       memorySize: this.memoryCache.size,
       backgroundQueueSize: this.backgroundRefreshQueue.size
     }
+  }
+
+  // Add cleanup method to clear all cached data
+  clear(): void {
+    console.log('🧹 Clearing EnhancedCacheManager...')
+    
+    // Clear memory cache
+    this.memoryCache.clear()
+    
+    // Clear background refresh queue
+    this.backgroundRefreshQueue.clear()
+    
+    // Clear all refresh timeouts
+    this.refreshTimeouts.forEach(timeout => clearTimeout(timeout))
+    this.refreshTimeouts.clear()
+    
+    // Clear localStorage cache
+    if (typeof window !== 'undefined') {
+      const keys = Object.keys(localStorage)
+      keys.forEach(key => {
+        if (key.startsWith('market_data_')) {
+          localStorage.removeItem(key)
+        }
+      })
+    }
+    
+    console.log('✅ EnhancedCacheManager cleared')
   }
 }
 
@@ -408,6 +417,7 @@ class MarketDataService {
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
   private backgroundRefreshEnabled = true
+  private backgroundRefreshInterval: NodeJS.Timeout | null = null
 
   constructor() {
     // Use the backend API for market data
@@ -419,6 +429,37 @@ class MarketDataService {
 
     // Start background refresh process
     this.startBackgroundRefresh()
+  }
+
+  // Add cleanup method to stop all background processes
+  public cleanup(): void {
+    console.log('🧹 Cleaning up MarketDataService...')
+    
+    // Disable background refresh
+    this.backgroundRefreshEnabled = false
+    
+    // Clear background refresh interval
+    if (this.backgroundRefreshInterval) {
+      clearInterval(this.backgroundRefreshInterval)
+      this.backgroundRefreshInterval = null
+    }
+    
+    // Close websocket connection
+    if (this.websocket) {
+      this.websocket.close()
+      this.websocket = null
+    }
+    
+    // Clear subscriptions
+    this.subscriptions.clear()
+    
+    // Clear cache
+    this.cache.clear()
+    
+    // Reset reconnect attempts
+    this.reconnectAttempts = 0
+    
+    console.log('✅ MarketDataService cleanup completed')
   }
 
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
@@ -532,7 +573,7 @@ class MarketDataService {
 
   private startBackgroundRefresh(): void {
     // Periodically refresh frequently accessed quotes
-    setInterval(() => {
+    this.backgroundRefreshInterval = setInterval(() => {
       if (!this.backgroundRefreshEnabled) return
       
       const stats = this.cache.getStats()
@@ -1033,8 +1074,19 @@ class MarketDataService {
   }
 }
 
-// Export singleton instance
-export const marketDataService = new MarketDataService()
+// Create a global instance
+const marketDataService = new MarketDataService()
+
+// Export the service instance
+export { marketDataService }
+
+// Export a global cleanup function
+export const cleanupMarketDataService = () => {
+  marketDataService.cleanup()
+}
+
+// Export the service class for testing
+export { MarketDataService }
 
 // Export types
 export type { 
