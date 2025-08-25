@@ -7,6 +7,7 @@ import { PortfolioAllocation } from './dashboard/PortfolioAllocation'
 import { PerformanceChart } from './dashboard/PerformanceChart'
 import { RiskMetrics } from './dashboard/RiskMetrics'
 import { HoldingsTable } from './dashboard/HoldingsTable'
+import { CumulativeReturnsChart } from './dashboard/CumulativeReturnsChart'
 import { FinnhubNewsFeed } from './FinnhubNewsFeed'
 import { SkeletonCard, SkeletonTable } from './Skeleton'
 import { useToast } from './Toast'
@@ -333,6 +334,13 @@ export const Dashboard: React.FC = () => {
             </div>
             <RiskMetrics portfolioData={portfolioData} />
           </div>
+        </div>
+
+        {/* Cumulative Returns vs Benchmark */}
+        <div className="mb-8">
+          <CumulativeReturnsChart 
+            portfolioHoldings={currentPortfolio?.holdings || []}
+          />
         </div>
 
         {/* Holdings Table */}

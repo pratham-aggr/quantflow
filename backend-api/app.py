@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Production app with Render-optimized yfinance handling and Alpha Vantage news integration
 """
@@ -13,6 +12,8 @@ import time
 import random
 import yfinance as yf
 from dotenv import load_dotenv
+import pandas as pd
+import numpy as np
 
 # Load environment variables from .env file
 load_dotenv('../.env')
@@ -1210,6 +1211,170 @@ def simulate_rebalancing_scenarios():
         logging.error(f"Error simulating rebalancing scenarios: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/portfolio/cumulative-returns', methods=['POST'])
+def get_cumulative_returns():
+    """Calculate cumulative returns for portfolio vs benchmark"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'holdings' not in data:
+            return jsonify({'error': 'Portfolio holdings data required'}), 400
+        
+        holdings = data['holdings']
+        benchmark = data.get('benchmark', 'SPY')  # Default to S&P 500
+        period = data.get('period', '1y')  # Default to 1 year
+        
+        if not holdings:
+            return jsonify({'error': 'No holdings provided'}), 400
+        
+        # Calculate period in days
+        period_days = {
+            '1m': 30,
+            '3m': 90,
+            '6m': 180,
+            '1y': 365,
+            '2y': 730,
+            '5y': 1825
+        }.get(period, 365)
+        
+        # Get portfolio symbols
+        symbols = [holding['symbol'] for holding in holdings if holding.get('symbol')]
+        
+        if not symbols:
+            return jsonify({'error': 'No valid symbols found in holdings'}), 400
+        
+        # Fetch historical data for portfolio holdings
+        portfolio_data = {}
+        for symbol in symbols:
+            try:
+                ticker = yf.Ticker(symbol)
+                hist = ticker.history(period=f"{period_days}d")
+                if not hist.empty:
+                    portfolio_data[symbol] = hist['Close'].values
+            except Exception as e:
+                logging.warning(f"Failed to fetch data for {symbol}: {str(e)}")
+                continue
+        
+        # Fetch benchmark data
+        try:
+            benchmark_ticker = yf.Ticker(benchmark)
+            benchmark_hist = benchmark_ticker.history(period=f"{period_days}d")
+            benchmark_prices = benchmark_hist['Close'].values if not benchmark_hist.empty else []
+        except Exception as e:
+            logging.error(f"Failed to fetch benchmark data: {str(e)}")
+            return jsonify({'error': 'Failed to fetch benchmark data'}), 500
+        
+        if not portfolio_data or len(benchmark_prices) == 0:
+            return jsonify({'error': 'Insufficient data for analysis'}), 400
+        
+        # Calculate daily returns for portfolio holdings
+        portfolio_returns = {}
+        for symbol, prices in portfolio_data.items():
+            if len(prices) > 1:
+                returns = []
+                for i in range(1, len(prices)):
+                    if float(prices[i-1]) != 0:
+                        daily_return = (float(prices[i]) - float(prices[i-1])) / float(prices[i-1])
+                        returns.append(daily_return)
+                    else:
+                        returns.append(0)
+                portfolio_returns[symbol] = returns
+        
+        # Calculate daily returns for benchmark
+        benchmark_returns = []
+        for i in range(1, len(benchmark_prices)):
+            if float(benchmark_prices[i-1]) != 0:
+                daily_return = (float(benchmark_prices[i]) - float(benchmark_prices[i-1])) / float(benchmark_prices[i-1])
+                benchmark_returns.append(daily_return)
+            else:
+                benchmark_returns.append(0)
+        
+        # Calculate weighted portfolio returns based on holdings
+        weighted_portfolio_returns = []
+        if portfolio_returns:
+            # Get the minimum length of all return series
+            min_length = min(len(returns) for returns in portfolio_returns.values())
+            min_length = min(min_length, len(benchmark_returns))
+            
+            # Calculate total portfolio value
+            total_value = sum(holding.get('quantity', 0) * holding.get('current_price', 0) for holding in holdings)
+            
+            for i in range(min_length):
+                weighted_return = 0
+                for holding in holdings:
+                    symbol = holding.get('symbol')
+                    if symbol in portfolio_returns and i < len(portfolio_returns[symbol]):
+                        weight = (holding.get('quantity', 0) * holding.get('current_price', 0)) / total_value if total_value > 0 else 0
+                        weighted_return += weight * portfolio_returns[symbol][i]
+                weighted_portfolio_returns.append(weighted_return)
+        
+        # Calculate cumulative returns
+        def calculate_cumulative_returns(returns):
+            cumulative = [1.0]  # Start with 1 (100%)
+            for ret in returns:
+                cumulative.append(cumulative[-1] * (1 + ret))
+            return cumulative
+        
+        portfolio_cumulative = calculate_cumulative_returns(weighted_portfolio_returns)
+        benchmark_cumulative = calculate_cumulative_returns(benchmark_returns[:len(weighted_portfolio_returns)])
+        
+        # Generate dates for x-axis
+        dates = []
+        if benchmark_hist is not None and not benchmark_hist.empty:
+            start_date = benchmark_hist.index[0]
+            for i in range(len(portfolio_cumulative)):
+                date = start_date + pd.Timedelta(days=i)
+                dates.append(date.strftime('%Y-%m-%d'))
+        else:
+            # Fallback: generate dates based on data length
+            for i in range(len(portfolio_cumulative)):
+                dates.append(f"Day {i+1}")
+        
+        # Calculate performance metrics
+        portfolio_total_return = (portfolio_cumulative[-1] - 1) * 100 if portfolio_cumulative else 0
+        benchmark_total_return = (benchmark_cumulative[-1] - 1) * 100 if benchmark_cumulative else 0
+        excess_return = portfolio_total_return - benchmark_total_return
+        
+        # Calculate volatility (annualized)
+        portfolio_vol = np.std(weighted_portfolio_returns) * np.sqrt(252) * 100 if weighted_portfolio_returns else 0
+        benchmark_vol = np.std(benchmark_returns[:len(weighted_portfolio_returns)]) * np.sqrt(252) * 100 if benchmark_returns else 0
+        
+        # Calculate Sharpe ratio (assuming risk-free rate of 2%)
+        risk_free_rate = 0.02
+        portfolio_sharpe = ((np.mean(weighted_portfolio_returns) * 252) - risk_free_rate) / (portfolio_vol / 100) if portfolio_vol > 0 else 0
+        benchmark_sharpe = ((np.mean(benchmark_returns[:len(weighted_portfolio_returns)]) * 252) - risk_free_rate) / (benchmark_vol / 100) if benchmark_vol > 0 else 0
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'dates': dates,
+                'portfolio_cumulative': portfolio_cumulative,
+                'benchmark_cumulative': benchmark_cumulative,
+                'portfolio_returns': weighted_portfolio_returns,
+                'benchmark_returns': benchmark_returns[:len(weighted_portfolio_returns)]
+            },
+            'metrics': {
+                'portfolio_total_return': round(portfolio_total_return, 2),
+                'benchmark_total_return': round(benchmark_total_return, 2),
+                'excess_return': round(excess_return, 2),
+                'portfolio_volatility': round(portfolio_vol, 2),
+                'benchmark_volatility': round(benchmark_vol, 2),
+                'portfolio_sharpe': round(portfolio_sharpe, 2),
+                'benchmark_sharpe': round(benchmark_sharpe, 2)
+            },
+            'metadata': {
+                'benchmark': benchmark,
+                'period': period,
+                'symbols': symbols,
+                'data_points': len(portfolio_cumulative)
+            }
+        })
+        
+    except Exception as e:
+        logging.error(f"Error calculating cumulative returns: {str(e)}")
+        import traceback
+        logging.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({'error': f'Failed to calculate cumulative returns: {str(e)}'}), 500
 
 
 if __name__ == '__main__':
