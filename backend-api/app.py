@@ -554,28 +554,87 @@ def search_stocks():
         if not query:
             return jsonify({'error': 'Query parameter required'}), 400
         
-        # Use yfinance to search
-        tickers = yf.Tickers(query)
-        
-        # Get basic info for each ticker
+        # Use yfinance to search - try different approaches
         results = []
-        for ticker in tickers.tickers[:10]:  # Limit to 10 results
+        
+        try:
+            # First try: Use Tickers object properly
+            tickers = yf.Tickers(query)
+            
+            # Get ticker symbols safely
+            ticker_symbols = []
             try:
-                info = ticker.info
-                if info and 'shortName' in info:
-                    results.append({
-                        'symbol': ticker.ticker,
-                        'name': info.get('shortName', ''),
-                        'type': 'stock',
-                        'primaryExchange': info.get('exchange', '')
-                    })
-            except:
-                continue
+                # Try to get ticker symbols from the Tickers object
+                if hasattr(tickers, 'tickers') and tickers.tickers:
+                    ticker_symbols = list(tickers.tickers.keys())[:10]
+                else:
+                    # Fallback: try to get symbols from the tickers object directly
+                    ticker_symbols = [str(ticker) for ticker in tickers.tickers][:10]
+            except Exception as symbol_error:
+                logging.warning(f"Error getting ticker symbols: {str(symbol_error)}")
+                ticker_symbols = []
+            
+            for ticker_symbol in ticker_symbols:
+                try:
+                    ticker = yf.Ticker(ticker_symbol)
+                    info = ticker.info
+                    if info and 'shortName' in info:
+                        results.append({
+                            'symbol': ticker_symbol,
+                            'name': info.get('shortName', ''),
+                            'type': 'stock',
+                            'primaryExchange': info.get('exchange', '')
+                        })
+                except Exception as ticker_error:
+                    logging.warning(f"Error processing ticker {ticker_symbol}: {str(ticker_error)}")
+                    continue
+                    
+        except Exception as tickers_error:
+            logging.warning(f"Tickers approach failed: {str(tickers_error)}, trying alternative")
+            
+            # Fallback: Try direct search with common patterns
+            try:
+                # Try common stock patterns
+                search_patterns = [
+                    query.upper(),
+                    f"{query.upper()}.TO",  # Toronto
+                    f"{query.upper()}.V",   # Vancouver
+                    f"{query.upper()}.AX",  # Australia
+                    f"{query.upper()}.L",   # London
+                ]
+                
+                for pattern in search_patterns:
+                    if len(results) >= 10:
+                        break
+                    try:
+                        ticker = yf.Ticker(pattern)
+                        info = ticker.info
+                        if info and 'shortName' in info and info.get('regularMarketPrice'):
+                            results.append({
+                                'symbol': pattern,
+                                'name': info.get('shortName', ''),
+                                'type': 'stock',
+                                'primaryExchange': info.get('exchange', '')
+                            })
+                    except:
+                        continue
+                        
+            except Exception as fallback_error:
+                logging.error(f"Fallback search also failed: {str(fallback_error)}")
+        
+        # Convert to the format expected by the frontend
+        formatted_results = []
+        for result in results:
+            formatted_results.append({
+                'description': result['name'],
+                'displaySymbol': result['symbol'],
+                'symbol': result['symbol'],
+                'type': result['type']
+            })
         
         return jsonify({
-            'query': query,
-            'count': len(results),
-            'results': results
+            'count': len(formatted_results),
+            'result': formatted_results
         })
     except Exception as e:
         logging.error(f"Error searching stocks: {str(e)}")

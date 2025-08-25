@@ -26,8 +26,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors }
   } = useForm<LoginFormData>()
+
+  const fillDemoCredentials = () => {
+    setValue('email', 'demo@quantflow.com')
+    setValue('password', 'Demo123!')
+  }
 
   const onSubmit = async (data: LoginFormData) => {
     setIsSubmitting(true)
@@ -77,6 +83,40 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
         <p className="text-neutral-600 dark:text-neutral-400 mt-2">Sign in to your QuantFlow account</p>
       </div>
 
+      {/* Demo Credentials Section */}
+      <div className="mb-6 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div className="flex items-center space-x-2 mb-2">
+          <svg className="w-4 h-4 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 className="text-sm font-medium text-blue-900 dark:text-blue-100">
+            🚀 Try Demo Account
+          </h3>
+        </div>
+        <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
+          Experience QuantFlow with a pre-configured demo portfolio
+        </p>
+        <div className="bg-white dark:bg-neutral-800 rounded border border-blue-200 dark:border-blue-700 p-2 mb-2">
+          <div className="space-y-2 text-xs">
+            <div>
+              <span className="font-medium text-blue-900 dark:text-blue-100">Email:</span>
+              <span className="ml-1 text-blue-700 dark:text-blue-300 font-mono">demo@quantflow.com</span>
+            </div>
+            <div>
+              <span className="font-medium text-blue-900 dark:text-blue-100">Password:</span>
+              <span className="ml-1 text-blue-700 dark:text-blue-300 font-mono">Demo123!</span>
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={fillDemoCredentials}
+          className="w-full text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded transition-colors"
+        >
+          Fill Demo Credentials
+        </button>
+      </div>
+
       {submitError && (
         <ErrorMessage 
           message={submitError} 
@@ -85,7 +125,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister, onForg
         />
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <FormInput
           label="Email Address"
           type="email"
