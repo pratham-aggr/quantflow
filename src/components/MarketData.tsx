@@ -15,10 +15,10 @@ export const MarketData: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-4xl font-bold robinhood-text-primary mb-3">
-            Market Data
+            Market News
           </h1>
           <p className="robinhood-text-secondary text-lg">
-            Real-time market information and financial data
+            Real-time market news and financial insights
           </p>
         </div>
 

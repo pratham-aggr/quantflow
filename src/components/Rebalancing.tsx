@@ -206,19 +206,28 @@ export default function Rebalancing() {
     setIsWhatIfLoading(true)
     
     try {
-      // Transform suggestions back to service format
-      const targetAllocation = selectedSuggestionsList.map(suggestion => ({
-        ...suggestion,
-        action: suggestion.action.toUpperCase() as 'BUY' | 'SELL',
-        priority: suggestion.priority.toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW',
-        estimated_cost: suggestion.estimated_cost || 0
-      }))
+      // Create target allocation from selected suggestions
+      const whatIfTargetAllocation: Record<string, number> = {}
       
-      console.log('Target allocation:', targetAllocation)
+      // Start with current allocation
+      Object.assign(whatIfTargetAllocation, currentAllocation)
+      
+      // Apply selected suggestions to create new target allocation
+      selectedSuggestionsList.forEach(suggestion => {
+        if (suggestion.action === 'buy') {
+          // Increase allocation for buy suggestions
+          whatIfTargetAllocation[suggestion.symbol] = (whatIfTargetAllocation[suggestion.symbol] || 0) + suggestion.drift_percentage
+        } else if (suggestion.action === 'sell') {
+          // Decrease allocation for sell suggestions
+          whatIfTargetAllocation[suggestion.symbol] = Math.max(0, (whatIfTargetAllocation[suggestion.symbol] || 0) - Math.abs(suggestion.drift_percentage))
+        }
+      })
+      
+      console.log('What-if target allocation:', whatIfTargetAllocation)
       
       const result = await rebalancingService.createWhatIfAnalysis(
         currentPortfolio.holdings,
-        targetAllocation
+        whatIfTargetAllocation
       )
       
       console.log('What-if analysis result:', result)

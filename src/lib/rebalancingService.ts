@@ -27,6 +27,7 @@ export interface RebalancingAnalysis {
   estimated_transaction_cost: number
   rebalancing_score: number
   optimization_method: string
+  suggestions: RebalancingSuggestion[]
 }
 
 export interface WhatIfAnalysis {
@@ -129,7 +130,7 @@ class RebalancingService {
           avg_price: holding.avg_price,
           current_price: holding.current_price || holding.avg_price
         })),
-        target_allocation
+        targetAllocation
       }
 
       return this.makeRequest<WhatIfAnalysis>('/api/rebalancing/what-if', {
@@ -256,8 +257,8 @@ class RebalancingService {
     return 'HIGH'
   }
 
-  formatRebalancingInstructions(targetAllocation: Record<string, number>): string[] {
-    return target_allocation.map(suggestion => {
+  formatRebalancingInstructions(suggestions: RebalancingSuggestion[]): string[] {
+    return suggestions.map((suggestion: RebalancingSuggestion) => {
       const action = suggestion.action === 'BUY' ? 'Buy' : 'Sell'
       const cost = suggestion.estimated_cost > 0 ? ` (Est. cost: $${suggestion.estimated_cost.toFixed(2)})` : ''
       return `${action} ${suggestion.quantity} shares of ${suggestion.symbol}${cost}`

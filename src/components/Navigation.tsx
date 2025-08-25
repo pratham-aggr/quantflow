@@ -22,7 +22,7 @@ const navigation = [
   { name: 'Portfolios', href: '/portfolios', icon: Briefcase },
   { name: 'Rebalancing', href: '/rebalancing', icon: TrendingUp },
   { name: 'Risk Analysis', href: '/risk-analysis', icon: Shield },
-  { name: 'Market Data', href: '/market-data', icon: Globe }
+  { name: 'Market News', href: '/market-news', icon: Globe }
 ]
 
 export const Navigation: React.FC = () => {

@@ -193,7 +193,7 @@ function App() {
                         } 
                       />
                       <Route 
-                        path="/market-data" 
+                        path="/market-news" 
                         element={
                           <ProtectedRoute>
                             <MarketData />

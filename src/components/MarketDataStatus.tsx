@@ -6,7 +6,7 @@ export const MarketDataStatus: React.FC = () => {
 
   return (
     <div className="bg-white rounded-lg shadow p-4">
-      <h3 className="text-sm font-medium text-gray-900 mb-3">Market Data Status</h3>
+      <h3 className="text-sm font-medium text-gray-900 mb-3">Market News Status</h3>
       
       <div className="space-y-2">
         <div className="flex items-center justify-between">
