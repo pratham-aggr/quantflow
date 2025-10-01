@@ -1,6 +1,7 @@
 import { supabase } from './supabase'
 import { Portfolio, Holding, Transaction, CreatePortfolioData, CreateHoldingData, CreateTransactionData, PortfolioWithHoldings } from '../types/portfolio'
 import { marketDataService } from './marketDataService'
+import { optimizedApiService } from './optimizedApiService'
 
 const isSupabaseConfigured = process.env.REACT_APP_SUPABASE_URL && process.env.REACT_APP_SUPABASE_ANON_KEY 
 
@@ -8,7 +9,8 @@ export const portfolioService = {
   // Add cleanup method to prevent API calls after logout
   cleanup(): void {
     console.log('🧹 Cleaning up PortfolioService...')
-    // This service doesn't maintain state, but we can add any cleanup logic here if needed
+    // Cleanup the optimized API service
+    optimizedApiService.cleanup()
     console.log('✅ PortfolioService cleanup completed')
   },
 
@@ -380,29 +382,54 @@ export const portfolioService = {
     }
   },
 
-  // Update holdings with current market prices
+  // Update holdings with current market prices (optimized parallel loading)
   async updateHoldingsWithMarketPrices(holdings: Holding[]): Promise<Holding[]> {
-    const updatedHoldings = await Promise.all(
-      holdings.map(async (holding) => {
-        try {
-          // Use intelligent caching - don't force refresh unless data is stale
-          const quote = await marketDataService.getStockQuote(holding.symbol, false)
-          if (quote) {
-            return {
-              ...holding,
-              current_price: quote.price,
-              change: quote.change,
-              changePercent: quote.changePercent
-            }
+    if (holdings.length === 0) return holdings
+
+    // Extract symbols for batch fetching
+    const symbols = holdings.map(h => h.symbol)
+    
+    try {
+      // Use the optimized batch quote fetching for better performance
+      const quotes = await optimizedApiService.getMultipleQuotes(symbols)
+      
+      // Map quotes back to holdings
+      const updatedHoldings = holdings.map(holding => {
+        const quote = quotes[holding.symbol.toUpperCase()]
+        if (quote) {
+          return {
+            ...holding,
+            current_price: quote.price,
+            change: quote.change,
+            changePercent: quote.changePercent
           }
-        } catch (error) {
-          console.warn(`Failed to fetch price for ${holding.symbol}:`, error)
         }
         return holding
       })
-    )
-    
-    return updatedHoldings
+      
+      return updatedHoldings
+    } catch (error) {
+      console.error('Error in batch update holdings with market prices:', error)
+      // Fallback to individual requests if batch fails
+      return await Promise.all(
+        holdings.map(async (holding) => {
+          try {
+            const quote = await marketDataService.getStockQuote(holding.symbol, false)
+            if (quote) {
+              return {
+                ...holding,
+                current_price: quote.price,
+                change: quote.change,
+                changePercent: quote.changePercent
+              }
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch price for ${holding.symbol}:`, error)
+          }
+          return holding
+        })
+      )
+    }
   },
 
   // Get portfolio with real-time market prices

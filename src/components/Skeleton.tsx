@@ -139,3 +139,104 @@ export const SkeletonProfile: React.FC<{ className?: string }> = ({ className = 
     </div>
   </div>
 )
+
+// Portfolio-specific skeleton components
+export const SkeletonPortfolioCard: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <div className={`bg-white dark:bg-neutral-900 rounded-lg shadow p-6 ${className}`}>
+    <div className="flex justify-between items-start mb-4">
+      <Skeleton height={20} className="w-1/3" />
+      <Skeleton height={16} className="w-1/4" />
+    </div>
+    <div className="space-y-3">
+      <div className="flex justify-between">
+        <Skeleton height={16} className="w-1/4" />
+        <Skeleton height={16} className="w-1/4" />
+      </div>
+      <div className="flex justify-between">
+        <Skeleton height={16} className="w-1/3" />
+        <Skeleton height={16} className="w-1/4" />
+      </div>
+    </div>
+  </div>
+)
+
+export const SkeletonStockCard: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <div className={`bg-white dark:bg-neutral-900 rounded-lg shadow p-4 ${className}`}>
+    <div className="flex justify-between items-center mb-3">
+      <div className="flex items-center space-x-3">
+        <Skeleton height={40} width={40} rounded="full" />
+        <div>
+          <Skeleton height={16} className="w-16 mb-1" />
+          <Skeleton height={12} className="w-20" />
+        </div>
+      </div>
+      <div className="text-right">
+        <Skeleton height={16} className="w-20 mb-1" />
+        <Skeleton height={12} className="w-16" />
+      </div>
+    </div>
+    <div className="flex justify-between items-center">
+      <Skeleton height={14} className="w-24" />
+      <Skeleton height={14} className="w-16" />
+    </div>
+  </div>
+)
+
+export const SkeletonHoldingsTable: React.FC<{ rows?: number; className?: string }> = ({
+  rows = 5,
+  className = ''
+}) => (
+  <div className={`bg-white dark:bg-neutral-900 rounded-lg shadow overflow-hidden ${className}`}>
+    {/* Header */}
+    <div className="bg-gray-50 dark:bg-neutral-800 px-6 py-3 border-b border-gray-200 dark:border-neutral-700">
+      <div className="grid grid-cols-6 gap-4">
+        <Skeleton height={16} className="col-span-2" />
+        <Skeleton height={16} />
+        <Skeleton height={16} />
+        <Skeleton height={16} />
+        <Skeleton height={16} />
+      </div>
+    </div>
+    
+    {/* Rows */}
+    <div className="divide-y divide-gray-200 dark:divide-neutral-700">
+      {Array.from({ length: rows }).map((_, rowIndex) => (
+        <div key={rowIndex} className="px-6 py-4">
+          <div className="grid grid-cols-6 gap-4 items-center">
+            <div className="col-span-2 flex items-center space-x-3">
+              <Skeleton height={32} width={32} rounded="full" />
+              <div>
+                <Skeleton height={16} className="w-16 mb-1" />
+                <Skeleton height={12} className="w-20" />
+              </div>
+            </div>
+            <Skeleton height={16} />
+            <Skeleton height={16} />
+            <Skeleton height={16} />
+            <Skeleton height={16} />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)
+
+export const SkeletonDashboard: React.FC<{ className?: string }> = ({ className = '' }) => (
+  <div className={`space-y-6 ${className}`}>
+    {/* Portfolio Overview */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <SkeletonPortfolioCard />
+      <SkeletonPortfolioCard />
+      <SkeletonPortfolioCard />
+    </div>
+    
+    {/* Holdings Table */}
+    <SkeletonHoldingsTable rows={5} />
+    
+    {/* Charts */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <SkeletonCard />
+      <SkeletonCard />
+    </div>
+  </div>
+)

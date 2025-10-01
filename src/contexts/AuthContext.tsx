@@ -36,12 +36,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const globalTimeout = setTimeout(() => {
       console.log('🛑 Global auth timeout - forcing loading to false')
       setState({ user: null, loading: false, error: null })
-    }, 2000) // Reduced to 2 seconds
+    }, 1500) // Reduced to 1.5 seconds for faster perceived loading
 
     const initializeAuth = async () => {
       try {
-        // Use the optimized login service for session retrieval
-        const sessionData = await loginService.getCurrentSession()
+        // Use the optimized login service for session retrieval with timeout
+        const sessionPromise = loginService.getCurrentSession()
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Session timeout')), 1000)
+        )
+        
+        const sessionData = await Promise.race([sessionPromise, timeoutPromise]) as any
         
         if (sessionData?.user) {
           setState({
@@ -118,7 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         loading: false, 
         error: 'Login timed out. Please try again.' 
       }))
-    }, 10000) // 10 second timeout
+    }, 8000) // Reduced to 8 seconds for faster feedback
     
     try {
       const result = await loginService.loginUser({

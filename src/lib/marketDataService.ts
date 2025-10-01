@@ -382,8 +382,6 @@ class EnhancedCacheManager {
 
   // Add cleanup method to clear all cached data
   clear(): void {
-    console.log('🧹 Clearing EnhancedCacheManager...')
-    
     // Clear memory cache
     this.memoryCache.clear()
     
@@ -403,8 +401,6 @@ class EnhancedCacheManager {
         }
       })
     }
-    
-    console.log('✅ EnhancedCacheManager cleared')
   }
 }
 
@@ -418,6 +414,7 @@ class MarketDataService {
   private maxReconnectAttempts = 5
   private backgroundRefreshEnabled = true
   private backgroundRefreshInterval: NodeJS.Timeout | null = null
+  private pendingRequests = new Map<string, Promise<StockQuote | null>>()
 
   constructor() {
     // Use the backend API for market data
@@ -433,8 +430,6 @@ class MarketDataService {
 
   // Add cleanup method to stop all background processes
   public cleanup(): void {
-    console.log('🧹 Cleaning up MarketDataService...')
-    
     // Disable background refresh
     this.backgroundRefreshEnabled = false
     
@@ -453,13 +448,14 @@ class MarketDataService {
     // Clear subscriptions
     this.subscriptions.clear()
     
+    // Clear pending requests
+    this.pendingRequests.clear()
+    
     // Clear cache
     this.cache.clear()
     
     // Reset reconnect attempts
     this.reconnectAttempts = 0
-    
-    console.log('✅ MarketDataService cleanup completed')
   }
 
   private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
@@ -473,20 +469,16 @@ class MarketDataService {
       url.searchParams.append(key, value)
     })
 
-    console.log(`Making API request to: ${this.serverUrl}/api/market-data${endpoint}`)
-
     return this.rateLimiter.execute(async () => {
-      console.log(`Executing API request for ${endpoint}...`)
       const response = await fetch(url.toString(), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
       })
-      console.log(`API response status: ${response.status}`)
       
       if (!response.ok) {
-        console.error(`API request failed with status: ${response.status}`)
+        console.error(`❌ API request failed: ${endpoint} (${response.status})`)
         if (response.status === 429) {
           throw new Error('Rate limit exceeded')
         }
@@ -494,7 +486,6 @@ class MarketDataService {
       }
 
       const data = await response.json()
-      console.log(`API response data:`, data)
       return data.data || data // Handle both wrapped and unwrapped responses
     })
   }
@@ -502,58 +493,68 @@ class MarketDataService {
   async getStockQuote(symbol: string, forceRefresh: boolean = false): Promise<StockQuote | null> {
     const cacheKey = `quote_${symbol.toUpperCase()}`
     
+    // Check for pending request first (deduplication)
+    if (!forceRefresh) {
+      const pending = this.pendingRequests.get(cacheKey)
+      if (pending) {
+        return pending
+      }
+    }
+    
     // Check cache first (unless force refresh)
     if (!forceRefresh) {
       const cached = this.cache.get<StockQuote>(cacheKey, 'quotes')
       if (cached) {
-        console.log(`Returning cached quote for ${symbol}:`, cached)
-        
         // If data is stale, trigger background refresh
         if (this.cache.isStale(cacheKey)) {
-          console.log(`📊 Quote for ${symbol} is stale, refreshing in background...`)
           this.queueBackgroundRefresh(symbol)
         }
         
         return cached
       }
     }
-
-    console.log(`Fetching quote for ${symbol} from API...`)
-    try {
-      const rawData = await this.makeRequest<any>(`/quote/${symbol.toUpperCase()}`)
-      console.log(`API response for ${symbol}:`, rawData)
-      
-      // Map yfinance API response to our StockQuote interface
-      if (rawData && rawData.price) {
-        const mappedData: StockQuote = {
-          symbol: symbol.toUpperCase(),
-          price: rawData.price,
-          change: rawData.change,
-          changePercent: rawData.changePercent,
-          high: rawData.high,
-          low: rawData.low,
-          open: rawData.open,
-          previousClose: rawData.previousClose,
-          volume: rawData.volume || 0,
-          timestamp: rawData.timestamp || Date.now()
+    
+    // Create and store the promise to prevent duplicate requests
+    const requestPromise = (async () => {
+      try {
+        const rawData = await this.makeRequest<any>(`/quote/${symbol.toUpperCase()}`)
+        
+        // Map yfinance API response to our StockQuote interface
+        if (rawData && rawData.price) {
+          const mappedData: StockQuote = {
+            symbol: symbol.toUpperCase(),
+            price: rawData.price,
+            change: rawData.change,
+            changePercent: rawData.changePercent,
+            high: rawData.high,
+            low: rawData.low,
+            open: rawData.open,
+            previousClose: rawData.previousClose,
+            volume: rawData.volume || 0,
+            timestamp: rawData.timestamp || Date.now()
+          }
+          
+          this.cache.set(cacheKey, mappedData, 'quotes')
+          return mappedData
+        } else {
+          if (rawData && rawData.error) {
+            console.warn(`⚠️ ${symbol} may not be available (US stocks only)`)
+          }
         }
         
-        console.log(`Mapped quote data for ${symbol}:`, mappedData)
-        this.cache.set(cacheKey, mappedData, 'quotes')
-        return mappedData
-      } else {
-        console.log(`Invalid quote data for ${symbol}:`, rawData)
-        // Check if it's a non-US stock (free plan limitation)
-        if (rawData && rawData.error) {
-          console.warn(`Free plan limitation: ${symbol} may not be available (US stocks only)`)
-        }
+        return null
+      } catch (error) {
+        console.error(`❌ Failed to fetch quote for ${symbol}:`, error)
+        return null
+      } finally {
+        // Remove from pending requests when done
+        this.pendingRequests.delete(cacheKey)
       }
-      
-      return null
-    } catch (error) {
-      console.error(`Failed to fetch quote for ${symbol}:`, error)
-      return null
-    }
+    })()
+    
+    // Store the promise to deduplicate simultaneous requests
+    this.pendingRequests.set(cacheKey, requestPromise)
+    return requestPromise
   }
 
   private queueBackgroundRefresh(symbol: string): void {
@@ -562,11 +563,9 @@ class MarketDataService {
     // Queue background refresh
     setTimeout(async () => {
       try {
-        console.log(`🔄 Background refresh for ${symbol}...`)
         await this.getStockQuote(symbol, true)
-        console.log(`✅ Background refresh completed for ${symbol}`)
       } catch (error) {
-        console.warn(`❌ Background refresh failed for ${symbol}:`, error)
+        // Silent fail for background refresh
       }
     }, 1000) // Small delay to avoid overwhelming the API
   }
@@ -575,9 +574,6 @@ class MarketDataService {
     // Periodically refresh frequently accessed quotes
     this.backgroundRefreshInterval = setInterval(() => {
       if (!this.backgroundRefreshEnabled) return
-      
-      const stats = this.cache.getStats()
-      console.log(`📊 Cache stats: ${stats.memorySize} items in memory, ${stats.backgroundQueueSize} in queue`)
       
       // This could be enhanced to refresh the most frequently accessed quotes
     }, 60000) // Check every minute
@@ -632,7 +628,6 @@ class MarketDataService {
   }
 
   async getMultipleQuotes(symbols: string[]): Promise<Record<string, StockQuote>> {
-    console.log(`Getting multiple quotes for symbols:`, symbols)
     const results: Record<string, StockQuote> = {}
     const uncachedSymbols: string[] = []
 
@@ -640,40 +635,66 @@ class MarketDataService {
     symbols.forEach(symbol => {
       const cached = this.cache.get<StockQuote>(`quote_${symbol.toUpperCase()}`, 'quotes')
       if (cached) {
-        console.log(`Using cached quote for ${symbol}:`, cached)
         results[symbol.toUpperCase()] = cached
       } else {
         uncachedSymbols.push(symbol)
       }
     })
 
-    console.log(`Uncached symbols to fetch:`, uncachedSymbols)
-
-    // Fetch uncached symbols with rate limiting (1 call per second for free plan)
+    // Fetch uncached symbols using BATCH endpoint for speed
     if (uncachedSymbols.length > 0) {
       try {
-        // Process symbols sequentially to respect rate limits
-        for (const symbol of uncachedSymbols) {
-          console.log(`Fetching quote for ${symbol}...`)
-          const quote = await this.getStockQuote(symbol)
-          if (quote) {
-            console.log(`Successfully fetched quote for ${symbol}:`, quote)
-            results[symbol.toUpperCase()] = quote
-          } else {
-            console.log(`Failed to fetch quote for ${symbol}`)
-          }
+        // For multiple symbols, use the batch endpoint (much faster!)
+        if (uncachedSymbols.length >= 2) {
+          const symbolsParam = uncachedSymbols.map(s => s.toUpperCase()).join(',')
+          const batchData = await this.makeRequest<Record<string, any>>(`/quotes`, { symbols: symbolsParam })
           
-          // Add delay between requests to respect rate limits (1 call per second)
-          if (uncachedSymbols.indexOf(symbol) < uncachedSymbols.length - 1) {
-            console.log(`Waiting 1 second before next request...`)
-            await new Promise(resolve => setTimeout(resolve, 1000))
+          // Process batch results
+          Object.entries(batchData).forEach(([symbol, rawData]) => {
+            if (rawData && !rawData.error && rawData.price) {
+              const mappedData: StockQuote = {
+                symbol: symbol.toUpperCase(),
+                price: rawData.price,
+                change: rawData.change,
+                changePercent: rawData.changePercent,
+                high: rawData.high,
+                low: rawData.low,
+                open: rawData.open,
+                previousClose: rawData.previousClose,
+                volume: rawData.volume || 0,
+                timestamp: rawData.timestamp || Date.now()
+              }
+              
+              this.cache.set(`quote_${symbol}`, mappedData, 'quotes')
+              results[symbol] = mappedData
+            } else {
+              console.warn(`⚠️ No data for ${symbol}`)
+            }
+          })
+        } else {
+          // For single symbol, use individual request
+          const quote = await this.getStockQuote(uncachedSymbols[0])
+          if (quote) {
+            results[uncachedSymbols[0].toUpperCase()] = quote
           }
         }
-        
-        console.log(`All quotes fetched. Results:`, results)
       } catch (error) {
-        console.error('Error in getMultipleQuotes:', error)
-        throw error
+        console.error('❌ Batch request failed, using fallback')
+        
+        // Fallback to individual requests with reduced stagger
+        const quotePromises = uncachedSymbols.map(async (symbol, index) => {
+          await new Promise(resolve => setTimeout(resolve, index * 100)) // 100ms between requests
+          return this.getStockQuote(symbol)
+        })
+
+        const quoteResults = await Promise.allSettled(quotePromises)
+        
+        quoteResults.forEach((result, index) => {
+          const symbol = uncachedSymbols[index]
+          if (result.status === 'fulfilled' && result.value) {
+            results[symbol.toUpperCase()] = result.value
+          }
+        })
       }
     }
 

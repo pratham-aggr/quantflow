@@ -672,7 +672,8 @@ class AdvancedRiskEngine:
                     'predicted_volatility': ml_prediction.predicted_volatility,
                     'confidence_interval': ml_prediction.confidence_interval,
                     'feature_importance': ml_prediction.feature_importance,
-                    'model_accuracy': ml_prediction.model_accuracy
+                    'model_accuracy': ml_prediction.model_accuracy,
+                    'prediction_horizon': ml_prediction.prediction_horizon
                 },
                 'recommendations': recommendations,
                 'risk_tolerance': risk_tolerance,
@@ -693,7 +694,7 @@ class AdvancedRiskEngine:
     def _empty_correlation_matrix(self) -> CorrelationMatrix:
         return CorrelationMatrix(
             matrix=np.array([]), symbols=[], heatmap_data={},
-            high_correlation_pairs=[], diversification_score=float('nan')
+            high_correlation_pairs=[], diversification_score=0.0
         )
     
     def _empty_sector_analysis(self) -> SectorAnalysis:

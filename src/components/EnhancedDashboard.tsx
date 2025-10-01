@@ -440,32 +440,14 @@ export const EnhancedDashboard: React.FC = () => {
     return () => clearInterval(interval)
   }, [refreshCurrentPortfolio, isRefreshing])
 
-  // Generate chart data for performance widget
+  // Performance data will be fetched from historical API
+  // For now, return empty array - will be populated by real data
   const performanceData = useMemo((): ChartDataPoint[] => {
     if (!currentPortfolio?.holdings) return []
-
-    // Generate performance data based on real portfolio value
-    const days = 30
-    const data: ChartDataPoint[] = []
-    let currentValue = currentPortfolio.total_value || 100000
-
-    for (let i = days; i >= 0; i--) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      
-      // Add some realistic variation
-      const variation = (Math.random() - 0.5) * 0.02 // ±1% daily variation
-      currentValue *= (1 + variation)
-      
-      data.push({
-        label: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        value: currentValue,
-        timestamp: date.getTime()
-      })
-    }
-
-    return data
-  }, [currentPortfolio?.total_value, currentPortfolio?.holdings])
+    
+    // Return empty array - performance data should come from historical API
+    return []
+  }, [currentPortfolio?.holdings])
 
   // Generate sector allocation data
   const sectorData = useMemo((): ChartDataPoint[] => {
