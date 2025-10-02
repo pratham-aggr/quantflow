@@ -46,18 +46,9 @@ interface VolatilityComparisonChartProps {
   className?: string
 }
 
-interface VolatilityComparisonChartWithPredictionProps extends VolatilityComparisonChartProps {
-  mlPrediction?: {
-    predicted_volatility: number
-    confidence_interval: [number, number]
-    model_accuracy: number
-  }
-}
-
-export const VolatilityComparisonChart: React.FC<VolatilityComparisonChartWithPredictionProps> = ({
+export const VolatilityComparisonChart: React.FC<VolatilityComparisonChartProps> = ({
   portfolioHoldings,
-  className = '',
-  mlPrediction
+  className = ''
 }) => {
   const [data, setData] = useState<VolatilityData | null>(null)
   const [metrics, setMetrics] = useState<VolatilityMetrics | null>(null)
@@ -94,18 +85,7 @@ export const VolatilityComparisonChart: React.FC<VolatilityComparisonChartWithPr
       
       if (result.success) {
         setData(result.data)
-        // Override metrics with ML prediction if provided
-        if (mlPrediction) {
-          setMetrics({
-            avg_predicted_volatility: mlPrediction.predicted_volatility,
-            avg_realized_volatility: result.metrics.avg_realized_volatility,
-            prediction_accuracy: mlPrediction.model_accuracy * 100,
-            volatility_trend: result.metrics.volatility_trend,
-            risk_level: result.metrics.risk_level
-          })
-        } else {
-          setMetrics(result.metrics)
-        }
+        setMetrics(result.metrics)
       } else {
         throw new Error(result.error || 'Failed to calculate volatility comparison')
       }
@@ -118,7 +98,7 @@ export const VolatilityComparisonChart: React.FC<VolatilityComparisonChartWithPr
 
   useEffect(() => {
     fetchVolatilityData()
-  }, [portfolioHoldings, period, mlPrediction])
+  }, [portfolioHoldings, period])
 
   const chartData = {
     labels: data?.dates || [],
@@ -305,11 +285,97 @@ export const VolatilityComparisonChart: React.FC<VolatilityComparisonChartWithPr
   }
 
   return (
-    <div className={className}>
+    <div className={`bg-white dark:bg-gray-900 rounded-lg shadow p-6 border border-gray-200 dark:border-gray-700 ${className}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-white flex items-center">
+          <Brain className="h-5 w-5 mr-2 text-blue-600 dark:text-blue-400" />
+          ML Volatility Prediction vs Realized
+        </h3>
+        
+        {/* Period Selector */}
+        <div className="relative">
+          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+            Period
+          </label>
+          <select
+            value={period}
+            onChange={(e) => setPeriod(e.target.value as any)}
+            className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:focus:ring-blue-400 dark:focus:border-blue-400 transition-all duration-200 hover:border-gray-400 dark:hover:border-gray-500 shadow-sm"
+          >
+            <option value="1m">1 Month</option>
+            <option value="3m">3 Months</option>
+            <option value="6m">6 Months</option>
+            <option value="1y">1 Year</option>
+            <option value="2y">2 Years</option>
+          </select>
+          <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+            <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {/* Volatility Metrics */}
+      {metrics && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Predicted</span>
+              {getVolatilityIcon(metrics.avg_predicted_volatility)}
+            </div>
+            <p className={`text-lg font-bold ${getVolatilityColor(metrics.avg_predicted_volatility)}`}>
+              {(metrics.avg_predicted_volatility * 100).toFixed(2)}%
+            </p>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Avg Realized</span>
+              {getVolatilityIcon(metrics.avg_realized_volatility)}
+            </div>
+            <p className={`text-lg font-bold ${getVolatilityColor(metrics.avg_realized_volatility)}`}>
+              {(metrics.avg_realized_volatility * 100).toFixed(2)}%
+            </p>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Accuracy</span>
+              <Brain className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            </div>
+            <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+              {metrics.prediction_accuracy.toFixed(1)}%
+            </p>
+          </div>
+          
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Risk Level</span>
+              <Activity className="w-4 h-4 text-orange-600 dark:text-orange-400" />
+            </div>
+            <p className="text-lg font-bold text-gray-900 dark:text-white capitalize">
+              {metrics.risk_level}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Chart */}
       <div className="h-80">
         <Line data={chartData} options={options} />
       </div>
+
+      {/* Additional Info */}
+      {metrics && (
+        <div className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+          <p className="text-center">
+            Volatility trend: <span className="font-medium capitalize">{metrics.volatility_trend}</span> • 
+            ML model accuracy: <span className="font-medium">{metrics.prediction_accuracy.toFixed(1)}%</span>
+          </p>
+        </div>
+      )}
     </div>
   )
 }

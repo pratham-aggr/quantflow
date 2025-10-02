@@ -126,28 +126,25 @@ export const InteractiveDashboardChart: React.FC<InteractiveChartProps> = ({
   const doughnutChartRef = useRef<ChartJS<'doughnut'>>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Cleanup charts when component unmounts only (not on chart type changes)
+  // Cleanup charts when component unmounts or chart type changes
   useEffect(() => {
     return () => {
-      // Destroy all chart instances on unmount only
-      // Don't destroy on chart type change to avoid null reference errors
-      setTimeout(() => {
-        const lineChart = lineChartRef.current
-        const barChart = barChartRef.current
-        const doughnutChart = doughnutChartRef.current
-        
-        if (lineChart) {
-          lineChart.destroy()
-        }
-        if (barChart) {
-          barChart.destroy()
-        }
-        if (doughnutChart) {
-          doughnutChart.destroy()
-        }
-      }, 100)
+      // Destroy all chart instances on cleanup
+      const lineChart = lineChartRef.current
+      const barChart = barChartRef.current
+      const doughnutChart = doughnutChartRef.current
+      
+      if (lineChart) {
+        lineChart.destroy()
+      }
+      if (barChart) {
+        barChart.destroy()
+      }
+      if (doughnutChart) {
+        doughnutChart.destroy()
+      }
     }
-  }, [])
+  }, [currentChartType])
 
   // Animated data
   const animatedData = useChartAnimation(data, {
@@ -256,18 +253,11 @@ export const InteractiveDashboardChart: React.FC<InteractiveChartProps> = ({
           displayColors: true,
           callbacks: {
             label: (context: any) => {
-              try {
-                if (!context || context.dataIndex === undefined || !filteredData[context.dataIndex]) {
-                  return ''
-                }
-                const point = filteredData[context.dataIndex]
-                return `${context.dataset.label}: ${point.value.toLocaleString('en-US', {
-                  style: 'currency',
-                  currency: 'USD'
-                })}`
-              } catch (error) {
-                return ''
-              }
+              const point = filteredData[context.dataIndex]
+              return `${context.dataset.label}: ${point.value.toLocaleString('en-US', {
+                style: 'currency',
+                currency: 'USD'
+              })}`
             }
           }
         },
@@ -289,17 +279,11 @@ export const InteractiveDashboardChart: React.FC<InteractiveChartProps> = ({
 
       },
       onClick: (event: any, elements: any) => {
-        try {
-          if (elements && elements.length > 0) {
-            const element = elements[0] as InteractionItem
-            if (element.index !== undefined && filteredData[element.index]) {
-              const point = filteredData[element.index]
-              setSelectedPoint(point)
-              onDataPointClick?.(point)
-            }
-          }
-        } catch (error) {
-          // Ignore click errors on destroyed charts
+        if (elements.length > 0) {
+          const element = elements[0] as InteractionItem
+          const point = filteredData[element.index]
+          setSelectedPoint(point)
+          onDataPointClick?.(point)
         }
       }
     }
@@ -371,37 +355,25 @@ export const InteractiveDashboardChart: React.FC<InteractiveChartProps> = ({
 
   const handleZoomIn = useCallback(() => {
     const chart = lineChartRef.current || barChartRef.current
-    if (chart && chart.canvas) {
-      try {
-        chart.zoom(1.2)
-        setZoomLevel(prev => prev * 1.2)
-      } catch (error) {
-        // Ignore errors from destroyed charts
-      }
+    if (chart) {
+      chart.zoom(1.2)
+      setZoomLevel(prev => prev * 1.2)
     }
   }, [])
 
   const handleZoomOut = useCallback(() => {
     const chart = lineChartRef.current || barChartRef.current
-    if (chart && chart.canvas) {
-      try {
-        chart.zoom(0.8)
-        setZoomLevel(prev => prev * 0.8)
-      } catch (error) {
-        // Ignore errors from destroyed charts
-      }
+    if (chart) {
+      chart.zoom(0.8)
+      setZoomLevel(prev => prev * 0.8)
     }
   }, [])
 
   const handleReset = useCallback(() => {
     const chart = lineChartRef.current || barChartRef.current
-    if (chart && chart.canvas) {
-      try {
-        chart.resetZoom()
-        setZoomLevel(1)
-      } catch (error) {
-        // Ignore errors from destroyed charts
-      }
+    if (chart) {
+      chart.resetZoom()
+      setZoomLevel(1)
     }
   }, [])
 
@@ -418,16 +390,12 @@ export const InteractiveDashboardChart: React.FC<InteractiveChartProps> = ({
 
   const handleDownload = useCallback(() => {
     const chart = lineChartRef.current || barChartRef.current || doughnutChartRef.current
-    if (chart && chart.canvas) {
-      try {
-        const canvas = chart.canvas
-        const link = document.createElement('a')
-        link.download = `${title || 'chart'}-${currentTimeRange}.png`
-        link.href = canvas.toDataURL()
-        link.click()
-      } catch (error) {
-        console.error('Failed to download chart:', error)
-      }
+    if (chart) {
+      const canvas = chart.canvas
+      const link = document.createElement('a')
+      link.download = `${title || 'chart'}-${currentTimeRange}.png`
+      link.href = canvas.toDataURL()
+      link.click()
     }
   }, [title, currentTimeRange])
 

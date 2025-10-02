@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -76,9 +76,8 @@ const MonteCarloChart: React.FC<MonteCarloChartProps> = ({ portfolioHoldings, cl
   const [error, setError] = useState<string | null>(null)
   const [period, setPeriod] = useState('1y')
   const [showConfidenceIntervals, setShowConfidenceIntervals] = useState(true)
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fetchMonteCarloData = useCallback(async () => {
+  const fetchMonteCarloData = async () => {
     if (!portfolioHoldings || portfolioHoldings.length === 0) return
 
     setLoading(true)
@@ -112,40 +111,11 @@ const MonteCarloChart: React.FC<MonteCarloChartProps> = ({ portfolioHoldings, cl
     } finally {
       setLoading(false)
     }
-  }, [portfolioHoldings, period])
+  }
 
-  // Debounced effect for portfolio holdings changes
-  useEffect(() => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current)
-    }
-
-    debounceTimeoutRef.current = setTimeout(() => {
-      if (portfolioHoldings && portfolioHoldings.length > 0) {
-        fetchMonteCarloData()
-      }
-    }, 500) // 500ms debounce
-
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current)
-      }
-    }
-  }, [portfolioHoldings?.length, portfolioHoldings?.map(h => h.symbol).join(','), fetchMonteCarloData])
-
-  // Immediate effect for period changes
   useEffect(() => {
     fetchMonteCarloData()
-  }, [period, fetchMonteCarloData])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current)
-      }
-    }
-  }, [])
+  }, [portfolioHoldings, period])
 
   const chartData = useMemo(() => {
     if (!data) return null

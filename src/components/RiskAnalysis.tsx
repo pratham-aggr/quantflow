@@ -173,20 +173,24 @@ export const RiskAnalysis: React.FC = () => {
           try {
             const data = await response.json()
             setEngineAvailable(true)
+            info('Advanced Engine Available', 'Using advanced risk analysis engine')
           } catch (parseError) {
             console.error('Risk engine response error:', parseError)
             setEngineAvailable(false)
             setUseAdvancedEngine(false)
+            showError('Engine Unavailable', 'Advanced engine response format error')
           }
         } else {
           console.log('Risk engine not responding properly:', response.status)
           setEngineAvailable(false)
           setUseAdvancedEngine(false)
+          showError('Engine Unavailable', 'Advanced engine unavailable, using local analysis')
         }
       } catch (err) {
         console.error('Risk engine check error:', err)
         setEngineAvailable(false)
         setUseAdvancedEngine(false)
+        showError('Engine Unavailable', 'Advanced engine unavailable, using local analysis')
       } finally {
         setIsCheckingEngine(false)
       }
@@ -241,20 +245,77 @@ export const RiskAnalysis: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Render appropriate dashboard */}
-      {useAdvancedEngine && engineAvailable ? (
-        <AdvancedRiskDashboard 
-          holdings={currentPortfolio.holdings}
-          riskTolerance={user?.risk_tolerance || 'moderate'}
-        />
-      ) : (
-        <LocalRiskDashboard 
-          holdings={currentPortfolio.holdings}
-          riskMetrics={localRiskMetrics}
-          riskTolerance={user?.risk_tolerance || 'moderate'}
-        />
-      )}
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-robinhood-dark dark:to-robinhood-dark-secondary">
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h1 className="text-4xl font-bold robinhood-text-primary mb-3">
+                Risk Analysis
+              </h1>
+              <p className="robinhood-text-secondary text-lg">
+                {useAdvancedEngine ? 'Advanced risk assessment and portfolio analytics' : 'Local portfolio risk analysis'}
+              </p>
+            </div>
+            
+            {/* Engine Toggle */}
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className={`w-3 h-3 rounded-full ${engineAvailable ? 'bg-green-500' : 'bg-red-500'}`} />
+                <span className="text-sm text-gray-600">
+                  {engineAvailable ? 'Advanced Engine Available' : 'Advanced Engine Offline'}
+                </span>
+              </div>
+              
+              {engineAvailable && (
+                <button
+                  onClick={() => setUseAdvancedEngine(!useAdvancedEngine)}
+                  className="px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+                  style={{
+                    backgroundColor: useAdvancedEngine ? '#3B82F6' : '#6B7280',
+                    color: 'white'
+                  }}
+                >
+                  {useAdvancedEngine ? 'Advanced Mode' : 'Local Mode'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Engine Status Alert */}
+          {!engineAvailable && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
+              <div className="flex items-center">
+                <AlertTriangle className="w-5 h-5 text-yellow-600 mr-2" />
+                <div>
+                  <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
+                    Advanced Risk Engine Unavailable
+                  </h3>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                    Using local risk analysis. For advanced features like Monte Carlo simulations, 
+                    ensure the risk engine is running on port 5001.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Render appropriate dashboard */}
+        {useAdvancedEngine && engineAvailable ? (
+          <AdvancedRiskDashboard 
+            holdings={currentPortfolio.holdings}
+            riskTolerance={user?.risk_tolerance || 'moderate'}
+          />
+        ) : (
+          <LocalRiskDashboard 
+            holdings={currentPortfolio.holdings}
+            riskMetrics={localRiskMetrics}
+            riskTolerance={user?.risk_tolerance || 'moderate'}
+          />
+        )}
+      </div>
     </div>
   )
 }

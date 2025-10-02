@@ -83,9 +83,9 @@ export const useSafeStockPrices = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbolsKey, enabled, user])
 
-  // Use the safe auto-refresh hook (handles initial fetch automatically)
+  // Use the safe auto-refresh hook
   useAutoRefresh({
-    enabled: autoRefresh && enabled && !!user && symbols.length > 0,
+    enabled: autoRefresh && enabled && !!user,
     interval: refreshInterval,
     onRefresh: fetchPrices
   })

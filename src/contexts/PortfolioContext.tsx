@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { useAuth } from './AuthContext'
 import { portfolioService } from '../lib/portfolioService'
 import { cleanupService } from '../lib/cleanupService'
-import { performanceMonitor } from '../lib/performanceMonitor'
 import { 
   Portfolio, 
   Holding, 
@@ -62,66 +61,47 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
     cleanupService.cleanup()
   }, [])
 
-  const refreshPortfolios = useCallback(async () => {
+  const refreshPortfolios = useCallback(() => {
     if (!user) return
 
     setState(prev => ({ ...prev, loading: true, error: null }))
 
-    try {
-      // Track performance of portfolio loading
-      await performanceMonitor.trackAsync('Portfolio Loading', async () => {
-        // First, load all portfolios
-        const portfoliosResult = await portfolioService.getPortfolios(user.id)
-
-        // Get current portfolio ID before updating state
-        const currentId = state.currentPortfolio?.id
-
-        // Update portfolios list
+    portfolioService.getPortfolios(user.id)
+      .then(portfolios => {
         setState(prev => ({
           ...prev,
-          portfolios: portfoliosResult,
-          loading: false
+          portfolios
         }))
 
-        // If we have a current portfolio, refresh its market data
-        if (currentId) {
-          try {
-            const updatedPortfolio = await portfolioService.getPortfolioWithMarketPrices(currentId)
-            if (updatedPortfolio) {
-              setState(prev => ({
-                ...prev,
-                currentPortfolio: updatedPortfolio
-              }))
-            }
-          } catch (error) {
-            console.warn('Failed to refresh current portfolio market data:', error)
-          }
-        } 
-        // If no current portfolio but we have portfolios, load the first one
-        else if (portfoliosResult.length > 0) {
-          try {
-            const firstPortfolio = await portfolioService.getPortfolioWithMarketPrices(portfoliosResult[0].id)
-            if (firstPortfolio) {
-              setState(prev => ({
-                ...prev,
-                currentPortfolio: firstPortfolio
-              }))
-            }
-          } catch (error) {
-            console.warn('Failed to load first portfolio with market data:', error)
-          }
+        // Select the first portfolio if available and no current portfolio
+        if (portfolios.length > 0 && !state.currentPortfolio) {
+          return portfolioService.getPortfolioWithMarketPrices(portfolios[0].id)
         }
-      }, { userId: user.id, portfolioCount: state.portfolios.length })
-    } catch (error) {
-      console.error('Error refreshing portfolios:', error)
-      setState(prev => ({
-        ...prev,
-        loading: false,
-        error: 'Failed to load portfolios'
-      }))
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+        return null
+      })
+      .then(portfolioWithHoldings => {
+        if (portfolioWithHoldings) {
+          setState(prev => ({
+            ...prev,
+            currentPortfolio: portfolioWithHoldings,
+            loading: false
+          }))
+        } else {
+          setState(prev => ({
+            ...prev,
+            loading: false
+          }))
+        }
+      })
+      .catch(error => {
+        console.error('Error refreshing portfolios:', error)
+        setState(prev => ({
+          ...prev,
+          loading: false,
+          error: 'Failed to load portfolios'
+        }))
+      })
+  }, [user, state.currentPortfolio])
 
   // Load portfolios when user changes
   useEffect(() => {
@@ -137,8 +117,7 @@ export const PortfolioProvider: React.FC<PortfolioProviderProps> = ({ children }
         error: null
       })
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id])
+  }, [user, refreshPortfolios, cleanupBackgroundProcesses])
 
   const createPortfolio = async (data: CreatePortfolioData): Promise<Portfolio | null> => {
     if (!user) return null

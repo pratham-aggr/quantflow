@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -52,9 +52,8 @@ export const PortfolioDrawdownChart: React.FC<PortfolioDrawdownChartProps> = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [period, setPeriod] = useState<'1m' | '3m' | '6m' | '1y' | '2y' | '5y'>('1y')
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
-  const fetchDrawdownData = useCallback(async () => {
+  const fetchDrawdownData = async () => {
     if (!portfolioHoldings || portfolioHoldings.length === 0) {
       setError('No portfolio holdings available')
       return
@@ -92,40 +91,11 @@ export const PortfolioDrawdownChart: React.FC<PortfolioDrawdownChartProps> = ({
     } finally {
       setLoading(false)
     }
-  }, [portfolioHoldings, period])
+  }
 
-  // Debounced effect for portfolio holdings changes
-  useEffect(() => {
-    if (debounceTimeoutRef.current) {
-      clearTimeout(debounceTimeoutRef.current)
-    }
-
-    debounceTimeoutRef.current = setTimeout(() => {
-      if (portfolioHoldings && portfolioHoldings.length > 0) {
-        fetchDrawdownData()
-      }
-    }, 500) // 500ms debounce
-
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current)
-      }
-    }
-  }, [portfolioHoldings?.length, portfolioHoldings?.map(h => h.symbol).join(','), fetchDrawdownData])
-
-  // Immediate effect for period changes
   useEffect(() => {
     fetchDrawdownData()
-  }, [period, fetchDrawdownData])
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceTimeoutRef.current) {
-        clearTimeout(debounceTimeoutRef.current)
-      }
-    }
-  }, [])
+  }, [portfolioHoldings, period])
 
   const chartData = {
     labels: data?.dates || [],
