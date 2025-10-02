@@ -13,7 +13,6 @@ import {
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 import { TrendingUp, TrendingDown, Target, BarChart3 } from 'lucide-react'
-import { portfolioApiService } from '../../lib/portfolioApiService'
 
 ChartJS.register(
   CategoryScale,
@@ -70,7 +69,23 @@ export const CumulativeReturnsChart: React.FC<CumulativeReturnsChartProps> = ({
     setError(null)
 
     try {
-      const result = await portfolioApiService.getCumulativeReturns(portfolioHoldings, benchmark, period)
+      const response = await fetch(`${process.env.REACT_APP_BACKEND_API_URL || 'http://127.0.0.1:5001'}/api/portfolio/cumulative-returns`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          holdings: portfolioHoldings,
+          benchmark: benchmark,
+          period: period
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch cumulative returns data')
+      }
+
+      const result = await response.json()
       
       if (result.success) {
         setData(result.data)

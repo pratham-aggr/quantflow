@@ -460,7 +460,7 @@ class MarketDataService {
     this.reconnectAttempts = 0
   }
 
-  private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}, method: string = 'GET', body?: any): Promise<T> {
+  private async makeRequest<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
     if (!this.serverUrl) {
       throw new Error('Server URL not configured')
     }
@@ -472,55 +472,29 @@ class MarketDataService {
     })
 
     return this.rateLimiter.execute(async () => {
-      // Retry logic for 502 errors
-      let lastError: Error | null = null
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const response = await fetch(url.toString(), {
-            method,
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: body ? JSON.stringify(body) : undefined,
-          })
+      const response = await fetch(url.toString(), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
       
-          if (!response.ok) {
-            console.error(`❌ API request failed: ${endpoint} (${response.status})`)
-            if (response.status === 429) {
-              throw new Error('Rate limit exceeded - please try again later')
-            }
-            if (response.status === 500) {
-              const errorData = await response.json().catch(() => ({}))
-              if (errorData.error && errorData.error.includes('Rate limited')) {
-                throw new Error('Rate limited - please try again later')
-              }
-              throw new Error('Server error - please try again later')
-            }
-            if (response.status === 502) {
-              // For 502 errors, retry after a delay
-              if (attempt < 2) {
-                console.warn(`⚠️ Backend temporarily unavailable (502), retrying in ${(attempt + 1) * 1000}ms...`)
-                await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 1000))
-                continue
-              }
-              throw new Error('Backend temporarily unavailable - please try again later')
-            }
-            throw new Error(`API request failed: ${response.status}`)
-          }
-
-          const data = await response.json()
-          return data.data || data // Handle both wrapped and unwrapped responses
-        } catch (error) {
-          lastError = error as Error
-          if (attempt < 2 && (error as Error).message.includes('Backend temporarily unavailable')) {
-            console.warn(`⚠️ Request failed, retrying in ${(attempt + 1) * 1000}ms...`)
-            await new Promise(resolve => setTimeout(resolve, (attempt + 1) * 1000))
-            continue
-          }
-          throw error
+      if (!response.ok) {
+        console.error(`❌ API request failed: ${endpoint} (${response.status})`)
+        if (response.status === 429) {
+          throw new Error('Rate limit exceeded - please try again later')
         }
+        if (response.status === 500) {
+          const errorData = await response.json().catch(() => ({}))
+          if (errorData.error && errorData.error.includes('Rate limited')) {
+            throw new Error('Rate limited - please try again later')
+          }
+        }
+        throw new Error(`API request failed: ${response.status}`)
       }
-      throw lastError || new Error('Request failed after all retries')
+
+      const data = await response.json()
+      return data.data || data // Handle both wrapped and unwrapped responses
     })
   }
 
