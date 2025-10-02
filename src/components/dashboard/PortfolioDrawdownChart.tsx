@@ -12,6 +12,7 @@ import {
 } from 'chart.js'
 import { Line } from 'react-chartjs-2'
 import { TrendingDown, BarChart3, Activity } from 'lucide-react'
+import { portfolioApiService } from '../../lib/portfolioApiService'
 
 ChartJS.register(
   CategoryScale,
@@ -64,22 +65,7 @@ export const PortfolioDrawdownChart: React.FC<PortfolioDrawdownChartProps> = ({
     setError(null)
 
     try {
-      const response = await fetch(`${process.env.REACT_APP_BACKEND_API_URL || 'http://127.0.0.1:5001'}/api/portfolio/drawdowns`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          holdings: portfolioHoldings,
-          period: period
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch drawdown data')
-      }
-
-      const result = await response.json()
+      const result = await portfolioApiService.getDrawdowns(portfolioHoldings, period)
       
       if (result.success) {
         setData(result.data)

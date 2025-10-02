@@ -42,14 +42,39 @@ CACHE_DURATION = 300  # 5 minutes cache
 app = Flask(__name__)
 
 # CORS configuration - allow Vercel preview and production domains
-CORS(app, resources={r"/.*": {"origins": [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "https://quantflow.vercel.app",
-    "https://quantflow-one.vercel.app",
-    "https://quantflow-git-main-pratham-aggrs-projects.vercel.app",
-    re.compile(r"https://quantflow-.*\.vercel\.app")
-]}}, supports_credentials=True)
+CORS(app, resources={r"/.*": {
+    "origins": [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://quantflow.vercel.app",
+        "https://quantflow-one.vercel.app",
+        "https://quantflow-git-main-pratham-aggrs-projects.vercel.app",
+        re.compile(r"https://quantflow-.*\.vercel\.app"),
+        re.compile(r"https://.*\.vercel\.app"),  # Allow any Vercel domain
+        re.compile(r"https://.*-.*-.*\.vercel\.app")  # Allow Vercel preview domains
+    ],
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization", "X-Requested-With"],
+    "supports_credentials": True
+}})
+
+# Manual CORS headers for additional safety
+@app.after_request
+def after_request(response):
+    origin = request.headers.get('Origin')
+    if origin and any(pattern.match(origin) if hasattr(pattern, 'match') else origin == pattern 
+                     for pattern in [
+                         "http://localhost:3000",
+                         "http://localhost:3001", 
+                         "https://quantflow.vercel.app",
+                         "https://quantflow-one.vercel.app",
+                         re.compile(r"https://.*\.vercel\.app")
+                     ]):
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
 
 # Initialize the essential service
 advanced_risk_engine = AdvancedRiskEngine()
