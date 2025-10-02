@@ -27,17 +27,12 @@ from rebalancing_engine import RebalancingEngine, RebalancingSuggestion
 from advanced_rebalancing import AdvancedRebalancingEngine
 
 import re
-from datetime import datetime, timedelta
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
-
-# Simple in-memory cache for quotes to reduce API calls
-quote_cache = {}
-CACHE_DURATION = 300  # 5 minutes cache
 
 app = Flask(__name__)
 
@@ -211,37 +206,21 @@ def create_yfinance_session():
 
 @app.route('/health', methods=['GET'])
 def health_check():
-    """Health check endpoint with cache status"""
+    """Health check endpoint"""
     return jsonify({
         'status': 'healthy',
         'service': 'Render Risk Engine',
         'version': '1.0.0',
-        'environment': os.environ.get('RENDER_ENVIRONMENT', 'development'),
-        'cache_status': {
-            'cached_quotes': len(quote_cache),
-            'cache_duration_seconds': CACHE_DURATION
-        }
+        'environment': os.environ.get('RENDER_ENVIRONMENT', 'development')
     })
 
 # ========== MARKET DATA ENDPOINTS ==========
 
 @app.route('/api/market-data/quote/<symbol>', methods=['GET'])
 def get_stock_quote(symbol):
-    """Get stock quote using yfinance with rate limiting protection and caching"""
+    """Get stock quote using yfinance"""
     try:
         symbol = symbol.upper()
-        
-        # Check cache first
-        now = datetime.now()
-        if symbol in quote_cache:
-            cached_data, cache_time = quote_cache[symbol]
-            if (now - cache_time).total_seconds() < CACHE_DURATION:
-                logging.info(f"Returning cached data for {symbol}")
-                return jsonify(cached_data)
-        
-        # Add small delay to avoid rate limiting
-        time.sleep(0.2)
-        
         ticker = yf.Ticker(symbol)
         
         # Get current info
@@ -263,36 +242,19 @@ def get_stock_quote(symbol):
             'timestamp': int(time.time() * 1000)
         }
         
-        # Cache the result
-        quote_cache[symbol] = (quote, now)
-        
         return jsonify(quote)
     except Exception as e:
-        error_msg = str(e)
-        if 'rate limit' in error_msg.lower() or 'too many requests' in error_msg.lower():
-            logging.warning(f"Rate limited for {symbol}, returning rate limit error")
-            return jsonify({'error': 'Rate limited - please try again later'}), 429
-        logging.error(f"Error fetching quote for {symbol}: {error_msg}")
+        logging.error(f"Error fetching quote for {symbol}: {str(e)}")
         return jsonify({'error': 'Failed to fetch stock data'}), 500
 
 def fetch_single_quote(symbol):
     """Helper function to fetch a single quote - used for parallel processing"""
     try:
-        # Check cache first
-        now = datetime.now()
-        if symbol in quote_cache:
-            cached_data, cache_time = quote_cache[symbol]
-            if (now - cache_time).total_seconds() < CACHE_DURATION:
-                return symbol, cached_data
-        
-        # Add delay to avoid rate limiting
-        time.sleep(0.5)  # 500ms delay between requests
-        
         ticker = yf.Ticker(symbol)
         info = ticker.info
         
         if info and 'regularMarketPrice' in info:
-            quote_data = {
+            return symbol, {
                 'symbol': symbol,
                 'price': info.get('regularMarketPrice', 0),
                 'change': info.get('regularMarketChange', 0),
@@ -304,42 +266,11 @@ def fetch_single_quote(symbol):
                 'volume': info.get('volume', 0),
                 'timestamp': int(time.time() * 1000)
             }
-            # Cache the result
-            quote_cache[symbol] = (quote_data, now)
-            return symbol, quote_data
         else:
             return symbol, {'error': 'Stock data not found'}
     except Exception as e:
-        error_msg = str(e)
-        if 'rate limit' in error_msg.lower() or 'too many requests' in error_msg.lower():
-            logging.warning(f"Rate limited for {symbol}, retrying with delay...")
-            time.sleep(2)  # Wait 2 seconds before retry
-            try:
-                # Retry once with longer delay
-                ticker = yf.Ticker(symbol)
-                info = ticker.info
-                if info and 'regularMarketPrice' in info:
-                    quote_data = {
-                        'symbol': symbol,
-                        'price': info.get('regularMarketPrice', 0),
-                        'change': info.get('regularMarketChange', 0),
-                        'changePercent': info.get('regularMarketChangePercent', 0),
-                        'high': info.get('dayHigh', 0),
-                        'low': info.get('dayLow', 0),
-                        'open': info.get('regularMarketOpen', 0),
-                        'previousClose': info.get('regularMarketPreviousClose', 0),
-                        'volume': info.get('volume', 0),
-                        'timestamp': int(time.time() * 1000)
-                    }
-                    # Cache the result
-                    quote_cache[symbol] = (quote_data, datetime.now())
-                    return symbol, quote_data
-            except Exception as retry_error:
-                logging.error(f"Retry failed for {symbol}: {str(retry_error)}")
-                return symbol, {'error': 'Rate limited - please try again later'}
-        
-        logging.error(f"Error fetching quote for {symbol}: {error_msg}")
-        return symbol, {'error': error_msg}
+        logging.error(f"Error fetching quote for {symbol}: {str(e)}")
+        return symbol, {'error': str(e)}
 
 @app.route('/api/market-data/quotes', methods=['GET'])
 def get_multiple_quotes():
@@ -354,8 +285,8 @@ def get_multiple_quotes():
         
         logging.info(f"🚀 Fetching {len(symbol_list)} quotes in parallel: {symbol_list}")
         
-        # Use ThreadPoolExecutor for parallel fetching with reduced concurrency to avoid rate limits
-        max_workers = min(3, len(symbol_list))  # Max 3 concurrent requests to avoid rate limiting
+        # Use ThreadPoolExecutor for parallel fetching (much faster!)
+        max_workers = min(10, len(symbol_list))  # Max 10 concurrent requests
         
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             # Submit all tasks
