@@ -421,7 +421,9 @@ class MarketDataService {
     this.serverUrl = process.env.REACT_APP_BACKEND_API_URL || ''
     
     if (!this.serverUrl) {
-      console.warn('Backend API URL not configured. Some features will not be available.')
+      console.warn('⚠️ Backend API URL not configured. Market data features will not be available.')
+    } else {
+      console.log('✅ Market data service initialized with backend:', this.serverUrl)
     }
 
     // Start background refresh process
@@ -480,7 +482,13 @@ class MarketDataService {
       if (!response.ok) {
         console.error(`❌ API request failed: ${endpoint} (${response.status})`)
         if (response.status === 429) {
-          throw new Error('Rate limit exceeded')
+          throw new Error('Rate limit exceeded - please try again later')
+        }
+        if (response.status === 500) {
+          const errorData = await response.json().catch(() => ({}))
+          if (errorData.error && errorData.error.includes('Rate limited')) {
+            throw new Error('Rate limited - please try again later')
+          }
         }
         throw new Error(`API request failed: ${response.status}`)
       }
@@ -544,7 +552,12 @@ class MarketDataService {
         
         return null
       } catch (error) {
-        console.error(`❌ Failed to fetch quote for ${symbol}:`, error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        if (errorMessage.includes('Rate limited') || errorMessage.includes('Rate limit exceeded')) {
+          console.warn(`⚠️ Rate limited for ${symbol} - will retry later`)
+        } else {
+          console.error(`❌ Failed to fetch quote for ${symbol}:`, error)
+        }
         return null
       } finally {
         // Remove from pending requests when done
@@ -667,6 +680,12 @@ class MarketDataService {
               
               this.cache.set(`quote_${symbol}`, mappedData, 'quotes')
               results[symbol] = mappedData
+            } else if (rawData && rawData.error) {
+              if (rawData.error.includes('Rate limited') || rawData.error.includes('Too Many Requests')) {
+                console.warn(`⚠️ Rate limited for ${symbol} - will retry later`)
+              } else {
+                console.warn(`⚠️ No data for ${symbol}: ${rawData.error}`)
+              }
             } else {
               console.warn(`⚠️ No data for ${symbol}`)
             }
@@ -716,6 +735,31 @@ class MarketDataService {
 
   isConfigured(): boolean {
     return !!this.serverUrl
+  }
+
+  async checkBackendHealth(): Promise<boolean> {
+    if (!this.serverUrl) return false
+    
+    try {
+      const response = await fetch(`${this.serverUrl}/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('✅ Backend health check passed:', data)
+        return true
+      } else {
+        console.warn('⚠️ Backend health check failed:', response.status)
+        return false
+      }
+    } catch (error) {
+      console.error('❌ Backend health check error:', error)
+      return false
+    }
   }
 
   // ========== WOW FACTOR ENHANCEMENTS ==========
