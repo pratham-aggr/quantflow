@@ -35,7 +35,6 @@ env/
 # VSCode
 .vscode/
 
-# Jupyter Notebook
 .ipynb_checkpoints
 
 # Python Testing
