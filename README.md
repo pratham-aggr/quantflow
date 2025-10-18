@@ -309,27 +309,6 @@ make lint
 
 ---
 
-## Roadmap
-
-### Q1 2024
-- [ ] Advanced portfolio optimization algorithms
-- [ ] Real-time collaboration features
-- [ ] Enhanced mobile responsiveness
-
-### Q2 2024
-- [ ] Mobile application (iOS/Android)
-- [ ] Advanced analytics and reporting
-- [ ] Multi-tenant architecture
-
-### Q3 2024
-- [ ] Multiple data provider integrations
-- [ ] Enhanced AI/ML capabilities
-- [ ] Advanced risk models
-
-### Q4 2024
-- [ ] Enterprise features and integrations
-- [ ] Advanced compliance tools
-- [ ] Global deployment options
 
 ---
 
