@@ -41,10 +41,18 @@ jobs:
         
     - name: Scan for secrets
       uses: trufflesecurity/trufflehog@main
+      if: github.event_name == 'pull_request'
       with:
         path: ./
-        base: main
+        base: ${{ github.event.pull_request.base.sha }}
         head: HEAD
+        extra_args: --debug --only-verified
+        
+    - name: Scan for secrets (push event)
+      uses: trufflesecurity/trufflehog@main
+      if: github.event_name == 'push'
+      with:
+        path: ./
         extra_args: --debug --only-verified
 
   backend-security:
