@@ -1,259 +1,216 @@
-# QuantFlow - Advanced Portfolio Management & Risk Analysis Platform
+# QuantFlow
 
-[![React](https://img.shields.io/badge/React-18.2.0-blue.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
-[![Python](https://img.shields.io/badge/Python-3.9+-green.svg)](https://www.python.org/)
-[![Flask](https://img.shields.io/badge/Flask-2.3+-red.svg)](https://flask.palletsprojects.com/)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-orange.svg)](https://supabase.com/)
-[![Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black.svg)](https://vercel.com/)
-[![Render](https://img.shields.io/badge/Deployed%20on-Render-blue.svg)](https://render.com/)
+**Advanced Portfolio Management & Risk Analysis Platform**
 
-> **QuantFlow** is a comprehensive portfolio management platform that combines real-time market data, advanced risk analysis, automated rebalancing, and intelligent portfolio optimization. Built with modern technologies for professional-grade financial analysis.
+QuantFlow is a comprehensive financial technology platform that provides institutional-grade portfolio management, risk analysis, and automated rebalancing capabilities. Built with modern microservices architecture and containerized deployment, it offers real-time market data integration, advanced risk modeling, and intelligent portfolio optimization.
 
-## 🚀 Live Demo
+## Architecture Overview
 
-- **Frontend:** [https://quantflow-git-main-pratham-aggrs-projects.vercel.app](https://quantflow-git-main-pratham-aggrs-projects.vercel.app)
-- **Backend API:** [https://quantflow-backend-api.onrender.com](https://quantflow-backend-api.onrender.com)
+QuantFlow employs a microservices architecture with clear separation of concerns:
 
-## ✨ Features
+- **Frontend**: React-based single-page application with TypeScript
+- **Backend**: Python Flask API with advanced financial modeling
+- **Database**: PostgreSQL with Supabase for authentication and data persistence
+- **Containerization**: Docker-based deployment with orchestration
+- **Infrastructure**: Cloud-native deployment on Vercel and Render
 
-### 📊 **Portfolio Management**
-- **Real-time Portfolio Tracking** - Monitor your investments with live market data
-- **Multi-Asset Support** - Stocks, ETFs, and other securities
-- **Performance Analytics** - Detailed performance metrics and historical analysis
-- **Portfolio Allocation** - Visual breakdown of asset allocation
+## Key Features
 
-### 🎯 **Advanced Risk Analysis**
-- **Risk Metrics Calculation** - VaR, Sharpe Ratio, Beta, Alpha, and more
-- **Portfolio Stress Testing** - Scenario analysis and stress testing
-- **Correlation Analysis** - Asset correlation and diversification insights
-- **Risk-Adjusted Returns** - Comprehensive risk-adjusted performance metrics
+### Portfolio Management
+- Real-time portfolio tracking with live market data
+- Multi-asset class support (stocks, ETFs, bonds, alternatives)
+- Performance analytics with historical analysis
+- Portfolio allocation visualization and optimization
 
-### ⚖️ **Automated Rebalancing**
-- **Smart Rebalancing Engine** - Automated portfolio rebalancing strategies
-- **What-If Analysis** - Test different rebalancing scenarios
-- **Tax-Loss Harvesting** - Optimize tax efficiency
-- **Custom Rebalancing Rules** - Define your own rebalancing criteria
+### Risk Analysis Engine
+- Advanced risk metrics calculation (VaR, CVaR, Sharpe Ratio, Beta)
+- Monte Carlo simulation for scenario analysis
+- Correlation analysis and diversification scoring
+- Machine learning-based volatility prediction
+- Stress testing and sensitivity analysis
 
-### 📈 **Market Intelligence**
-- **Real-time Market Data** - Live stock quotes and market information
-- **Financial News Feed** - Relevant market news and insights
-- **Technical Indicators** - Moving averages, RSI, and other technical analysis
-- **Market Trends** - Market sentiment and trend analysis
+### Automated Rebalancing
+- Intelligent rebalancing algorithms
+- Tax-loss harvesting optimization
+- Custom rebalancing strategies and rules
+- What-if analysis for portfolio scenarios
 
-### 🔐 **Security & Authentication**
-- **Secure User Authentication** - Supabase-powered authentication
-- **Role-based Access** - User permissions and access control
-- **Data Encryption** - Secure data transmission and storage
-- **API Security** - Protected API endpoints with CORS
+### Market Intelligence
+- Real-time market data integration
+- Financial news aggregation and sentiment analysis
+- Technical indicators and trend analysis
+- Market sentiment scoring
 
-## 🏗️ Architecture
+## Technology Stack
 
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   Backend API   │    │   Database      │
-│   (React/TS)    │◄──►│   (Python/Flask)│◄──►│   (Supabase)    │
-│   Vercel        │    │   Render        │    │   PostgreSQL    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         │                       │                       │
-         ▼                       ▼                       ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Market Data   │    │   Risk Engine   │    │   User Data     │
-│   (yfinance)    │    │   (Custom)      │    │   (Profiles)    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
+### Frontend
+- **React 18** with TypeScript for type safety
+- **Tailwind CSS** for responsive design
+- **Chart.js** for financial visualizations
+- **React Router** for client-side navigation
 
-## 🛠️ Tech Stack
+### Backend
+- **Python 3.9+** with Flask framework
+- **NumPy/Pandas** for financial calculations
+- **SciPy** for statistical analysis
+- **scikit-learn** for machine learning
+- **yfinance** for market data integration
 
-### **Frontend**
-- **React 18** - Modern UI framework with hooks
-- **TypeScript** - Type-safe JavaScript development
-- **Tailwind CSS** - Utility-first CSS framework
-- **Chart.js** - Interactive charts and visualizations
-- **React Router** - Client-side routing
+### Infrastructure
+- **Docker** for containerization
+- **Nginx** for reverse proxy and static file serving
+- **PostgreSQL** with Supabase for data persistence
+- **Vercel** for frontend hosting
+- **Render** for backend hosting
 
-### **Backend**
-- **Python 3.9+** - Backend programming language
-- **Flask** - Lightweight web framework
-- **yfinance** - Yahoo Finance API for market data
-- **NumPy/Pandas** - Data analysis and manipulation
-- **Gunicorn** - WSGI HTTP Server for production
-
-### **Database & Authentication**
-- **Supabase** - PostgreSQL database with real-time features
-- **Row Level Security** - Database-level security
-- **JWT Authentication** - Secure token-based auth
-
-### **Deployment**
-- **Vercel** - Frontend hosting and deployment
-- **Render** - Backend hosting and deployment
-- **GitHub** - Version control and CI/CD
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- **Node.js** 18+ and **npm**
-- **Python** 3.9+
-- **Git**
+- Docker and Docker Compose
+- Node.js 18+ (for development)
+- Python 3.9+ (for development)
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/pratham-aggr/quantflow.git
-cd quantflow
-```
+### Development Setup
 
-### 2. Frontend Setup
-```bash
-# Install dependencies
-npm install
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/pratham-aggr/quantflow.git
+   cd quantflow
+   ```
 
-# Create environment file
-cp .env.example .env.local
+2. **Environment Configuration**
+   ```bash
+   # Frontend environment
+   cp .env.example .env.local
+   
+   # Backend environment
+   cd backend-api
+   cp .env.example .env
+   ```
 
-# Add your environment variables
-REACT_APP_SUPABASE_URL=your-supabase-url
-REACT_APP_SUPABASE_ANON_KEY=your-supabase-anon-key
-REACT_APP_BACKEND_API_URL=http://localhost:5000
+3. **Development with Docker**
+   ```bash
+   # Start all services
+   docker-compose up -d
+   
+   # View logs
+   docker-compose logs -f
+   ```
 
-# Start development server
-npm start
-```
+4. **Development without Docker**
+   ```bash
+   # Frontend
+   npm install
+   npm start
+   
+   # Backend
+   cd backend-api
+   pip install -r requirements.txt
+   python app.py
+   ```
 
-### 3. Backend Setup
-```bash
-# Navigate to backend directory
-cd backend-api
+### Production Deployment
 
-# Create virtual environment
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+1. **Build and Deploy**
+   ```bash
+   # Production build
+   docker-compose -f docker-compose.prod.yml up -d
+   
+   # Scale services
+   docker-compose -f docker-compose.prod.yml up -d --scale backend=3
+   ```
 
-# Install dependencies
-pip install -r requirements.txt
+2. **Environment Variables**
+   ```bash
+   # Required environment variables
+   export FRONTEND_URL=https://your-domain.com
+   export BACKEND_URL=https://api.your-domain.com
+   export SUPABASE_URL=your-supabase-url
+   export SUPABASE_KEY=your-supabase-key
+   ```
 
-# Start backend server
-python app.py
-```
+## API Documentation
 
-### 4. Database Setup
-1. Create a [Supabase](https://supabase.com/) project
-2. Set up your database schema
-3. Configure authentication
-4. Update environment variables with your Supabase credentials
+### Authentication Endpoints
+- `POST /api/auth/login` - User authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/refresh` - Token refresh
 
-## 📁 Project Structure
+### Portfolio Management
+- `GET /api/portfolio/{id}` - Get portfolio details
+- `POST /api/portfolio` - Create new portfolio
+- `PUT /api/portfolio/{id}` - Update portfolio
+- `DELETE /api/portfolio/{id}` - Delete portfolio
 
-```
-quantflow/
-├── src/                          # Frontend source code
-│   ├── components/               # React components
-│   │   ├── dashboard/           # Dashboard components
-│   │   ├── auth/                # Authentication components
-│   │   └── ...                  # Other UI components
-│   ├── lib/                     # Utility libraries
-│   │   ├── supabase.ts          # Database client
-│   │   ├── marketDataService.ts # Market data service
-│   │   └── ...                  # Other services
-│   ├── contexts/                # React contexts
-│   ├── hooks/                   # Custom React hooks
-│   └── types/                   # TypeScript type definitions
-├── backend-api/                  # Backend Python application
-│   ├── app.py                   # Main Flask application
-│   ├── advanced_risk_engine.py  # Risk analysis engine
-│   ├── rebalancing_engine.py    # Portfolio rebalancing
-│   ├── requirements.txt         # Python dependencies
-│   └── ...                      # Other backend modules
-├── public/                      # Static assets
-├── render.yaml                  # Render deployment config
-├── package.json                 # Frontend dependencies
-└── README.md                    # This file
-```
+### Risk Analysis
+- `POST /api/risk/analyze` - Comprehensive risk analysis
+- `POST /api/risk/monte-carlo` - Monte Carlo simulation
+- `POST /api/risk/correlation` - Correlation analysis
+- `POST /api/risk/ml-prediction` - ML-based predictions
 
-## 🔧 Configuration
+### Market Data
+- `GET /api/market-data/quote/{symbol}` - Real-time quotes
+- `GET /api/market-data/historical/{symbol}` - Historical data
+- `GET /api/market-data/news` - Market news feed
 
-### Environment Variables
+## Security
 
-#### Frontend (.env.local)
-```env
-REACT_APP_SUPABASE_URL=https://your-project.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=your-supabase-anon-key
-REACT_APP_BACKEND_API_URL=http://localhost:5000
-```
+QuantFlow implements enterprise-grade security measures:
 
-#### Backend (Environment)
-```env
-FRONTEND_URL=https://your-frontend-url.vercel.app
-PYTHON_VERSION=3.9.16
-PORT=10000
-```
+- **Authentication**: JWT-based authentication with Supabase
+- **Authorization**: Role-based access control (RBAC)
+- **Data Encryption**: TLS 1.3 for data in transit
+- **Input Validation**: Comprehensive input sanitization
+- **Rate Limiting**: API rate limiting and DDoS protection
+- **Security Headers**: CSP, HSTS, and other security headers
 
-## 🚀 Deployment
+## Performance
 
-### Frontend (Vercel)
-1. Connect your GitHub repository to Vercel
-2. Configure environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
+The platform is optimized for high-performance financial applications:
 
-### Backend (Render)
-1. Connect your GitHub repository to Render
-2. Configure environment variables in Render dashboard
-3. Set build command: `cd backend-api && pip install -r requirements.txt`
-4. Set start command: `cd backend-api && gunicorn app:app`
+- **Caching**: Multi-layer caching strategy
+- **Database Optimization**: Indexed queries and connection pooling
+- **CDN Integration**: Global content delivery
+- **Load Balancing**: Horizontal scaling capabilities
+- **Monitoring**: Real-time performance metrics
 
-For detailed deployment instructions, see [DEPLOYMENT.md](./DEPLOYMENT.md).
+## Monitoring and Observability
 
-## 📊 API Documentation
+- **Health Checks**: Comprehensive health monitoring
+- **Logging**: Structured logging with correlation IDs
+- **Metrics**: Performance and business metrics
+- **Alerting**: Automated alerting for critical issues
 
-### Market Data Endpoints
-- `GET /api/market-data/quote/{symbol}` - Get stock quote
-- `GET /api/market-data/quotes` - Get multiple quotes
-- `GET /api/market-data/search` - Search stocks
-- `GET /api/market-data/news` - Get market news
+## Contributing
 
-### Risk Analysis Endpoints
-- `POST /api/risk/analyze` - Analyze portfolio risk
-- `POST /api/risk/stress-test` - Stress test portfolio
-- `GET /api/risk/metrics` - Get risk metrics
-
-### Portfolio Endpoints
-- `POST /api/portfolio/rebalance` - Rebalance portfolio
-- `POST /api/portfolio/what-if` - What-if analysis
-- `GET /api/portfolio/performance` - Get performance data
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+We welcome contributions from the community. Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
 ### Development Workflow
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Add tests for new functionality
+5. Submit a pull request
 
-## 📝 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## Support
 
-- **Yahoo Finance** - Market data provider
-- **Supabase** - Database and authentication
-- **Vercel** - Frontend hosting
-- **Render** - Backend hosting
-- **React** - Frontend framework
-- **Flask** - Backend framework
+- **Documentation**: [GitHub Wiki](https://github.com/pratham-aggr/quantflow/wiki)
+- **Issues**: [GitHub Issues](https://github.com/pratham-aggr/quantflow/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/pratham-aggr/quantflow/discussions)
 
-## 📞 Support
+## Roadmap
 
-- **Documentation:** [https://github.com/pratham-aggr/quantflow](https://github.com/pratham-aggr/quantflow)
-- **Issues:** [GitHub Issues](https://github.com/pratham-aggr/quantflow/issues)
-- **Email:** [your-email@example.com]
+- [ ] Advanced portfolio optimization algorithms
+- [ ] Real-time collaboration features
+- [ ] Mobile application
+- [ ] Advanced reporting and analytics
+- [ ] Integration with more data providers
+- [ ] Machine learning model improvements
 
 ---
 
-<div align="center">
-  <p>Made with ❤️ by <a href="https://github.com/pratham-aggr">Pratham Aggarwal</a></p>
-  <p>⭐ Star this repository if you found it helpful!</p>
-</div>
+**QuantFlow** - Professional-grade portfolio management and risk analysis platform.
