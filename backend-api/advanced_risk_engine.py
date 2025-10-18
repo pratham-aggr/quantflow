@@ -823,7 +823,20 @@ class AdvancedRiskEngine:
         if not holdings:
             return [0.0] * 6
         
-        total_value = sum(holding.get('quantity', 0) * holding.get('avg_price', 0) for holding in holdings)
+        # Use flexible field names for total value calculation
+        total_value = 0.0
+        for holding in holdings:
+            quantity = holding.get('quantity', 0) or holding.get('shares', 0) or holding.get('amount', 0) or holding.get('units', 0)
+            price = holding.get('avg_price', 0) or holding.get('current_price', 0) or holding.get('price', 0) or holding.get('cost', 0)
+            
+            try:
+                quantity = float(quantity) if quantity else 0
+                price = float(price) if price else 0
+            except (ValueError, TypeError):
+                quantity = 0
+                price = 0
+            
+            total_value += quantity * price
         
         # Portfolio size (log scale)
         portfolio_size = np.log(total_value + 1) if total_value > 0 else 0
@@ -874,8 +887,23 @@ class AdvancedRiskEngine:
         if not holdings:
             return 0.0
         
-        # Simplified volatility calculation
-        total_value = sum(holding.get('quantity', 0) * holding.get('avg_price', 0) for holding in holdings)
+        # Use flexible field names for volatility calculation
+        total_value = 0.0
+        for holding in holdings:
+            # Try different field names for quantity and price
+            quantity = holding.get('quantity', 0) or holding.get('shares', 0) or holding.get('amount', 0) or holding.get('units', 0)
+            price = holding.get('avg_price', 0) or holding.get('current_price', 0) or holding.get('price', 0) or holding.get('cost', 0)
+            
+            # Convert to float if needed
+            try:
+                quantity = float(quantity) if quantity else 0
+                price = float(price) if price else 0
+            except (ValueError, TypeError):
+                quantity = 0
+                price = 0
+            
+            total_value += quantity * price
+        
         if total_value == 0:
             return 0.0
         
@@ -883,8 +911,19 @@ class AdvancedRiskEngine:
         valid_holdings = 0
         
         for holding in holdings:
-            value = holding.get('quantity', 0) * holding.get('avg_price', 0)
-            weight = value / total_value
+            # Use the same flexible field names
+            quantity = holding.get('quantity', 0) or holding.get('shares', 0) or holding.get('amount', 0) or holding.get('units', 0)
+            price = holding.get('avg_price', 0) or holding.get('current_price', 0) or holding.get('price', 0) or holding.get('cost', 0)
+            
+            try:
+                quantity = float(quantity) if quantity else 0
+                price = float(price) if price else 0
+            except (ValueError, TypeError):
+                quantity = 0
+                price = 0
+            
+            value = quantity * price
+            weight = value / total_value if total_value > 0 else 0
             
             # Try to get real volatility from market data
             symbol = holding.get('symbol', '')
