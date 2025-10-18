@@ -68,7 +68,7 @@ jobs:
         path: build/
         
     - name: Security audit
-      run: npm audit --audit-level high || echo "Security issues found, check logs"
+      run: npx audit-ci --config .audit-ci.json
       
   deploy-preview:
     needs: test-and-build
