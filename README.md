@@ -1,4 +1,4 @@
-# 🚀 QuantFlow
+# QuantFlow
 ### **Advanced Portfolio Management & Risk Analysis Platform**
 
 [![Frontend CI/CD](https://github.com/pratham-aggr/quantflow/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/pratham-aggr/quantflow/actions/workflows/frontend-ci.yml)
@@ -127,8 +127,11 @@ python app.py          # Backend (Flask)
 
 ### **Docker Deployment**
 ```bash
-# Build and run with Docker Compose
-docker-compose up -d
+# Development environment
+docker-compose -f docker/docker-compose.yml up -d
+
+# Production environment
+docker-compose -f docker/docker-compose.prod.yml up -d
 ```
 
 ---
