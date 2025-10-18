@@ -312,22 +312,6 @@ make lint
 
 ---
 
-## Support & Documentation
-
-### Documentation
-- **API Documentation** - [API Docs](https://docs.quantflow.com)
-- **User Guide** - [User Guide](https://guide.quantflow.com)
-- **Developer Guide** - [Developer Guide](https://dev.quantflow.com)
-
-### Support Channels
-- **GitHub Issues** - [Report Issues](https://github.com/pratham-aggr/quantflow/issues)
-- **GitHub Discussions** - [Community](https://github.com/pratham-aggr/quantflow/discussions)
-- **Documentation** - [Wiki](https://github.com/pratham-aggr/quantflow/wiki)
-
-### Enterprise Support
-- **Professional Support** - Available for enterprise customers
-- **Custom Development** - Tailored solutions for specific needs
-- **Training & Consulting** - Implementation and training services
 
 ---
 
