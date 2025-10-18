@@ -588,6 +588,12 @@ class AdvancedRiskEngine:
             logger.info(f"Generating risk report for {len(holdings)} holdings")
             logger.info(f"Holdings data: {holdings}")
             
+            # Debug: Check holdings structure
+            if holdings:
+                logger.info(f"First holding structure: {holdings[0] if holdings else 'None'}")
+                for i, holding in enumerate(holdings[:3]):  # Check first 3 holdings
+                    logger.info(f"Holding {i}: {holding}")
+            
             # Check if portfolio is empty
             if not holdings:
                 logger.warning("Portfolio is empty - cannot generate risk report")
@@ -603,17 +609,39 @@ class AdvancedRiskEngine:
                     'error': 'Portfolio is empty'
                 }
             
-            # Check if portfolio has any meaningful holdings
-            valid_holdings = [h for h in holdings if h.get('quantity', 0) > 0 and h.get('avg_price', 0) > 0]
+            # Check if portfolio has any meaningful holdings - use flexible validation
+            valid_holdings = []
+            for h in holdings:
+                # Try different field names for quantity and price
+                quantity = h.get('quantity', 0) or h.get('shares', 0) or h.get('amount', 0) or h.get('units', 0)
+                price = h.get('avg_price', 0) or h.get('current_price', 0) or h.get('price', 0) or h.get('cost', 0)
+                symbol = h.get('symbol', '') or h.get('ticker', '') or h.get('stock', '')
+                
+                # Convert to float if needed
+                try:
+                    quantity = float(quantity) if quantity else 0
+                    price = float(price) if price else 0
+                except (ValueError, TypeError):
+                    quantity = 0
+                    price = 0
+                
+                # Check if we have a valid symbol and some value
+                if symbol and (quantity > 0 or price > 0):
+                    valid_holdings.append(h)
+                    logger.info(f"Valid holding: {symbol} - qty: {quantity}, price: {price}")
+            
+            logger.info(f"Found {len(valid_holdings)} valid holdings out of {len(holdings)} total")
+            
             if not valid_holdings:
                 logger.warning("Portfolio has no valid holdings - cannot generate risk report")
+                logger.warning("Holdings must have a symbol and either quantity > 0 or price > 0")
                 return {
                     'summary': {'risk_score': 0, 'risk_level': 'No Data'},
                     'monte_carlo_analysis': {},
                     'correlation_analysis': {},
                     'sector_analysis': {},
                     'ml_prediction': {},
-                    'recommendations': ['Please add stocks with valid quantities and prices to your portfolio'],
+                    'recommendations': ['Please add stocks with valid symbols and quantities/prices to your portfolio'],
                     'risk_tolerance': risk_tolerance,
                     'timestamp': pd.Timestamp.now().isoformat(),
                     'error': 'No valid holdings'
