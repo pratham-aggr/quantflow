@@ -402,28 +402,36 @@ export const AdvancedRiskDashboard: React.FC<AdvancedRiskDashboardProps> = ({
 
 // ML Prediction Component - No Card, Just Metrics
 const MLPredictionView = ({ prediction }: { prediction: MLPrediction }) => {
+  // Add null checks for all prediction properties
+  const predictedVolatility = prediction?.predicted_volatility ?? 0
+  const modelAccuracy = prediction?.model_accuracy ?? 0
+  const confidenceInterval = prediction?.confidence_interval ?? [0, 0]
+  const predictionHorizon = prediction?.prediction_horizon ?? 30
+
   return (
     <div className="grid grid-cols-3 gap-8 mb-6">
       <div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Predicted Volatility</p>
         <p className="text-2xl font-bold text-gray-900 dark:text-white">
-          {advancedRiskService.formatPercentage(prediction.predicted_volatility)}
+          {predictedVolatility ? advancedRiskService.formatPercentage(predictedVolatility) : 'N/A'}
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-          {prediction.prediction_horizon}d horizon
+          {predictionHorizon}d horizon
         </p>
       </div>
       <div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Model Accuracy</p>
         <p className="text-2xl font-bold text-gray-900 dark:text-white">
-          {(prediction.model_accuracy * 100).toFixed(0)}%
+          {modelAccuracy ? `${(modelAccuracy * 100).toFixed(0)}%` : 'N/A'}
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">R² Score</p>
       </div>
       <div>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Confidence Range</p>
         <p className="text-lg font-bold text-gray-900 dark:text-white">
-          {advancedRiskService.formatPercentage(prediction.confidence_interval[0])} - {advancedRiskService.formatPercentage(prediction.confidence_interval[1])}
+          {confidenceInterval && confidenceInterval.length >= 2 ? 
+            `${advancedRiskService.formatPercentage(confidenceInterval[0])} - ${advancedRiskService.formatPercentage(confidenceInterval[1])}` : 
+            'N/A'}
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">95% CI</p>
       </div>
