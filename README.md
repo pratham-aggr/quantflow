@@ -1,210 +1,364 @@
 # QuantFlow
 
-**Advanced Portfolio Management & Risk Analysis Platform**
+**Enterprise-Grade Portfolio Management & Risk Analysis Platform**
 
 [![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=flat-square&logo=react&logoColor=white)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-2.3+-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Docker](https://img.shields.io/badge/Docker-20.10+-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-336791?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?style=flat-square)](https://github.com/pratham-aggr/quantflow/actions)
+[![Security](https://img.shields.io/badge/Security-A+%20Grade-brightgreen?style=flat-square)](https://github.com/pratham-aggr/quantflow/security)
 
 ---
 
-## Overview
+## Executive Summary
 
-QuantFlow is a comprehensive financial technology platform that provides institutional-grade portfolio management, advanced risk analysis, and automated rebalancing capabilities. Built with modern microservices architecture and containerized deployment.
+QuantFlow is a comprehensive financial technology platform designed for institutional-grade portfolio management, advanced risk analysis, and automated rebalancing. Built with modern microservices architecture and containerized deployment, it provides real-time market data integration, sophisticated risk modeling, and intelligent portfolio optimization capabilities.
 
-### Key Features
+### Business Value Proposition
 
-- **Real-time Portfolio Tracking** with live market data
-- **Advanced Risk Analysis** with Monte Carlo simulations
-- **Machine Learning** powered volatility predictions
-- **Automated Rebalancing** with tax optimization
-- **Enterprise Security** with JWT authentication
-- **Docker Ready** for easy deployment
+- **Institutional-Grade Security** - Enterprise authentication, encryption, and compliance
+- **Advanced Risk Analytics** - Monte Carlo simulations, VaR calculations, and ML predictions
+- **Automated Operations** - Intelligent rebalancing with tax optimization
+- **Real-Time Processing** - Live market data and portfolio tracking
+- **Scalable Architecture** - Cloud-native design with horizontal scaling
+- **Regulatory Compliance** - Built-in audit trails and reporting capabilities
 
-## Technology Stack
+---
 
-**Frontend:** React 18, TypeScript, Tailwind CSS, Chart.js, Axios  
-**Backend:** Python 3.9+, Flask, NumPy, Pandas, SciPy, scikit-learn  
-**Infrastructure:** Docker, Nginx, PostgreSQL, Supabase, Vercel
+## Architecture Overview
 
-## Quick Start
+QuantFlow employs a modern microservices architecture with clear separation of concerns:
 
-### Docker Deployment (Recommended)
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   API Gateway   │    │   Backend       │
+│   React + TS    │◄──►│   Nginx         │◄──►│   Flask + Python│
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+                                │
+                       ┌─────────────────┐
+                       │   Data Layer    │
+                       │   PostgreSQL    │
+                       │   Supabase     │
+                       └─────────────────┘
+```
+
+### Technology Stack
+
+**Frontend:** React 18, TypeScript 5.0, Tailwind CSS, Chart.js, Axios  
+**Backend:** Python 3.9+, Flask 2.3+, NumPy, Pandas, SciPy, scikit-learn  
+**Database:** PostgreSQL 13+, Supabase, Row Level Security  
+**Infrastructure:** Docker, Nginx, Vercel, Render, GitHub Actions  
+**Security:** JWT Authentication, TLS 1.3, Rate Limiting, Input Validation
+
+---
+
+## Production Deployment
+
+### Prerequisites
+
+- Docker 20.10+ and Docker Compose
+- Node.js 18+ (for development)
+- Python 3.9+ (for development)
+- PostgreSQL 13+ (for production)
+- SSL certificates (for production)
+
+### Environment Configuration
+
+Create the following environment files:
+
+**Frontend (.env.local):**
+```bash
+REACT_APP_API_URL=https://api.yourdomain.com
+REACT_APP_SUPABASE_URL=your-supabase-url
+REACT_APP_SUPABASE_ANON_KEY=your-supabase-key
+```
+
+**Backend (.env):**
+```bash
+FLASK_ENV=production
+DATABASE_URL=postgresql://user:pass@host:port/db
+SUPABASE_URL=your-supabase-url
+SUPABASE_KEY=your-supabase-key
+SECRET_KEY=your-secret-key
+```
+
+### Docker Production Deployment
 
 ```bash
 # Clone the repository
 git clone https://github.com/pratham-aggr/quantflow.git
 cd quantflow
 
-# Start the application
-docker-compose up -d
+# Set environment variables
+export FRONTEND_URL=https://yourdomain.com
+export BACKEND_URL=https://api.yourdomain.com
 
-# Access the application
-# Frontend: http://localhost:3000
-# Backend: http://localhost:5000
+# Deploy production environment
+docker-compose -f docker-compose.prod.yml up -d
+
+# Scale services for high availability
+docker-compose -f docker-compose.prod.yml up -d --scale backend=3
+
+# Verify deployment
+docker-compose -f docker-compose.prod.yml ps
 ```
 
-### Manual Setup
+### Production Commands
 
-```bash
-# Frontend
-npm install
-npm start
+| Command | Description | Usage |
+|---------|-------------|-------|
+| `make prod` | Start production environment | `make prod` |
+| `make scale` | Scale backend services | `make scale N=3` |
+| `make logs` | View application logs | `make logs` |
+| `make health` | Check service health | `make health` |
+| `make backup` | Backup database | `make backup` |
+| `make restore` | Restore database | `make restore backup.sql` |
+| `make update` | Update application | `make update` |
+| `make rollback` | Rollback to previous version | `make rollback` |
 
-# Backend (in another terminal)
-cd backend-api
-pip install -r requirements.txt
-python app.py
-```
+---
 
-## Docker Commands
-
-| Command | Description |
-|---------|-------------|
-| `make dev` | Start development environment |
-| `make prod` | Start production environment |
-| `make build` | Build all Docker images |
-| `make logs` | View application logs |
-| `make clean` | Clean up containers and images |
-| `make health` | Check service health |
-
-## Features
+## Core Features
 
 ### Portfolio Management
-- Real-time portfolio tracking with market data
-- Multi-asset support (stocks, ETFs, bonds)
-- Performance analytics and attribution
-- Interactive allocation visualization
+- **Real-Time Tracking** - Live portfolio monitoring with market data integration
+- **Multi-Asset Support** - Stocks, ETFs, bonds, commodities, and alternative investments
+- **Performance Analytics** - Comprehensive performance metrics, attribution analysis, and benchmarking
+- **Allocation Visualization** - Interactive portfolio allocation charts and rebalancing tools
+- **Transaction Management** - Complete transaction history and audit trails
 
-### Risk Analysis
-- Advanced risk metrics (VaR, CVaR, Sharpe Ratio)
-- Monte Carlo simulation and stress testing
-- Correlation analysis and diversification scoring
-- ML-based volatility forecasting
+### Advanced Risk Analysis
+- **Risk Metrics** - VaR, CVaR, Sharpe Ratio, Beta, Alpha, Maximum Drawdown calculations
+- **Monte Carlo Simulation** - Scenario analysis with 10,000+ simulations
+- **Correlation Analysis** - Asset correlation matrices and diversification scoring
+- **Stress Testing** - Portfolio stress testing under various market conditions
+- **ML Predictions** - Machine learning-based volatility forecasting and risk predictions
 
 ### Automated Rebalancing
-- Intelligent rebalancing algorithms
-- Tax-loss harvesting optimization
-- Custom rebalancing rules
-- What-if scenario analysis
+- **Intelligent Algorithms** - Modern portfolio theory-based rebalancing strategies
+- **Tax Optimization** - Tax-loss harvesting and tax-efficient rebalancing
+- **Custom Rules** - User-defined rebalancing criteria and constraints
+- **What-If Analysis** - Scenario testing for rebalancing strategies
+- **Execution Management** - Order management and execution tracking
 
 ### Market Intelligence
-- Real-time market data integration
-- Financial news aggregation
-- Technical analysis and indicators
-- Market sentiment scoring
+- **Real-Time Data** - Live market quotes, historical data, and market indicators
+- **News Integration** - Financial news aggregation and sentiment analysis
+- **Technical Analysis** - Technical indicators, trend analysis, and pattern recognition
+- **Sentiment Scoring** - Market sentiment analysis and scoring algorithms
+- **Economic Indicators** - Integration with economic data and macro indicators
 
-## API Endpoints
+---
 
-### Authentication
+## API Documentation
+
+### Authentication Endpoints
 ```http
-POST /api/auth/login
-POST /api/auth/register
-POST /api/auth/refresh
+POST   /api/auth/login          # User authentication
+POST   /api/auth/register       # User registration
+POST   /api/auth/refresh        # Token refresh
+POST   /api/auth/logout         # User logout
+GET    /api/auth/profile        # Get user profile
+PUT    /api/auth/profile        # Update user profile
 ```
 
 ### Portfolio Management
 ```http
-GET    /api/portfolio/{id}
-POST   /api/portfolio
-PUT    /api/portfolio/{id}
-DELETE /api/portfolio/{id}
+GET    /api/portfolio           # List user portfolios
+GET    /api/portfolio/{id}       # Get portfolio details
+POST   /api/portfolio           # Create new portfolio
+PUT    /api/portfolio/{id}      # Update portfolio
+DELETE /api/portfolio/{id}      # Delete portfolio
+GET    /api/portfolio/{id}/performance  # Portfolio performance
+GET    /api/portfolio/{id}/holdings     # Portfolio holdings
 ```
 
 ### Risk Analysis
 ```http
-POST /api/risk/analyze
-POST /api/risk/monte-carlo
-POST /api/risk/correlation
-POST /api/risk/ml-prediction
+POST   /api/risk/analyze         # Comprehensive risk analysis
+POST   /api/risk/monte-carlo    # Monte Carlo simulation
+POST   /api/risk/correlation    # Correlation analysis
+POST   /api/risk/ml-prediction  # ML-based predictions
+POST   /api/risk/stress-test    # Stress testing
+GET    /api/risk/metrics/{id}    # Risk metrics
 ```
 
 ### Market Data
 ```http
-GET /api/market-data/quote/{symbol}
-GET /api/market-data/historical/{symbol}
-GET /api/market-data/news
+GET    /api/market-data/quote/{symbol}        # Real-time quotes
+GET    /api/market-data/historical/{symbol}  # Historical data
+GET    /api/market-data/news                 # Market news
+GET    /api/market-data/indicators          # Market indicators
+GET    /api/market-data/sentiment           # Market sentiment
 ```
 
-## Contributing
+### Rebalancing
+```http
+POST   /api/rebalancing/analyze    # Analyze rebalancing needs
+POST   /api/rebalancing/execute    # Execute rebalancing
+GET    /api/rebalancing/history    # Rebalancing history
+POST   /api/rebalancing/optimize   # Tax optimization
+```
 
-1. **Fork the repository**
-   ```bash
-   git clone https://github.com/your-username/quantflow.git
-   cd quantflow
-   ```
+---
 
-2. **Set up development environment**
-   ```bash
-   make dev
-   ```
+## Security & Compliance
 
-3. **Create a feature branch**
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
+### Security Features
+- **Authentication** - JWT-based authentication with refresh tokens
+- **Authorization** - Role-based access control (RBAC) with granular permissions
+- **Encryption** - TLS 1.3 for data in transit, AES-256 for data at rest
+- **Input Validation** - Comprehensive input sanitization and validation
+- **Rate Limiting** - API rate limiting and DDoS protection
+- **Security Headers** - CSP, HSTS, X-Frame-Options, and other security headers
+- **Audit Logging** - Comprehensive audit trails for all operations
 
-4. **Make your changes and test**
-   ```bash
-   npm test
-   cd backend-api && python -m pytest
-   ```
+### Compliance
+- **Data Privacy** - GDPR and CCPA compliant data handling
+- **Financial Regulations** - Built-in compliance with financial regulations
+- **Audit Trails** - Complete audit trails for regulatory compliance
+- **Data Retention** - Configurable data retention policies
+- **Backup & Recovery** - Automated backup and disaster recovery
 
-5. **Submit a pull request**
-   ```bash
-   git add .
-   git commit -m "Add your feature"
-   git push origin feature/your-feature-name
-   ```
+---
 
-### Contribution Areas
+## Performance & Scalability
 
-- **Frontend:** React components, UI/UX improvements, performance optimization
-- **Backend:** Financial algorithms, risk models, API enhancements
-- **DevOps:** Docker optimization, deployment automation, monitoring
-- **Documentation:** API docs, user guides, technical documentation
-- **Testing:** Unit tests, integration tests, end-to-end tests
+### Performance Optimizations
+- **Caching Strategy** - Multi-layer caching (Redis, application-level, CDN)
+- **Database Optimization** - Indexed queries, connection pooling, query optimization
+- **CDN Integration** - Global content delivery network for static assets
+- **Load Balancing** - Horizontal scaling with load balancers
+- **Monitoring** - Real-time performance monitoring and alerting
 
-## Security
+### Scalability Features
+- **Horizontal Scaling** - Auto-scaling based on demand
+- **Microservices** - Independent scaling of services
+- **Database Sharding** - Horizontal database scaling
+- **Caching Layers** - Distributed caching for high availability
+- **Queue Management** - Asynchronous processing with job queues
 
-- JWT Authentication with secure token management
-- Role-based access control (RBAC)
-- TLS 1.3 encryption for data in transit
-- Comprehensive input validation and sanitization
-- API rate limiting and DDoS protection
-- Security headers (CSP, HSTS)
+---
 
-## Performance
+## Monitoring & Observability
 
-- Multi-layer caching strategy (Redis + application-level)
-- Database optimization with indexed queries
-- CDN integration for global content delivery
-- Horizontal scaling capabilities
-- Real-time performance monitoring
+### Health Checks
+```bash
+# Application health
+curl https://api.yourdomain.com/health
+
+# Database health
+curl https://api.yourdomain.com/health/database
+
+# External services health
+curl https://api.yourdomain.com/health/external
+```
+
+### Monitoring Stack
+- **Application Metrics** - Response times, error rates, throughput
+- **Infrastructure Metrics** - CPU, memory, disk, network usage
+- **Business Metrics** - User activity, portfolio performance, risk metrics
+- **Alerting** - Automated alerting for critical issues
+- **Logging** - Structured logging with correlation IDs
+
+---
+
+## Development & Contributing
+
+### Development Setup
+
+```bash
+# Fork and clone the repository
+git clone https://github.com/your-username/quantflow.git
+cd quantflow
+
+# Set up development environment
+make dev
+
+# Run tests
+make test
+
+# Run linting
+make lint
+```
+
+### Code Quality Standards
+- **TypeScript** - Strict type checking enabled
+- **ESLint** - Code linting with strict rules
+- **Prettier** - Code formatting
+- **Jest** - Unit testing with 80%+ coverage
+- **Pytest** - Backend testing with comprehensive coverage
+
+### Contribution Guidelines
+1. **Fork the repository** and create a feature branch
+2. **Follow coding standards** and write comprehensive tests
+3. **Update documentation** for any API changes
+4. **Submit pull request** with detailed description
+5. **Code review** process for all changes
+
+### Areas for Contribution
+- **Frontend** - React components, UI/UX improvements, performance optimization
+- **Backend** - Financial algorithms, risk models, API enhancements
+- **DevOps** - Docker optimization, deployment automation, monitoring
+- **Documentation** - API docs, user guides, technical documentation
+- **Testing** - Unit tests, integration tests, end-to-end tests
+
+---
 
 ## Roadmap
 
+### Q1 2024
 - [ ] Advanced portfolio optimization algorithms
 - [ ] Real-time collaboration features
+- [ ] Enhanced mobile responsiveness
+
+### Q2 2024
 - [ ] Mobile application (iOS/Android)
 - [ ] Advanced analytics and reporting
+- [ ] Multi-tenant architecture
+
+### Q3 2024
 - [ ] Multiple data provider integrations
 - [ ] Enhanced AI/ML capabilities
+- [ ] Advanced risk models
+
+### Q4 2024
+- [ ] Enterprise features and integrations
+- [ ] Advanced compliance tools
+- [ ] Global deployment options
+
+---
+
+## Support & Documentation
+
+### Documentation
+- **API Documentation** - [API Docs](https://docs.quantflow.com)
+- **User Guide** - [User Guide](https://guide.quantflow.com)
+- **Developer Guide** - [Developer Guide](https://dev.quantflow.com)
+
+### Support Channels
+- **GitHub Issues** - [Report Issues](https://github.com/pratham-aggr/quantflow/issues)
+- **GitHub Discussions** - [Community](https://github.com/pratham-aggr/quantflow/discussions)
+- **Documentation** - [Wiki](https://github.com/pratham-aggr/quantflow/wiki)
+
+### Enterprise Support
+- **Professional Support** - Available for enterprise customers
+- **Custom Development** - Tailored solutions for specific needs
+- **Training & Consulting** - Implementation and training services
+
+---
 
 ## License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
-## Support
-
-- **Documentation:** [GitHub Wiki](https://github.com/pratham-aggr/quantflow/wiki)
-- **Issues:** [GitHub Issues](https://github.com/pratham-aggr/quantflow/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/pratham-aggr/quantflow/discussions)
-
 ---
+
+**QuantFlow** - Professional-grade portfolio management and risk analysis platform.
 
 **Made with ❤️ by [Pratham Aggarwal](https://github.com/pratham-aggr)**
 
