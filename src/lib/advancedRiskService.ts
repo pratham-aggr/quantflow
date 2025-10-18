@@ -106,6 +106,12 @@ class AdvancedRiskService {
       const duration = performance.now() - startTime
       console.log(`Request to ${endpoint} completed in ${duration.toFixed(2)}ms`)
       
+      // Check if the response contains an error
+      if (data && data.error) {
+        console.error(`API returned error: ${data.error}`)
+        throw new Error(data.error)
+      }
+      
       performanceMonitor.trackAsync(`advanced_risk_${endpoint}`, async () => Promise.resolve(data))
       return data
     } catch (error) {
