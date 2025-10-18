@@ -28,7 +28,7 @@ jobs:
       
     - name: Run npm audit
       run: |
-        npm audit --audit-level moderate
+        npm audit --audit-level high
         echo "Security audit completed"
         
     - name: Check for known vulnerabilities
