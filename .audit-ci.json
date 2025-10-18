@@ -6,9 +6,8 @@
   "allowlist": [
     "axios",
     "react-scripts",
-    "jspdf",
     "nth-check",
-    "css-select",
+    "css-select", 
     "svgo",
     "@svgr/plugin-svgo",
     "@svgr/webpack",
@@ -17,5 +16,6 @@
     "webpack-dev-server"
   ],
   "report-type": "summary",
-  "output-format": "text"
+  "output-format": "text",
+  "skip-dev": false
 }
