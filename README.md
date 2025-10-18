@@ -9,27 +9,27 @@
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![Flask](https://img.shields.io/badge/Flask-2.3+-000000?style=for-the-badge&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![Docker](https://img.shields.io/badge/Docker-20.10+-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13+-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](http://makeapullrequest.com)
+[![GitHub stars](https://img.shields.io/github/stars/pratham-aggr/quantflow?style=for-the-badge)](https://github.com/pratham-aggr/quantflow/stargazers)
 
 </div>
 
 ---
 
-## What is QuantFlow?
+## Overview
 
 QuantFlow is a comprehensive financial technology platform that provides institutional-grade portfolio management, advanced risk analysis, and automated rebalancing capabilities. Built with modern microservices architecture and containerized deployment, it offers real-time market data integration, sophisticated risk modeling, and intelligent portfolio optimization.
 
-### Key Highlights
+### Key Features
 
-- **Real-time Portfolio Tracking** with live market data
-- **Advanced Risk Analysis** with Monte Carlo simulations
-- **Machine Learning** powered volatility predictions
-- **Automated Rebalancing** with tax-loss harvesting
-- **Enterprise Security** with JWT authentication
-- **Docker Ready** for easy deployment
+- **Real-time Portfolio Tracking** with live market data integration
+- **Advanced Risk Analysis** with Monte Carlo simulations and ML predictions
+- **Automated Rebalancing** with intelligent algorithms and tax optimization
+- **Enterprise Security** with JWT authentication and role-based access
+- **Docker Ready** for seamless deployment and scaling
+- **Modern Architecture** with microservices and cloud-native design
 
 ---
 
@@ -37,119 +37,134 @@ QuantFlow is a comprehensive financial technology platform that provides institu
 
 ```mermaid
 graph TB
-    subgraph "Frontend Layer"
-        A[React 18 + TypeScript]
-        B[Tailwind CSS]
-        C[Chart.js]
+    subgraph "Client Layer"
+        A[React Frontend]
+        B[TypeScript + Tailwind]
     end
     
-    subgraph "Backend Layer"
-        D[Python Flask API]
-        E[Advanced Risk Engine]
-        F[ML Prediction Models]
+    subgraph "API Gateway"
+        C[Nginx Reverse Proxy]
+    end
+    
+    subgraph "Backend Services"
+        D[Flask API Server]
+        E[Risk Analysis Engine]
+        F[ML Prediction Service]
     end
     
     subgraph "Data Layer"
-        G[PostgreSQL]
+        G[PostgreSQL Database]
         H[Supabase Auth]
         I[Market Data APIs]
     end
     
-    subgraph "Infrastructure"
-        J[Docker Containers]
-        K[Nginx Reverse Proxy]
-        L[Cloud Deployment]
-    end
-    
-    A --> D
+    A --> C
+    C --> D
+    D --> E
+    D --> F
     D --> G
+    D --> H
     D --> I
-    J --> K
-    K --> L
 ```
 
 ---
 
 ## Technology Stack
 
-### Frontend Technologies
+### Frontend
 <table>
 <tr>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="50" height="50"/>
 <br/><b>React 18</b>
+<br/><small>Modern UI Framework</small>
 </td>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" width="50" height="50"/>
 <br/><b>TypeScript</b>
+<br/><small>Type Safety</small>
 </td>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" width="50" height="50"/>
 <br/><b>Tailwind CSS</b>
+<br/><small>Utility-first CSS</small>
 </td>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/chartjs/chartjs-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/chartjs/chartjs-original.svg" width="50" height="50"/>
 <br/><b>Chart.js</b>
+<br/><small>Data Visualization</small>
 </td>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/axios/axios-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/axios/axios-original.svg" width="50" height="50"/>
 <br/><b>Axios</b>
+<br/><small>HTTP Client</small>
 </td>
 </tr>
 </table>
 
-### Backend Technologies
+### Backend
 <table>
 <tr>
 <td align="center" width="16%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg" width="50" height="50"/>
 <br/><b>Python 3.9+</b>
+<br/><small>Core Language</small>
 </td>
 <td align="center" width="16%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flask/flask-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/flask/flask-original.svg" width="50" height="50"/>
 <br/><b>Flask 2.3+</b>
+<br/><small>Web Framework</small>
 </td>
 <td align="center" width="16%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/numpy/numpy-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/numpy/numpy-original.svg" width="50" height="50"/>
 <br/><b>NumPy</b>
+<br/><small>Numerical Computing</small>
 </td>
 <td align="center" width="16%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pandas/pandas-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/pandas/pandas-original.svg" width="50" height="50"/>
 <br/><b>Pandas</b>
+<br/><small>Data Analysis</small>
 </td>
 <td align="center" width="16%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/scipy/scipy-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/scipy/scipy-original.svg" width="50" height="50"/>
 <br/><b>SciPy</b>
+<br/><small>Scientific Computing</small>
 </td>
 <td align="center" width="16%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/scikit-learn/scikit-learn-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/scikit-learn/scikit-learn-original.svg" width="50" height="50"/>
 <br/><b>scikit-learn</b>
+<br/><small>Machine Learning</small>
 </td>
 </tr>
 </table>
 
-### Infrastructure & DevOps
+### Infrastructure
 <table>
 <tr>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/docker/docker-original.svg" width="50" height="50"/>
 <br/><b>Docker</b>
+<br/><small>Containerization</small>
 </td>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nginx/nginx-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nginx/nginx-original.svg" width="50" height="50"/>
 <br/><b>Nginx</b>
+<br/><small>Reverse Proxy</small>
 </td>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" width="50" height="50"/>
 <br/><b>PostgreSQL</b>
+<br/><small>Database</small>
 </td>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/supabase/supabase-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/supabase/supabase-original.svg" width="50" height="50"/>
 <br/><b>Supabase</b>
+<br/><small>Backend as a Service</small>
 </td>
 <td align="center" width="20%">
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vercel/vercel-original.svg" width="40" height="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/vercel/vercel-original.svg" width="50" height="50"/>
 <br/><b>Vercel</b>
+<br/><small>Frontend Hosting</small>
 </td>
 </tr>
 </table>
@@ -158,7 +173,12 @@ graph TB
 
 ## Quick Start
 
-### Option 1: Docker (Recommended)
+### Prerequisites
+- Docker and Docker Compose
+- Node.js 18+ (for development)
+- Python 3.9+ (for development)
+
+### Docker Deployment (Recommended)
 
 ```bash
 # Clone the repository
@@ -173,7 +193,7 @@ docker-compose up -d
 # Backend: http://localhost:5000
 ```
 
-### Option 2: Manual Setup
+### Manual Development Setup
 
 ```bash
 # Frontend
@@ -188,32 +208,7 @@ python app.py
 
 ---
 
-## Docker Deployment
-
-### Development Environment
-
-```bash
-# Start development environment
-make dev
-
-# View logs
-make logs
-
-# Health check
-make health
-```
-
-### Production Environment
-
-```bash
-# Production deployment
-make prod
-
-# Scale services
-docker-compose -f docker-compose.prod.yml up -d --scale backend=3
-```
-
-### Available Commands
+## Docker Commands
 
 | Command | Description |
 |---------|-------------|
@@ -226,7 +221,7 @@ docker-compose -f docker-compose.prod.yml up -d --scale backend=3
 
 ---
 
-## Features
+## Core Features
 
 ### Portfolio Management
 - **Real-time Tracking** - Live portfolio monitoring with market data
@@ -255,36 +250,36 @@ docker-compose -f docker-compose.prod.yml up -d --scale backend=3
 
 ---
 
-## API Documentation
+## API Endpoints
 
 ### Authentication
 ```http
-POST /api/auth/login
-POST /api/auth/register
-POST /api/auth/refresh
+POST /api/auth/login          # User authentication
+POST /api/auth/register       # User registration
+POST /api/auth/refresh        # Token refresh
 ```
 
 ### Portfolio Management
 ```http
-GET    /api/portfolio/{id}
-POST   /api/portfolio
-PUT    /api/portfolio/{id}
-DELETE /api/portfolio/{id}
+GET    /api/portfolio/{id}    # Get portfolio details
+POST   /api/portfolio         # Create new portfolio
+PUT    /api/portfolio/{id}    # Update portfolio
+DELETE /api/portfolio/{id}    # Delete portfolio
 ```
 
 ### Risk Analysis
 ```http
-POST /api/risk/analyze
-POST /api/risk/monte-carlo
-POST /api/risk/correlation
-POST /api/risk/ml-prediction
+POST /api/risk/analyze        # Comprehensive risk analysis
+POST /api/risk/monte-carlo    # Monte Carlo simulation
+POST /api/risk/correlation    # Correlation analysis
+POST /api/risk/ml-prediction  # ML-based predictions
 ```
 
 ### Market Data
 ```http
-GET /api/market-data/quote/{symbol}
-GET /api/market-data/historical/{symbol}
-GET /api/market-data/news
+GET /api/market-data/quote/{symbol}        # Real-time quotes
+GET /api/market-data/historical/{symbol}   # Historical data
+GET /api/market-data/news                  # Market news feed
 ```
 
 ---
@@ -293,44 +288,43 @@ GET /api/market-data/news
 
 We welcome contributions from developers, financial analysts, and open-source enthusiasts!
 
-### Quick Contribution Guide
+### Development Workflow
 
-1. **Fork the repository**
+1. **Fork and Clone**
    ```bash
-   # Fork on GitHub, then clone your fork
    git clone https://github.com/your-username/quantflow.git
    cd quantflow
    ```
 
-2. **Set up development environment**
+2. **Set up Environment**
    ```bash
    # Using Docker (recommended)
    make dev
    ```
 
-3. **Create a feature branch**
+3. **Create Feature Branch**
    ```bash
-   git checkout -b feature/your-awesome-feature
+   git checkout -b feature/your-feature-name
    ```
 
-4. **Make your changes and test**
+4. **Make Changes and Test**
    ```bash
    # Run tests
    npm test
    cd backend-api && python -m pytest
    ```
 
-5. **Submit a pull request**
+5. **Submit Pull Request**
    ```bash
    git add .
-   git commit -m "Add your awesome feature"
-   git push origin feature/your-awesome-feature
+   git commit -m "Add your feature"
+   git push origin feature/your-feature-name
    ```
 
-### Areas for Contribution
+### Contribution Areas
 
-| Area | Technologies | Description |
-|------|-------------|-------------|
+| Area | Technologies | Focus |
+|------|-------------|-------|
 | **Frontend** | React, TypeScript, Tailwind | UI components, performance optimization |
 | **Backend** | Python, Flask, NumPy | Financial algorithms, risk models |
 | **DevOps** | Docker, Nginx, CI/CD | Deployment automation, monitoring |
@@ -339,23 +333,16 @@ We welcome contributions from developers, financial analysts, and open-source en
 
 ---
 
-## Security
+## Security & Performance
 
-QuantFlow implements enterprise-grade security measures:
-
+### Security Features
 - **JWT Authentication** - Secure token-based authentication
 - **Role-based Access** - Granular permission system
 - **Data Encryption** - TLS 1.3 for data in transit
 - **Input Validation** - Comprehensive input sanitization
 - **Rate Limiting** - API rate limiting and DDoS protection
-- **Security Headers** - CSP, HSTS, and security headers
 
----
-
-## Performance
-
-The platform is optimized for high-performance financial applications:
-
+### Performance Optimizations
 - **Multi-layer Caching** - Redis and application-level caching
 - **Database Optimization** - Indexed queries and connection pooling
 - **CDN Integration** - Global content delivery network
@@ -395,7 +382,6 @@ This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) 
 
 [![GitHub stars](https://img.shields.io/github/stars/pratham-aggr/quantflow?style=social)](https://github.com/pratham-aggr/quantflow/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/pratham-aggr/quantflow?style=social)](https://github.com/pratham-aggr/quantflow/network)
-[![GitHub watchers](https://img.shields.io/github/watchers/pratham-aggr/quantflow?style=social)](https://github.com/pratham-aggr/quantflow/watchers)
 
 ⭐ **Star this repository if you found it helpful!**
 
