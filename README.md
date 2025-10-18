@@ -43,25 +43,37 @@ QuantFlow employs a microservices architecture with clear separation of concerns
 
 ## Technology Stack
 
-### Frontend
-- **React 18** with TypeScript for type safety
-- **Tailwind CSS** for responsive design
-- **Chart.js** for financial visualizations
-- **React Router** for client-side navigation
+### Frontend Technologies
+- **React 18** - Modern UI framework with hooks and concurrent features
+- **TypeScript 5.0** - Type-safe JavaScript development
+- **Tailwind CSS** - Utility-first CSS framework for responsive design
+- **Chart.js** - Interactive financial charts and visualizations
+- **React Router** - Client-side routing and navigation
+- **Axios** - HTTP client for API communication
 
-### Backend
-- **Python 3.9+** with Flask framework
-- **NumPy/Pandas** for financial calculations
-- **SciPy** for statistical analysis
-- **scikit-learn** for machine learning
-- **yfinance** for market data integration
+### Backend Technologies
+- **Python 3.9+** - High-performance backend programming language
+- **Flask 2.3+** - Lightweight and flexible web framework
+- **NumPy** - Numerical computing and mathematical operations
+- **Pandas** - Data manipulation and analysis
+- **SciPy** - Scientific computing and statistical analysis
+- **scikit-learn** - Machine learning algorithms and models
+- **yfinance** - Yahoo Finance API integration for market data
+- **Gunicorn** - WSGI HTTP Server for production deployment
 
-### Infrastructure
-- **Docker** for containerization
-- **Nginx** for reverse proxy and static file serving
-- **PostgreSQL** with Supabase for data persistence
-- **Vercel** for frontend hosting
-- **Render** for backend hosting
+### Database & Authentication
+- **PostgreSQL** - Robust relational database system
+- **Supabase** - Backend-as-a-Service with real-time features
+- **JWT** - JSON Web Tokens for secure authentication
+- **Row Level Security** - Database-level security policies
+
+### Infrastructure & DevOps
+- **Docker** - Containerization platform
+- **Docker Compose** - Multi-container orchestration
+- **Nginx** - High-performance web server and reverse proxy
+- **Vercel** - Frontend hosting and deployment platform
+- **Render** - Backend hosting and deployment platform
+- **GitHub Actions** - CI/CD pipeline automation
 
 ## Quick Start
 
@@ -129,6 +141,48 @@ QuantFlow employs a microservices architecture with clear separation of concerns
    export SUPABASE_KEY=your-supabase-key
    ```
 
+## Docker Deployment
+
+### Pull and Run with Docker
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/pratham-aggr/quantflow.git
+   cd quantflow
+   ```
+
+2. **Start the application**
+   ```bash
+   # Development environment
+   make dev
+   
+   # Or using docker-compose directly
+   docker-compose up -d
+   ```
+
+3. **Access the application**
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:5000
+   - Health Check: http://localhost:5000/health
+
+### Production Deployment
+
+1. **Production setup**
+   ```bash
+   # Set environment variables
+   export FRONTEND_URL=https://your-domain.com
+   export BACKEND_URL=https://api.your-domain.com
+   
+   # Start production environment
+   make prod
+   ```
+
+2. **Scale services**
+   ```bash
+   # Scale backend services
+   docker-compose -f docker-compose.prod.yml up -d --scale backend=3
+   ```
+
 ## API Documentation
 
 ### Authentication Endpoints
@@ -152,6 +206,74 @@ QuantFlow employs a microservices architecture with clear separation of concerns
 - `GET /api/market-data/quote/{symbol}` - Real-time quotes
 - `GET /api/market-data/historical/{symbol}` - Historical data
 - `GET /api/market-data/news` - Market news feed
+
+## Contributing
+
+We welcome contributions from developers, financial analysts, and open-source enthusiasts. Here's how you can contribute:
+
+### Getting Started
+
+1. **Fork the repository**
+   ```bash
+   # Fork on GitHub, then clone your fork
+   git clone https://github.com/your-username/quantflow.git
+   cd quantflow
+   ```
+
+2. **Set up development environment**
+   ```bash
+   # Using Docker (recommended)
+   make dev
+   
+   # Or manually
+   npm install
+   cd backend-api && pip install -r requirements.txt
+   ```
+
+3. **Create a feature branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+### Development Workflow
+
+1. **Make your changes**
+   - Follow the existing code style
+   - Add tests for new functionality
+   - Update documentation as needed
+
+2. **Test your changes**
+   ```bash
+   # Run tests
+   npm test
+   cd backend-api && python -m pytest
+   
+   # Check Docker build
+   docker-compose build
+   ```
+
+3. **Submit a pull request**
+   ```bash
+   git add .
+   git commit -m "Add your feature"
+   git push origin feature/your-feature-name
+   ```
+
+### Contribution Guidelines
+
+- **Code Style**: Follow existing patterns and use TypeScript/Python best practices
+- **Testing**: Add unit tests for new features and bug fixes
+- **Documentation**: Update README and code comments as needed
+- **Commit Messages**: Use clear, descriptive commit messages
+- **Pull Requests**: Provide detailed descriptions of changes
+
+### Areas for Contribution
+
+- **Frontend**: React components, UI/UX improvements, performance optimization
+- **Backend**: Financial algorithms, risk models, API enhancements
+- **DevOps**: Docker optimization, deployment automation, monitoring
+- **Documentation**: API docs, user guides, technical documentation
+- **Testing**: Unit tests, integration tests, end-to-end tests
 
 ## Security
 
@@ -180,17 +302,6 @@ The platform is optimized for high-performance financial applications:
 - **Logging**: Structured logging with correlation IDs
 - **Metrics**: Performance and business metrics
 - **Alerting**: Automated alerting for critical issues
-
-## Contributing
-
-We welcome contributions from the community. Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests for new functionality
-5. Submit a pull request
 
 ## License
 
