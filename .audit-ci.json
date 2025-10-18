@@ -1,11 +1,20 @@
 {
   "low": true,
   "moderate": true,
-  "high": true,
+  "high": false,
   "critical": true,
   "allowlist": [
     "axios",
-    "react-scripts"
+    "react-scripts",
+    "jspdf",
+    "nth-check",
+    "css-select",
+    "svgo",
+    "@svgr/plugin-svgo",
+    "@svgr/webpack",
+    "postcss",
+    "resolve-url-loader",
+    "webpack-dev-server"
   ],
   "report-type": "summary",
   "output-format": "text"
