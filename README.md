@@ -46,6 +46,8 @@ QuantFlow employs a modern microservices architecture with clear separation of c
                        └─────────────────┘
 ```
 
+## QuantFlow
+
 ### Technology Stack
 
 **Frontend:** React 18, TypeScript 5.0, Tailwind CSS, Chart.js, Axios  
@@ -306,12 +308,6 @@ make lint
 - **DevOps** - Docker optimization, deployment automation, monitoring
 - **Documentation** - API docs, user guides, technical documentation
 - **Testing** - Unit tests, integration tests, end-to-end tests
-
----
-
-
----
-
 
 ---
 
