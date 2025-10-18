@@ -2,6 +2,9 @@
 
 **Portfolio Management & Risk Analysis Platform**
 
+[![Frontend CI/CD](https://github.com/pratham-aggr/quantflow/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/pratham-aggr/quantflow/actions/workflows/frontend-ci.yml)
+[![Security Scan](https://github.com/pratham-aggr/quantflow/actions/workflows/security-scan.yml/badge.svg)](https://github.com/pratham-aggr/quantflow/actions/workflows/security-scan.yml)
+
 [![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=flat-square&logo=react&logoColor=white)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Python](https://img.shields.io/badge/Python-3.9+-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
