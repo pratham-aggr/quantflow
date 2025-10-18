@@ -150,18 +150,6 @@ docker-compose -f docker-compose.prod.yml up -d --scale backend=3
 docker-compose -f docker-compose.prod.yml ps
 ```
 
-### Production Commands
-
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `make prod` | Start production environment | `make prod` |
-| `make scale` | Scale backend services | `make scale N=3` |
-| `make logs` | View application logs | `make logs` |
-| `make health` | Check service health | `make health` |
-| `make backup` | Backup database | `make backup` |
-| `make restore` | Restore database | `make restore backup.sql` |
-| `make update` | Update application | `make update` |
-| `make rollback` | Rollback to previous version | `make rollback` |
 
 ---
 
