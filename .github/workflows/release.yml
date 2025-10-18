@@ -26,14 +26,18 @@ jobs:
       with:
         node-version: '18.x'
         cache: 'npm'
+        cache-dependency-path: 'package-lock.json'
         
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
         
-    - name: Install frontend dependencies
-      run: npm ci
+    - name: Clear npm cache and install frontend dependencies
+      run: |
+        npm cache clean --force
+        rm -rf node_modules
+        npm ci
       
     - name: Install backend dependencies
       working-directory: ./backend-api
