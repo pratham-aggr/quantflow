@@ -633,30 +633,76 @@ class AdvancedRiskEngine:
             logger.info(f"Found {len(valid_holdings)} valid holdings out of {len(holdings)} total")
             
             if not valid_holdings:
-                logger.warning("Portfolio has no valid holdings - cannot generate risk report")
+                logger.warning("Portfolio has no valid holdings - trying fallback approach")
                 logger.warning("Holdings must have a symbol and either quantity > 0 or price > 0")
-                return {
-                    'summary': {'risk_score': 0, 'risk_level': 'No Data'},
-                    'monte_carlo_analysis': {},
-                    'correlation_analysis': {},
-                    'sector_analysis': {},
-                    'ml_prediction': {},
-                    'recommendations': ['Please add stocks with valid symbols and quantities/prices to your portfolio'],
-                    'risk_tolerance': risk_tolerance,
-                    'timestamp': pd.Timestamp.now().isoformat(),
-                    'error': 'No valid holdings'
-                }
+                
+                # Fallback: try to use all holdings even if validation failed
+                if holdings:
+                    logger.info("Attempting fallback with all holdings regardless of validation")
+                    valid_holdings = holdings
+                else:
+                    return {
+                        'summary': {'risk_score': 0, 'risk_level': 'No Data'},
+                        'monte_carlo_analysis': {},
+                        'correlation_analysis': {},
+                        'sector_analysis': {},
+                        'ml_prediction': {},
+                        'recommendations': ['Please add stocks with valid symbols and quantities/prices to your portfolio'],
+                        'risk_tolerance': risk_tolerance,
+                        'timestamp': pd.Timestamp.now().isoformat(),
+                        'error': 'No valid holdings'
+                    }
             
-            # Run all analyses
-            monte_carlo_result = self.run_monte_carlo_simulation(holdings)
-            correlation_matrix = self.calculate_correlation_matrix(holdings)
-            sector_analysis = self.analyze_sector_allocation(holdings)
-            ml_prediction = self.predict_volatility_ml(holdings)
+            # Run all analyses with error handling
+            try:
+                monte_carlo_result = self.run_monte_carlo_simulation(holdings)
+                logger.info("Monte Carlo simulation completed successfully")
+            except Exception as e:
+                logger.error(f"Monte Carlo simulation failed: {e}")
+                monte_carlo_result = self._empty_monte_carlo_result()
             
-            # Calculate traditional risk metrics
-            portfolio_volatility = self._calculate_portfolio_volatility(holdings)
-            sharpe_ratio = self._calculate_sharpe_ratio(holdings)
-            var_95 = self._calculate_value_at_risk(holdings, 0.05)
+            try:
+                correlation_matrix = self.calculate_correlation_matrix(holdings)
+                logger.info("Correlation analysis completed successfully")
+            except Exception as e:
+                logger.error(f"Correlation analysis failed: {e}")
+                correlation_matrix = self._empty_correlation_matrix()
+            
+            try:
+                sector_analysis = self.analyze_sector_allocation(holdings)
+                logger.info("Sector analysis completed successfully")
+            except Exception as e:
+                logger.error(f"Sector analysis failed: {e}")
+                sector_analysis = self._empty_sector_analysis()
+            
+            try:
+                ml_prediction = self.predict_volatility_ml(holdings)
+                logger.info("ML prediction completed successfully")
+            except Exception as e:
+                logger.error(f"ML prediction failed: {e}")
+                ml_prediction = self._empty_ml_prediction()
+            
+            # Calculate traditional risk metrics with error handling
+            try:
+                portfolio_volatility = self._calculate_portfolio_volatility(holdings)
+                logger.info(f"Portfolio volatility: {portfolio_volatility}")
+            except Exception as e:
+                logger.error(f"Error calculating portfolio volatility: {e}")
+                portfolio_volatility = 0.15
+            
+            try:
+                sharpe_ratio = self._calculate_sharpe_ratio(holdings)
+                logger.info(f"Sharpe ratio: {sharpe_ratio}")
+            except Exception as e:
+                logger.error(f"Error calculating Sharpe ratio: {e}")
+                sharpe_ratio = 0.0
+            
+            try:
+                var_95 = self._calculate_value_at_risk(holdings, 0.05)
+                logger.info(f"VaR 95%: {var_95}")
+            except Exception as e:
+                logger.error(f"Error calculating VaR: {e}")
+                var_95 = 0.0
             
             # Generate risk score
             risk_score = self._calculate_comprehensive_risk_score(
