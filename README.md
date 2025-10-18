@@ -13,7 +13,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](http://makeapullrequest.com)
-[![Contributors](https://img.shields.io/github/contributors/pratham-aggr/quantflow?style=for-the-badge)](https://github.com/pratham-aggr/quantflow/graphs/contributors)
 
 </div>
 
@@ -21,9 +20,9 @@
 
 ## What is QuantFlow?
 
-QuantFlow is a comprehensive financial technology platform that provides **institutional-grade portfolio management**, **advanced risk analysis**, and **automated rebalancing** capabilities. Built with modern microservices architecture and containerized deployment, it offers real-time market data integration, sophisticated risk modeling, and intelligent portfolio optimization.
+QuantFlow is a comprehensive financial technology platform that provides institutional-grade portfolio management, advanced risk analysis, and automated rebalancing capabilities. Built with modern microservices architecture and containerized deployment, it offers real-time market data integration, sophisticated risk modeling, and intelligent portfolio optimization.
 
-### 🎯 Key Highlights
+### Key Highlights
 
 - **Real-time Portfolio Tracking** with live market data
 - **Advanced Risk Analysis** with Monte Carlo simulations
@@ -34,7 +33,7 @@ QuantFlow is a comprehensive financial technology platform that provides **insti
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 graph TB
@@ -71,7 +70,7 @@ graph TB
 
 ---
 
-## 🛠️ Technology Stack
+## Technology Stack
 
 ### Frontend Technologies
 <table>
@@ -157,7 +156,7 @@ graph TB
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Option 1: Docker (Recommended)
 
@@ -189,7 +188,7 @@ python app.py
 
 ---
 
-## 📦 Docker Deployment
+## Docker Deployment
 
 ### Development Environment
 
@@ -227,28 +226,28 @@ docker-compose -f docker-compose.prod.yml up -d --scale backend=3
 
 ---
 
-## 🔧 Features
+## Features
 
-### 📊 Portfolio Management
+### Portfolio Management
 - **Real-time Tracking** - Live portfolio monitoring with market data
 - **Multi-Asset Support** - Stocks, ETFs, bonds, and alternative investments
 - **Performance Analytics** - Comprehensive performance metrics and attribution
 - **Allocation Visualization** - Interactive portfolio allocation charts
 
-### 🎯 Risk Analysis Engine
+### Risk Analysis Engine
 - **Advanced Metrics** - VaR, CVaR, Sharpe Ratio, Beta, Alpha calculations
 - **Monte Carlo Simulation** - Scenario analysis and stress testing
 - **Correlation Analysis** - Asset correlation and diversification scoring
 - **ML Predictions** - Machine learning-based volatility forecasting
 - **Stress Testing** - Portfolio stress testing under various scenarios
 
-### ⚖️ Automated Rebalancing
+### Automated Rebalancing
 - **Smart Algorithms** - Intelligent rebalancing strategies
 - **Tax Optimization** - Tax-loss harvesting and optimization
 - **Custom Rules** - User-defined rebalancing criteria
 - **What-if Analysis** - Scenario testing for rebalancing strategies
 
-### 📈 Market Intelligence
+### Market Intelligence
 - **Real-time Data** - Live market quotes and historical data
 - **News Integration** - Financial news aggregation and sentiment analysis
 - **Technical Analysis** - Technical indicators and trend analysis
@@ -256,7 +255,7 @@ docker-compose -f docker-compose.prod.yml up -d --scale backend=3
 
 ---
 
-## 🔌 API Documentation
+## API Documentation
 
 ### Authentication
 ```http
@@ -290,11 +289,11 @@ GET /api/market-data/news
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions from developers, financial analysts, and open-source enthusiasts!
 
-### 🚀 Quick Contribution Guide
+### Quick Contribution Guide
 
 1. **Fork the repository**
    ```bash
@@ -328,7 +327,7 @@ We welcome contributions from developers, financial analysts, and open-source en
    git push origin feature/your-awesome-feature
    ```
 
-### 🎯 Areas for Contribution
+### Areas for Contribution
 
 | Area | Technologies | Description |
 |------|-------------|-------------|
@@ -340,32 +339,32 @@ We welcome contributions from developers, financial analysts, and open-source en
 
 ---
 
-## 🔒 Security
+## Security
 
 QuantFlow implements enterprise-grade security measures:
 
-- **🔐 JWT Authentication** - Secure token-based authentication
-- **🛡️ Role-based Access** - Granular permission system
-- **🔒 Data Encryption** - TLS 1.3 for data in transit
-- **🚫 Input Validation** - Comprehensive input sanitization
-- **⚡ Rate Limiting** - API rate limiting and DDoS protection
-- **🔐 Security Headers** - CSP, HSTS, and security headers
+- **JWT Authentication** - Secure token-based authentication
+- **Role-based Access** - Granular permission system
+- **Data Encryption** - TLS 1.3 for data in transit
+- **Input Validation** - Comprehensive input sanitization
+- **Rate Limiting** - API rate limiting and DDoS protection
+- **Security Headers** - CSP, HSTS, and security headers
 
 ---
 
-## 📊 Performance
+## Performance
 
 The platform is optimized for high-performance financial applications:
 
-- **⚡ Multi-layer Caching** - Redis and application-level caching
-- **🗄️ Database Optimization** - Indexed queries and connection pooling
-- **🌐 CDN Integration** - Global content delivery network
-- **⚖️ Load Balancing** - Horizontal scaling capabilities
-- **📈 Real-time Metrics** - Performance monitoring and alerting
+- **Multi-layer Caching** - Redis and application-level caching
+- **Database Optimization** - Indexed queries and connection pooling
+- **CDN Integration** - Global content delivery network
+- **Load Balancing** - Horizontal scaling capabilities
+- **Real-time Metrics** - Performance monitoring and alerting
 
 ---
 
-## 📈 Roadmap
+## Roadmap
 
 - [ ] **Advanced Portfolio Optimization** - Modern portfolio theory algorithms
 - [ ] **Real-time Collaboration** - Multi-user portfolio management
@@ -376,17 +375,17 @@ The platform is optimized for high-performance financial applications:
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## 💬 Support
+## Support
 
-- **📚 Documentation**: [GitHub Wiki](https://github.com/pratham-aggr/quantflow/wiki)
-- **🐛 Issues**: [GitHub Issues](https://github.com/pratham-aggr/quantflow/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/pratham-aggr/quantflow/discussions)
+- **Documentation**: [GitHub Wiki](https://github.com/pratham-aggr/quantflow/wiki)
+- **Issues**: [GitHub Issues](https://github.com/pratham-aggr/quantflow/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/pratham-aggr/quantflow/discussions)
 
 ---
 
