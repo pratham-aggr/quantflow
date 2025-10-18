@@ -19,7 +19,7 @@
 
 ---
 
-## 🚀 What is QuantFlow?
+## What is QuantFlow?
 
 QuantFlow is a comprehensive financial technology platform that provides **institutional-grade portfolio management**, **advanced risk analysis**, and **automated rebalancing** capabilities. Built with modern microservices architecture and containerized deployment, it offers real-time market data integration, sophisticated risk modeling, and intelligent portfolio optimization.
 
