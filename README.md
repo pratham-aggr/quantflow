@@ -31,20 +31,61 @@ QuantFlow is a comprehensive financial technology platform designed for institut
 
 ## Architecture Overview
 
-QuantFlow employs a modern microservices architecture with clear separation of concerns:
+QuantFlow employs a modern microservices architecture with clear separation of concerns, designed for scalability, security, and high performance:
+
+### System Architecture
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Frontend      │    │   API Gateway   │    │   Backend       │
-│   React + TS    │◄──►│   Nginx         │◄──►│   Flask + Python│
-└─────────────────┘    └─────────────────┘    └─────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                        Client Layer                             │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │   Web Browser   │  │   Mobile App    │  │   API Clients   │  │
+│  │   React + TS    │  │   (Future)     │  │   Third-party   │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
                                 │
-                       ┌─────────────────┐
-                       │   Data Layer    │
-                       │   PostgreSQL    │
-                       │   Supabase     │
-                       └─────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                      API Gateway Layer                         │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │   Load Balancer │  │   Nginx Proxy   │  │   Rate Limiting │  │
+│  │   SSL/TLS       │  │   CORS Handler  │  │   Authentication│  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                     Application Layer                           │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │   Portfolio     │  │   Risk Analysis │  │   Market Data   │  │
+│  │   Management    │  │   Engine        │  │   Service       │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │   Rebalancing  │  │   ML Prediction │  │   Notification  │  │
+│  │   Service      │  │   Service       │  │   Service       │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+                                │
+┌─────────────────────────────────────────────────────────────────┐
+│                       Data Layer                               │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │   PostgreSQL    │  │   Redis Cache   │  │   File Storage  │  │
+│  │   Database      │  │   Session Store │  │   Static Assets │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐  │
+│  │   Supabase     │  │   Market Data   │  │   News APIs     │  │
+│  │   Auth & RLS   │  │   Providers     │  │   Integration   │  │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘  │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### Key Architectural Principles
+
+- **Microservices Architecture** - Independent, scalable services
+- **API-First Design** - RESTful APIs with comprehensive documentation
+- **Event-Driven Architecture** - Asynchronous processing and real-time updates
+- **Security by Design** - Multi-layer security with authentication and authorization
+- **Cloud-Native** - Containerized deployment with orchestration
+- **High Availability** - Load balancing, failover, and redundancy
+- **Scalability** - Horizontal scaling and auto-scaling capabilities
 
 ## QuantFlow
 
