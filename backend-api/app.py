@@ -657,6 +657,11 @@ def generate_advanced_risk_report():
             risk_report = advanced_risk_engine.generate_risk_report(holdings, risk_tolerance)
             print(f"Render: Generated risk report successfully")
             
+            # Check if the risk report contains an error
+            if risk_report and 'error' in risk_report:
+                print(f"❌ Render: Risk report contains error: {risk_report['error']}")
+                return jsonify({'error': risk_report['error']}), 500
+            
             # Convert NaN values to null for JSON serialization
             risk_report = convert_nan_to_null(risk_report)
             
