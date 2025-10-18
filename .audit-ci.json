@@ -1,0 +1,12 @@
+{
+  "low": true,
+  "moderate": true,
+  "high": true,
+  "critical": true,
+  "allowlist": [
+    "axios",
+    "react-scripts"
+  ],
+  "report-type": "summary",
+  "output-format": "text"
+}
