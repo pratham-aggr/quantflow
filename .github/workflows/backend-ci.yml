@@ -68,7 +68,7 @@ jobs:
         PYTHONPATH: ${{ github.workspace }}/backend-api
         
     - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v5
       if: matrix.python-version == '3.9'
       with:
         file: ./backend-api/coverage.xml
