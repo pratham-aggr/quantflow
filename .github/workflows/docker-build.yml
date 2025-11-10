@@ -96,7 +96,7 @@ jobs:
         docker stop test-frontend
 
     - name: Generate artifact attestation
-      uses: actions/attest-build-provenance@v1
+      uses: actions/attest-build-provenance@v3
       with:
         subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}
         push-to-registry: true
